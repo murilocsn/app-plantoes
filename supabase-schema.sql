@@ -1,9 +1,10 @@
 -- ============================================================
--- Controle de Plantões — schema do banco de dados (Supabase)
+-- FinancPlantões — schema do banco de dados (Supabase)
 -- Multiusuário: cada conta (login) só enxerga os próprios dados.
 --
--- Cole todo este arquivo no SQL Editor do seu projeto Supabase
--- e clique em "RUN" uma única vez.
+-- Este script é seguro para rodar mais de uma vez (idempotente):
+-- se você já rodou uma versão anterior, pode colar este arquivo
+-- inteiro de novo e clicar em RUN sem medo de duplicar nada.
 -- ============================================================
 
 -- Tabela de locais de plantão (por usuário)
@@ -32,6 +33,13 @@ create table if not exists shifts (
   created_at timestamptz not null default now()
 );
 
+-- Tabela de configurações do usuário (meta financeira de ganho)
+create table if not exists settings (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  monthly_goal numeric not null default 0,
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists idx_shifts_date on shifts(date);
 create index if not exists idx_shifts_user on shifts(user_id);
 create index if not exists idx_shifts_location on shifts(location_id);
@@ -47,6 +55,7 @@ create index if not exists idx_locations_user on locations(user_id);
 
 alter table locations enable row level security;
 alter table shifts enable row level security;
+alter table settings enable row level security;
 
 drop policy if exists "locations_select" on locations;
 drop policy if exists "locations_insert" on locations;
@@ -68,14 +77,39 @@ create policy "shifts_insert" on shifts for insert with check (auth.uid() = user
 create policy "shifts_update" on shifts for update using (auth.uid() = user_id);
 create policy "shifts_delete" on shifts for delete using (auth.uid() = user_id);
 
+drop policy if exists "settings_select" on settings;
+drop policy if exists "settings_insert" on settings;
+drop policy if exists "settings_update" on settings;
+drop policy if exists "settings_delete" on settings;
+
+create policy "settings_select" on settings for select using (auth.uid() = user_id);
+create policy "settings_insert" on settings for insert with check (auth.uid() = user_id);
+create policy "settings_update" on settings for update using (auth.uid() = user_id);
+create policy "settings_delete" on settings for delete using (auth.uid() = user_id);
+
 -- ============================================================
 -- Tempo real: permite que o app atualize a tela automaticamente
--- quando o próprio usuário lança/edita/exclui um plantão em
--- outro dispositivo (o Realtime respeita as políticas acima,
--- então cada usuário só recebe eventos dos próprios dados).
+-- quando o próprio usuário lança/edita/exclui um plantão, local
+-- ou meta em outro dispositivo. Envolvido em blocos que ignoram
+-- o erro "já está na publicação" ao rodar o script de novo.
 -- ============================================================
-alter publication supabase_realtime add table shifts;
-alter publication supabase_realtime add table locations;
+do $$
+begin
+  alter publication supabase_realtime add table shifts;
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table locations;
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table settings;
+exception when duplicate_object then null;
+end $$;
 
 -- ============================================================
 -- Opcional: exigir/dispensar confirmação por e-mail no cadastro

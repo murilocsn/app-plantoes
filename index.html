@@ -3,33 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Controle de Plantões</title>
+<title>FinancPlantões</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg: #0F1B2B;
-    --surface: #162942;
-    --surface-2: #1E3350;
-    --surface-3: #274064;
-    --line: #2C4468;
-    --accent: #F2A93B;
-    --accent-dim: #8a6524;
-    --text: #E8EDF4;
-    --text-muted: #90A2C0;
-    --text-faint: #5D719A;
-    --good: #57B98B;
-    --bad: #E2645A;
+    --bg: #FFFFFF;
+    --surface: #FFFFFF;
+    --surface-2: #F2F4F7;
+    --surface-3: #E7EAF0;
+    --line: #E2E5EB;
+    --accent: #D98A24;
+    --accent-dim: #F3D9AE;
+    --text: #17202B;
+    --text-muted: #5B6472;
+    --text-faint: #8B93A3;
+    --good: #1E9A66;
+    --bad: #D2493F;
+    --day-bg: #FFF3D9;
+    --day-text: #8A5A0C;
+    --night-bg: #E4E9FB;
+    --night-text: #3448A3;
     --radius: 10px;
   }
   *{ box-sizing:border-box; }
-  html,body{ margin:0; padding:0; background:transparent; color:var(--text); }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); }
   body{
     font-family:'Inter', sans-serif;
     min-height:100vh;
-    background:
-      radial-gradient(1200px 500px at 90% -10%, #1a2f4d 0%, transparent 60%),
-      var(--bg);
+    background: var(--bg);
   }
   .app{ display:flex; min-height:100vh; }
 
@@ -40,15 +42,14 @@
     border-right:1px solid var(--line);
     display:flex; flex-direction:column; gap:24px;
   }
-  .brand{ padding:0 8px; }
+  .brand{ padding:0 8px; display:flex; align-items:center; gap:10px; }
+  .brand .logo-icon{ flex-shrink:0; }
   .brand .mark{
-    font-family:'Fraunces', serif; font-weight:700; font-size:15px;
-    letter-spacing:0.14em; text-transform:uppercase; color:var(--accent);
+    font-family:'Fraunces', serif; font-weight:700; font-size:16px;
+    letter-spacing:0.01em; color:var(--text); line-height:1.2;
   }
-  .brand h1{
-    font-family:'Fraunces', serif; font-weight:600; font-size:22px;
-    margin:4px 0 0; line-height:1.15;
-  }
+  .brand .mark b{ color:var(--accent); }
+  .brand .tagline{ font-size:10px; color:var(--text-faint); letter-spacing:0.06em; text-transform:uppercase; margin-top:1px; }
   .navlist{ display:flex; flex-direction:column; gap:4px; }
   .navbtn{
     display:flex; align-items:center; gap:10px;
@@ -72,11 +73,9 @@
   /* ---- Auth screen ---- */
   .auth-wrap{
     min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
-    background:
-      radial-gradient(1200px 500px at 90% -10%, #1a2f4d 0%, transparent 60%),
-      var(--bg);
+    background: var(--bg);
   }
-  .auth-card{ width:100%; max-width:380px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:28px; }
+  .auth-card{ width:100%; max-width:380px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:28px; box-shadow:0 8px 30px rgba(23,32,43,0.08); }
   .auth-card .mark{
     font-family:'Fraunces', serif; font-weight:700; font-size:14px;
     letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); margin-bottom:4px;
@@ -114,7 +113,7 @@
   .btn.danger{ color:var(--bad); border-color:#4a2a2a; }
   .btn.small{ padding:6px 10px; font-size:12.5px; }
 
-  .card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:20px; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:20px; box-shadow:0 1px 3px rgba(23,32,43,0.05); }
 
   /* ---- Calendar ---- */
   .cal-wrap{ display:grid; grid-template-columns:1fr 300px; gap:20px; align-items:start; }
@@ -124,21 +123,32 @@
   .grid7{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
   .wd{ text-align:center; font-size:11px; color:var(--text-faint); font-weight:600; text-transform:uppercase; letter-spacing:0.05em; padding-bottom:6px; }
   .day{
-    min-height:78px; border-radius:8px; border:1px solid var(--line); background:var(--surface);
+    height:96px; border-radius:8px; border:1px solid var(--line); background:var(--surface);
     padding:6px 7px; cursor:pointer; position:relative; display:flex; flex-direction:column; gap:4px;
+    overflow:hidden;
   }
   .day:hover{ border-color:var(--accent-dim); }
-  .day.out{ opacity:0.35; }
+  .day.out{ opacity:0.4; }
   .day.today{ border-color:var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
   .day.selected{ background:var(--surface-2); border-color:var(--accent); }
-  .day .num{ font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--text-muted); }
-  .day .tags{ display:flex; flex-direction:column; gap:2px; overflow:hidden; }
+  .day .num{ font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--text-muted); flex-shrink:0; }
+  .day .tags{ display:flex; flex-direction:column; gap:2px; overflow:hidden; flex:1; min-height:0; }
   .tag{
-    font-size:10px; padding:2px 5px; border-radius:4px; background:var(--surface-3);
+    font-size:9.5px; padding:2px 5px; border-radius:4px; background:var(--surface-3);
     color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    border-left:3px solid var(--accent);
+    border-left:3px solid var(--accent); display:flex; align-items:center; gap:4px; flex-shrink:0;
   }
+  .tag .loc-dot{ width:6px; height:6px; border-radius:50%; flex-shrink:0; }
   .tag.more{ color:var(--text-faint); background:transparent; border-left:none; padding-left:2px; }
+
+  /* ---- Etiqueta diurno / noturno ---- */
+  .period-badge{
+    font-size:9px; padding:1px 6px; border-radius:20px; font-weight:700;
+    text-transform:uppercase; letter-spacing:0.03em; display:inline-flex; align-items:center; gap:3px;
+    flex-shrink:0;
+  }
+  .period-badge.dia{ background:var(--day-bg); color:var(--day-text); }
+  .period-badge.noite{ background:var(--night-bg); color:var(--night-text); }
 
   .side-panel{ display:flex; flex-direction:column; gap:14px; }
   .side-panel h3{ font-family:'Fraunces', serif; font-size:16px; margin:0 0 2px; font-weight:600; }
@@ -184,6 +194,12 @@
   .loc-card .v{ font-family:'IBM Plex Mono',monospace; color:var(--accent); font-size:13px; }
   .loc-card .acts{ display:flex; gap:6px; margin-top:10px; }
 
+  /* ---- Goal progress ---- */
+  .goal-bar-track{ width:100%; height:10px; border-radius:6px; background:var(--surface-3); overflow:hidden; }
+  .goal-bar-fill{ height:100%; background:var(--accent); border-radius:6px; transition:width .3s ease; }
+  .goal-stats{ display:flex; flex-wrap:wrap; gap:16px; margin-top:10px; font-size:12.5px; color:var(--text-muted); }
+  .goal-stats b{ color:var(--text); }
+
   /* ---- Report ---- */
   .report-controls{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
   .stat-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:22px; }
@@ -195,7 +211,7 @@
   td{ padding:9px 10px; border-bottom:1px solid var(--line); }
   td.num, th.num{ text-align:right; font-family:'IBM Plex Mono',monospace; }
 
-  .modal-bg{ position:fixed; inset:0; background:rgba(6,11,20,0.65); display:none; align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .modal-bg{ position:fixed; inset:0; background:rgba(23,32,43,0.45); display:none; align-items:center; justify-content:center; z-index:50; padding:20px; }
   .modal-bg.show{ display:flex; }
   .modal{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:22px; width:100%; max-width:420px; max-height:90vh; overflow:auto; }
   .modal h3{ font-family:'Fraunces',serif; margin:0 0 14px; font-size:18px; }
@@ -217,7 +233,16 @@
 <!-- AUTH SCREEN -->
 <div class="auth-wrap" id="auth-wrap">
   <div class="auth-card">
-    <div class="mark">Escala &amp; Valor</div>
+    <div class="brand" style="margin-bottom:18px;">
+      <svg class="logo-icon" width="34" height="34" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="38" height="38" rx="11" fill="var(--accent)"/>
+        <path d="M20 9v22M14.5 14c0-2.4 2.4-4.2 5.5-4.2s5.5 1.8 5.5 4c0 4.6-11 3.2-11 8.2 0 2.4 2.4 4.2 5.5 4.2s5.5-1.8 5.5-4.2" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+      </svg>
+      <div>
+        <div class="mark">Financ<b>Plantões</b></div>
+        <div class="tagline">Controle de plantões</div>
+      </div>
+    </div>
     <h1 id="auth-title">Entrar</h1>
     <div class="auth-tabs">
       <button id="auth-tab-login" class="active" data-mode="login">Entrar</button>
@@ -234,6 +259,7 @@
     <button class="btn primary" id="auth-submit" style="width:100%; justify-content:center;">Entrar</button>
     <div class="auth-error" id="auth-error"></div>
     <div class="auth-note" id="auth-note">Seus dados ficam separados: cada conta vê apenas os próprios plantões e locais.</div>
+    <div style="text-align:center; font-size:11px; color:var(--text-faint); margin-top:18px;">Idealizado por <strong>Murilo Neder</strong></div>
   </div>
 </div>
 
@@ -241,8 +267,14 @@
 
   <nav class="nav">
     <div class="brand">
-      <div class="mark">Escala &amp; Valor</div>
-      <h1>Plantões</h1>
+      <svg class="logo-icon" width="30" height="30" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="38" height="38" rx="11" fill="var(--accent)"/>
+        <path d="M20 9v22M14.5 14c0-2.4 2.4-4.2 5.5-4.2s5.5 1.8 5.5 4c0 4.6-11 3.2-11 8.2 0 2.4 2.4 4.2 5.5 4.2s5.5-1.8 5.5-4.2" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+      </svg>
+      <div>
+        <div class="mark">Financ<b>Plantões</b></div>
+        <div class="tagline">Controle de plantões</div>
+      </div>
     </div>
     <div class="navlist">
       <div class="navbtn active" data-view="calendar"><span class="dot"></span>Calendário</div>
@@ -255,7 +287,7 @@
       <button class="btn small ghost" id="nav-logout">Sair</button>
     </div>
     <div class="sync-status" id="sync-status"><span class="sync-dot"></span><span id="sync-status-text">Conectando...</span></div>
-    <div class="nav-foot">Seus dados são pessoais e ficam disponíveis em qualquer dispositivo em que você entrar.</div>
+    <div class="nav-foot">Seus dados são pessoais e ficam disponíveis em qualquer dispositivo em que você entrar.<br><br>Idealizado por <strong>Murilo Neder</strong>.</div>
   </nav>
 
   <main class="main">
@@ -328,6 +360,21 @@
         </div>
       </div>
 
+      <div class="card" id="goal-card" style="margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h3 style="font-family:'Fraunces',serif; margin:0 0 4px; font-size:16px;">Meta financeira do período</h3>
+            <div style="color:var(--text-muted); font-size:12px;">Defina quanto quer receber e veja quantos plantões faltam para chegar lá.</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="number" id="goal-input" step="0.01" min="0" placeholder="Meta em R$"
+              style="width:140px; background:var(--surface-2); border:1px solid var(--line); border-radius:7px; color:var(--text); padding:9px 10px; font-family:inherit; font-size:13.5px;">
+            <button class="btn primary small" id="goal-save">Salvar meta</button>
+          </div>
+        </div>
+        <div id="goal-progress" style="margin-top:14px;"></div>
+      </div>
+
       <div class="stat-row">
         <div class="stat"><div class="label">Plantões no período</div><div class="num" id="stat-count">0</div></div>
         <div class="stat"><div class="label">Horas totais</div><div class="num" id="stat-hours">0h</div></div>
@@ -396,11 +443,25 @@
 
       <div class="recur-box" id="recur-box">
         <div class="field full">
-          <label>Repetir</label>
-          <div class="seg">
-            <button data-repeat="biweekly" class="active">A cada 15 dias</button>
-            <button data-repeat="weekly">Mesmo dia da semana</button>
+          <label>Frequência</label>
+          <div class="seg" id="repeat-presets">
+            <button data-preset="7-days">Semanal</button>
+            <button data-preset="15-days" class="active">Quinzenal</button>
+            <button data-preset="1-months">Mensal</button>
+            <button data-preset="custom">Personalizado</button>
           </div>
+        </div>
+        <div class="field">
+          <label>Repetir a cada</label>
+          <input type="number" id="f-repeat-interval" min="1" value="15">
+        </div>
+        <div class="field">
+          <label>Unidade</label>
+          <select id="f-repeat-unit">
+            <option value="days">dia(s)</option>
+            <option value="weeks">semana(s)</option>
+            <option value="months">mês(es)</option>
+          </select>
         </div>
         <div class="field full">
           <label>Repetir até (data final)</label>
@@ -455,7 +516,7 @@
   const supabase = configOk ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
   // ---------- State ----------
-  let DATA = { locations: [], shifts: [] };
+  let DATA = { locations: [], shifts: [], goal: 0 };
   let loaded = false;
   let currentUser = null; // { id, email }
 
@@ -578,14 +639,17 @@
     }
     try{
       // RLS garante que só voltam as linhas do usuário logado.
-      const [locRes, shiftRes] = await Promise.all([
+      const [locRes, shiftRes, goalRes] = await Promise.all([
         supabase.from('locations').select('*').order('name'),
-        supabase.from('shifts').select('*').order('date')
+        supabase.from('shifts').select('*').order('date'),
+        supabase.from('settings').select('*').eq('user_id', currentUser.id).maybeSingle()
       ]);
       if(locRes.error) throw locRes.error;
       if(shiftRes.error) throw shiftRes.error;
+      if(goalRes.error) throw goalRes.error;
       DATA.locations = locRes.data.map(rowToLocation);
       DATA.shifts = shiftRes.data.map(rowToShift);
+      DATA.goal = goalRes.data ? Number(goalRes.data.monthly_goal) : 0;
       setSyncStatus('ok', 'Sincronizado');
     }catch(e){
       console.error('Falha ao carregar dados', e);
@@ -607,6 +671,7 @@
     realtimeChannel = supabase.channel('plantoes-sync')
       .on('postgres_changes', { event:'*', schema:'public', table:'shifts' }, () => reloadAndRender())
       .on('postgres_changes', { event:'*', schema:'public', table:'locations' }, () => reloadAndRender())
+      .on('postgres_changes', { event:'*', schema:'public', table:'settings' }, () => reloadAndRender())
       .subscribe();
   }
   function unsubscribeRealtime(){
@@ -668,6 +733,28 @@
   function computeValue(value12, duration){ return (value12/12) * duration; }
   function locationById(id){ return DATA.locations.find(l=>l.id===id); }
 
+  // Noturno: 20:00 até 07:59 · Diurno: 08:00 até 19:59
+  function shiftPeriod(startTime){
+    if(!startTime) return null;
+    const [hh, mm] = startTime.split(':').map(Number);
+    const minutes = hh*60 + mm;
+    return (minutes >= 20*60 || minutes < 8*60) ? 'noite' : 'dia';
+  }
+  function periodBadge(startTime){
+    const p = shiftPeriod(startTime);
+    if(!p) return '';
+    const label = p==='noite' ? 'Noturno' : 'Diurno';
+    const icon = p==='noite' ? '🌙' : '☀';
+    return `<span class="period-badge ${p}">${icon} ${label}</span>`;
+  }
+
+  const LOCATION_PALETTE = ['#D98A24','#4C7CF0','#1E9A66','#D2493F','#8A5BC9','#1FA3AE','#C2569A','#5C7CFA'];
+  function colorForLocation(id){
+    let h = 0;
+    for(const c of String(id)) h = (h*31 + c.charCodeAt(0)) >>> 0;
+    return LOCATION_PALETTE[h % LOCATION_PALETTE.length];
+  }
+
   // ---------- Nav ----------
   document.querySelectorAll('.navbtn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -716,7 +803,15 @@
         const tags = document.createElement('div'); tags.className='tags';
         dayShifts.slice(0,2).forEach(s=>{
           const t = document.createElement('div'); t.className='tag';
-          t.textContent = `${s.startTime ? s.startTime+' · ' : ''}${s.locationName} · ${s.duration}h`;
+          t.style.borderLeftColor = colorForLocation(s.locationId);
+          const p = shiftPeriod(s.startTime);
+          const icon = p ? (p==='noite' ? '🌙' : '☀') : '';
+          const dot = document.createElement('span'); dot.className='loc-dot'; dot.style.background = colorForLocation(s.locationId);
+          t.appendChild(dot);
+          const txt = document.createElement('span');
+          txt.style.overflow='hidden'; txt.style.textOverflow='ellipsis'; txt.style.whiteSpace='nowrap';
+          txt.textContent = `${icon} ${s.startTime ? s.startTime+' · ' : ''}${s.locationName}`;
+          t.appendChild(txt);
           tags.appendChild(t);
         });
         if(dayShifts.length>2){
@@ -755,9 +850,14 @@
     list.innerHTML = '';
     dayShifts.forEach(s=>{
       const item = document.createElement('div'); item.className='shift-item';
+      item.style.borderLeft = `3px solid ${colorForLocation(s.locationId)}`;
       item.innerHTML = `
-        <div class="row1"><span class="loc">${s.locationName}</span><span class="val">${fmtMoney(s.value)}</span></div>
-        <div class="meta">${s.startTime ? 'Início '+s.startTime+' · ' : ''}${s.duration}h${s.recurringGroupId ? ' · fixo' : ''}${s.professional ? ' · '+escapeHtml(s.professional) : ''}${s.notes ? ' · '+escapeHtml(s.notes) : ''}</div>
+        <div class="row1"><span class="loc">${escapeHtml(s.locationName)}</span><span class="val">${fmtMoney(s.value)}</span></div>
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          ${periodBadge(s.startTime)}
+          <span class="meta">${s.startTime ? 'Início '+s.startTime+' · ' : ''}${s.duration}h${s.recurringGroupId ? ' · fixo' : ''}</span>
+        </div>
+        ${(s.professional || s.notes) ? `<div class="meta">${s.professional ? escapeHtml(s.professional) : ''}${s.professional && s.notes ? ' · ' : ''}${s.notes ? escapeHtml(s.notes) : ''}</div>` : ''}
         <div class="acts">
           <button class="btn small ghost" data-edit="${s.id}">Editar</button>
           <button class="btn small danger" data-del="${s.id}">Excluir</button>
@@ -781,7 +881,14 @@
 
   // ---------- Shift modal ----------
   let currentDuration = 12;
-  let currentRepeat = 'biweekly';
+
+  function addInterval(d, n, unit){
+    const r = new Date(d);
+    if(unit==='days') r.setDate(r.getDate()+n);
+    else if(unit==='weeks') r.setDate(r.getDate()+n*7);
+    else if(unit==='months') r.setMonth(r.getMonth()+n);
+    return r;
+  }
 
   function populateLocationSelect(){
     const sel = $('f-location');
@@ -847,9 +954,11 @@
     document.querySelectorAll('#f-duration-seg button').forEach(b=>{
       b.classList.toggle('active', Number(b.dataset.dur)===currentDuration);
     });
-    document.querySelectorAll('#recur-box .seg button[data-repeat]').forEach(b=>{
-      b.classList.toggle('active', b.dataset.repeat===currentRepeat);
+    document.querySelectorAll('#repeat-presets button').forEach(b=>{
+      b.classList.toggle('active', b.dataset.preset==='15-days');
     });
+    $('f-repeat-interval').value = 15;
+    $('f-repeat-unit').value = 'days';
     $('f-repeat-until').value = '';
     updateValuePreview();
     $('shift-modal-bg').classList.add('show');
@@ -873,13 +982,24 @@
     });
   });
 
-  document.querySelectorAll('#recur-box .seg button[data-repeat]').forEach(b=>{
+  document.querySelectorAll('#repeat-presets button').forEach(b=>{
     b.addEventListener('click', ()=>{
-      document.querySelectorAll('#recur-box .seg button[data-repeat]').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('#repeat-presets button').forEach(x=>x.classList.remove('active'));
       b.classList.add('active');
-      currentRepeat = b.dataset.repeat;
+      if(b.dataset.preset !== 'custom'){
+        const [n, unit] = b.dataset.preset.split('-');
+        $('f-repeat-interval').value = n;
+        $('f-repeat-unit').value = unit;
+      }
     });
   });
+  // Editar manualmente o intervalo/unidade marca o preset como "Personalizado"
+  function markCustomPreset(){
+    document.querySelectorAll('#repeat-presets button').forEach(x=>x.classList.remove('active'));
+    document.querySelector('#repeat-presets button[data-preset="custom"]').classList.add('active');
+  }
+  $('f-repeat-interval').addEventListener('input', markCustomPreset);
+  $('f-repeat-unit').addEventListener('change', markCustomPreset);
 
   $('f-recurring').addEventListener('change', ()=>{
     $('recur-box').classList.toggle('show', $('f-recurring').checked);
@@ -912,9 +1032,10 @@
         if(error) throw error;
       } else if($('f-recurring').checked && $('f-repeat-until').value){
         const until = fromISO($('f-repeat-until').value);
+        const interval = Math.max(1, parseInt($('f-repeat-interval').value, 10) || 1);
+        const unit = $('f-repeat-unit').value;
         const groupId = uid();
         let cursor = fromISO(date);
-        const step = currentRepeat==='weekly' ? 7 : 15;
         let guard = 0;
         const rows = [];
         while(cursor.getTime() <= until.getTime() && guard < 500){
@@ -923,7 +1044,7 @@
             duration: currentDuration, value12, value: computeValue(value12,currentDuration),
             professional, notes, recurringGroupId: groupId
           }));
-          cursor = addDays(cursor, step);
+          cursor = addInterval(cursor, interval, unit);
           guard++;
         }
         const { error } = await supabase.from('shifts').insert(rows);
@@ -1068,6 +1189,49 @@
     }
   }
 
+  // ---------- Meta financeira ----------
+  $('goal-save').addEventListener('click', async ()=>{
+    if(!configOk){ alert('Banco de dados não configurado. Veja README.md.'); return; }
+    const val = parseFloat($('goal-input').value) || 0;
+    $('goal-save').disabled = true;
+    try{
+      const { error } = await supabase.from('settings')
+        .upsert({ user_id: currentUser.id, monthly_goal: val }, { onConflict: 'user_id' });
+      if(error) throw error;
+      DATA.goal = val;
+      renderReport();
+    }catch(e){
+      console.error(e);
+      alert('Não foi possível salvar a meta. Verifique sua conexão e tente novamente.');
+    }
+    $('goal-save').disabled = false;
+  });
+
+  function renderGoalProgress(totalValue, inRangeCount){
+    const goal = DATA.goal || 0;
+    $('goal-input').value = goal || '';
+    const box = $('goal-progress');
+    if(!goal){
+      box.innerHTML = `<div style="color:var(--text-faint); font-size:12.5px;">Defina uma meta para acompanhar seu progresso.</div>`;
+      return;
+    }
+    const pct = Math.min(100, Math.round((totalValue/goal)*100));
+    const remaining = Math.max(0, goal - totalValue);
+    const avgShiftValue = inRangeCount>0 ? (totalValue/inRangeCount)
+      : (DATA.locations.length ? DATA.locations.reduce((a,l)=>a+l.value12,0)/DATA.locations.length : 0);
+    const shiftsNeeded = remaining>0 && avgShiftValue>0 ? Math.ceil(remaining/avgShiftValue) : 0;
+
+    box.innerHTML = `
+      <div class="goal-bar-track"><div class="goal-bar-fill" style="width:${pct}%"></div></div>
+      <div class="goal-stats">
+        <div><b>${pct}%</b> da meta</div>
+        <div>Recebido: <b>${fmtMoney(totalValue)}</b> de <b>${fmtMoney(goal)}</b></div>
+        ${remaining>0
+          ? `<div>Faltam <b>${fmtMoney(remaining)}</b> · aprox. <b>${shiftsNeeded} plantão(ões)</b> no valor médio atual</div>`
+          : `<div style="color:var(--good); font-weight:600;">Meta atingida! 🎉</div>`}
+      </div>`;
+  }
+
   // ---------- Report ----------
   let reportMode = 'month';
   function initReportControls(){
@@ -1122,6 +1286,7 @@
     $('stat-count').textContent = inRange.length;
     $('stat-hours').textContent = totalHours + 'h';
     $('stat-value').textContent = fmtMoney(totalValue);
+    renderGoalProgress(totalValue, inRange.length);
 
     const byLoc = {};
     inRange.forEach(s=>{
