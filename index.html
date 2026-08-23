@@ -165,27 +165,27 @@
   .empty{ color:var(--text-faint); font-size:13px; padding:16px 4px; text-align:center; border:1px dashed var(--line); border-radius:8px; }
 
   /* ---- Forms ---- */
-  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .field{ display:flex; flex-direction:column; gap:5px; }
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; }
+  .field{ display:flex; flex-direction:column; gap:3px; }
   .field.full{ grid-column:1 / -1; }
-  .field label{ font-size:12px; font-weight:600; color:var(--text-muted); }
+  .field label{ font-size:10.5px; font-weight:600; color:var(--text-muted); }
   .field input, .field select{
-    background:var(--surface-2); border:1px solid var(--line); border-radius:7px; color:var(--text);
-    padding:9px 10px; font-size:13.5px; font-family:inherit;
+    background:var(--surface-2); border:1px solid var(--line); border-radius:6px; color:var(--text);
+    padding:6px 8px; font-size:12.5px; font-family:inherit;
   }
   .field input:focus, .field select:focus{ outline:none; border-color:var(--accent); }
-  .seg{ display:flex; border:1px solid var(--line); border-radius:7px; overflow:hidden; }
+  .seg{ display:flex; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
   .seg button{
-    flex:1; background:var(--surface-2); border:none; color:var(--text-muted); padding:9px 8px;
-    font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; border-right:1px solid var(--line);
+    flex:1; background:var(--surface-2); border:none; color:var(--text-muted); padding:6px 4px;
+    font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; border-right:1px solid var(--line);
   }
   .seg button:last-child{ border-right:none; }
   .seg button.active{ background:var(--accent); color:#241a06; }
   .duration-preview{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--text-muted); margin-top:2px; }
-  .form-actions{ display:flex; gap:8px; margin-top:16px; }
-  .recur-box{ border:1px solid var(--line); border-radius:8px; padding:12px; margin-top:4px; background:var(--surface-2); display:none; grid-column:1/-1; }
-  .recur-box.show{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .toggle-row{ display:flex; align-items:center; gap:8px; grid-column:1/-1; font-size:13px; color:var(--text-muted); }
+  .form-actions{ display:flex; gap:8px; margin-top:12px; }
+  .recur-box{ border:1px solid var(--line); border-radius:8px; padding:9px; margin-top:2px; background:var(--surface-2); display:none; grid-column:1/-1; }
+  .recur-box.show{ display:flex; flex-direction:column; gap:8px; }
+  .toggle-row{ display:flex; align-items:center; gap:7px; grid-column:1/-1; font-size:12px; color:var(--text-muted); }
 
   /* ---- Locations ---- */
   .loc-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-top:18px; }
@@ -211,10 +211,10 @@
   td{ padding:9px 10px; border-bottom:1px solid var(--line); }
   td.num, th.num{ text-align:right; font-family:'IBM Plex Mono',monospace; }
 
-  .modal-bg{ position:fixed; inset:0; background:rgba(23,32,43,0.45); display:none; align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .modal-bg{ position:fixed; inset:0; background:rgba(23,32,43,0.45); display:none; align-items:center; justify-content:center; z-index:50; padding:16px; }
   .modal-bg.show{ display:flex; }
-  .modal{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:22px; width:100%; max-width:420px; max-height:90vh; overflow:auto; }
-  .modal h3{ font-family:'Fraunces',serif; margin:0 0 14px; font-size:18px; }
+  .modal{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; width:100%; max-width:460px; max-height:96vh; overflow:auto; }
+  .modal h3{ font-family:'Fraunces',serif; margin:0 0 10px; font-size:16px; }
 
   @media (max-width: 860px){
     .app{ flex-direction:column; }
@@ -398,7 +398,7 @@
   <div class="modal">
     <h3 id="shift-modal-title">Novo plantão</h3>
     <div class="form-grid" id="shift-form">
-      <div class="field full">
+      <div class="field">
         <label>Data</label>
         <input type="date" id="f-date">
       </div>
@@ -410,11 +410,7 @@
         <label>Local</label>
         <select id="f-location"></select>
       </div>
-      <div class="field full">
-        <label>Profissional (opcional)</label>
-        <input type="text" id="f-professional" placeholder="Nome de quem cobriu o plantão, se diferente de você">
-      </div>
-      <div class="field full">
+      <div class="field">
         <label>Duração</label>
         <div class="seg" id="f-duration-seg">
           <button data-dur="6">6h</button>
@@ -422,6 +418,10 @@
           <button data-dur="18">18h</button>
           <button data-dur="24">24h</button>
         </div>
+      </div>
+      <div class="field full">
+        <label>Profissional (opcional)</label>
+        <input type="text" id="f-professional" placeholder="Nome de quem cobriu o plantão, se diferente de você">
       </div>
       <div class="field">
         <label>Valor do plantão de 12h (R$)</label>
@@ -451,21 +451,23 @@
             <button data-preset="custom">Personalizado</button>
           </div>
         </div>
-        <div class="field">
-          <label>Repetir a cada</label>
-          <input type="number" id="f-repeat-interval" min="1" value="15">
-        </div>
-        <div class="field">
-          <label>Unidade</label>
-          <select id="f-repeat-unit">
-            <option value="days">dia(s)</option>
-            <option value="weeks">semana(s)</option>
-            <option value="months">mês(es)</option>
-          </select>
-        </div>
-        <div class="field full">
-          <label>Repetir até (data final)</label>
-          <input type="date" id="f-repeat-until">
+        <div style="display:grid; grid-template-columns:64px 1fr 1.3fr; gap:8px;">
+          <div class="field">
+            <label>A cada</label>
+            <input type="number" id="f-repeat-interval" min="1" value="15">
+          </div>
+          <div class="field">
+            <label>Unidade</label>
+            <select id="f-repeat-unit">
+              <option value="days">dia(s)</option>
+              <option value="weeks">semana(s)</option>
+              <option value="months">mês(es)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Até</label>
+            <input type="date" id="f-repeat-until">
+          </div>
         </div>
       </div>
     </div>
