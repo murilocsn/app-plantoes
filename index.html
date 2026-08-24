@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FinancPlantões</title>
+
+<!-- PWA: instalar como app -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#D98A24">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FinancPlantões">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -69,6 +80,11 @@
   .who-box label{ font-size:10.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
   .who-box .email{ font-size:12.5px; color:var(--text); word-break:break-all; }
   .who-box button{ margin-top:6px; }
+  .reminder-box{ padding:0 8px; display:flex; flex-direction:column; gap:4px; margin-bottom:4px; }
+  .reminder-box label{ font-size:10.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
+  .reminder-status{ font-size:11.5px; color:var(--text-muted); line-height:1.4; }
+  .reminder-box button{ margin-top:2px; }
+  .reminder-box button.on{ background:var(--good); border-color:var(--good); color:#fff; }
 
   /* ---- Auth screen ---- */
   .auth-wrap{
@@ -281,6 +297,11 @@
       <div class="navbtn" data-view="locations"><span class="dot"></span>Locais</div>
       <div class="navbtn" data-view="report"><span class="dot"></span>Relatório</div>
     </div>
+    <div class="reminder-box" id="reminder-box">
+      <label>Lembrete diário</label>
+      <div class="reminder-status" id="reminder-status-text">Avisa no celular quando você tiver plantão no dia.</div>
+      <button class="btn small ghost" id="reminder-toggle">Ativar lembretes</button>
+    </div>
     <div class="who-box">
       <label>Conectado como</label>
       <div class="email" id="nav-user-email">—</div>
@@ -342,6 +363,7 @@
           <h2>Relatório de valores</h2>
           <p>Veja o total de plantões e valores por mês ou por período.</p>
         </div>
+        <button class="btn ghost" id="btn-export-csv">⬇ Exportar CSV (Imposto de Renda)</button>
       </div>
 
       <div class="report-controls">
@@ -492,6 +514,10 @@
         <label>Valor do plantão de 12h (R$)</label>
         <input type="number" id="l-value12" step="0.01" min="0">
       </div>
+      <div class="field full">
+        <label>CNPJ ou CPF da fonte pagadora (opcional)</label>
+        <input type="text" id="l-doc" placeholder="Usado no Carnê-Leão / IR — pode preencher depois">
+      </div>
     </div>
     <div class="form-actions">
       <button class="btn primary" id="loc-save">Salvar</button>
@@ -514,8 +540,13 @@
   const SUPABASE_ANON_KEY = 'sb_publishable_gvs6MsolBL25CTzxkjssew_xhNYup8S';
   // ====================================================================
 
+  // Chave pública VAPID para lembretes por notificação (veja README.md → "Lembretes").
+  // Deixe como está se ainda não for usar lembretes — o botão simplesmente ficará indisponível.
+  const VAPID_PUBLIC_KEY = 'COLE_AQUI_SUA_VAPID_PUBLIC_KEY';
+
   const configOk = SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length > 20;
   const supabase = configOk ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  const remindersConfigured = VAPID_PUBLIC_KEY.startsWith('B') && VAPID_PUBLIC_KEY.length > 40;
 
   // ---------- State ----------
   let DATA = { locations: [], shifts: [], goal: 0 };
@@ -610,7 +641,7 @@
   }
 
   function rowToLocation(r){
-    return { id: r.id, name: r.name, value12: Number(r.value12) };
+    return { id: r.id, name: r.name, value12: Number(r.value12), doc: r.doc || '' };
   }
   function rowToShift(r){
     return {
@@ -718,7 +749,106 @@
       renderCalendar(); renderSidePanel(); renderLocations(); renderReport();
     }
     subscribeRealtime();
+    refreshReminderUI();
   }
+
+  // ---------- Lembretes por notificação (push) ----------
+  let swRegistration = null;
+
+  async function registerServiceWorker(){
+    if(!('serviceWorker' in navigator)) return null;
+    try{
+      swRegistration = await navigator.serviceWorker.register('service-worker.js');
+      return swRegistration;
+    }catch(e){
+      console.error('Falha ao registrar service worker', e);
+      return null;
+    }
+  }
+
+  function urlBase64ToUint8Array(base64String){
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const arr = new Uint8Array(raw.length);
+    for(let i=0;i<raw.length;i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+  }
+
+  function isStandalone(){
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+  function isIos(){
+    return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  }
+
+  async function refreshReminderUI(){
+    const box = $('reminder-box');
+    const btn = $('reminder-toggle');
+    const statusText = $('reminder-status-text');
+    if(!remindersConfigured || !('serviceWorker' in navigator) || !('PushManager' in window)){
+      box.style.display = 'none';
+      return;
+    }
+    box.style.display = 'flex';
+    if(isIos() && !isStandalone()){
+      statusText.textContent = 'No iPhone: adicione o app à Tela de Início primeiro (Safari → Compartilhar → Adicionar à Tela de Início) para poder ativar.';
+      btn.disabled = true;
+      btn.textContent = 'Indisponível aqui';
+      return;
+    }
+    btn.disabled = false;
+    if(Notification.permission === 'denied'){
+      statusText.textContent = 'As notificações estão bloqueadas nas configurações do navegador/telefone.';
+      btn.textContent = 'Bloqueado';
+      btn.disabled = true;
+      return;
+    }
+    const reg = swRegistration || await registerServiceWorker();
+    const sub = reg ? await reg.pushManager.getSubscription() : null;
+    if(sub){
+      statusText.textContent = 'Ativo — você recebe um aviso no início do dia quando tem plantão.';
+      btn.textContent = 'Desativar lembretes';
+      btn.classList.add('on');
+    } else {
+      statusText.textContent = 'Avisa no celular quando você tiver plantão no dia.';
+      btn.textContent = 'Ativar lembretes';
+      btn.classList.remove('on');
+    }
+  }
+
+  $('reminder-toggle').addEventListener('click', async ()=>{
+    $('reminder-toggle').disabled = true;
+    try{
+      const reg = swRegistration || await registerServiceWorker();
+      if(!reg) throw new Error('Service worker indisponível');
+      const existing = await reg.pushManager.getSubscription();
+      if(existing){
+        await supabase.from('push_subscriptions').delete().eq('endpoint', existing.endpoint);
+        await existing.unsubscribe();
+      } else {
+        const permission = await Notification.requestPermission();
+        if(permission !== 'granted') throw new Error('Permissão negada');
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+        const json = sub.toJSON();
+        const { error } = await supabase.from('push_subscriptions').upsert({
+          user_id: currentUser.id,
+          endpoint: json.endpoint,
+          p256dh: json.keys.p256dh,
+          auth: json.keys.auth
+        }, { onConflict: 'endpoint' });
+        if(error) throw error;
+      }
+    }catch(e){
+      console.error(e);
+      alert('Não foi possível concluir. Verifique as permissões de notificação do navegador.');
+    }
+    await refreshReminderUI();
+    $('reminder-toggle').disabled = false;
+  });
 
   // ---------- Helpers ----------
   const WD_NAMES = ['dom','seg','ter','qua','qui','sex','sáb'];
@@ -1131,11 +1261,13 @@
       $('loc-modal-title').textContent = 'Editar local';
       $('l-name').value = l.name;
       $('l-value12').value = l.value12;
+      $('l-doc').value = l.doc || '';
       $('loc-delete').style.display = 'inline-flex';
     } else {
       $('loc-modal-title').textContent = 'Novo local';
       $('l-name').value = '';
       $('l-value12').value = '';
+      $('l-doc').value = '';
       $('loc-delete').style.display = 'none';
     }
     $('loc-modal-bg').classList.add('show');
@@ -1149,18 +1281,19 @@
     if(!configOk){ alert('Banco de dados não configurado. Veja README.md.'); return; }
     const name = $('l-name').value.trim();
     const value12 = parseFloat($('l-value12').value) || 0;
+    const doc = $('l-doc').value.trim();
     if(!name){ alert('Informe o nome do local.'); return; }
     $('loc-save').disabled = true;
     try{
       if(editingLocationId){
         const { error } = await supabase.from('locations')
-          .update({ name, value12 }).eq('id', editingLocationId);
+          .update({ name, value12, doc }).eq('id', editingLocationId);
         if(error) throw error;
         const { error: e2 } = await supabase.from('shifts')
           .update({ location_name: name }).eq('location_id', editingLocationId);
         if(e2) throw e2;
       } else {
-        const { error } = await supabase.from('locations').insert({ id: uid(), name, value12, user_id: currentUser.id });
+        const { error } = await supabase.from('locations').insert({ id: uid(), name, value12, doc, user_id: currentUser.id });
         if(error) throw error;
       }
       closeLocationModal();
@@ -1236,6 +1369,44 @@
 
   // ---------- Report ----------
   let reportMode = 'month';
+  let lastReport = { startISO: '', endISO: '', inRange: [] };
+
+  function csvEscape(v){
+    const s = String(v ?? '');
+    return /[",\n;]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }
+
+  $('btn-export-csv').addEventListener('click', ()=>{
+    const { inRange, startISO, endISO } = lastReport;
+    if(!inRange.length){ alert('Não há plantões no período selecionado para exportar.'); return; }
+    const header = ['Data','Unidade (fonte pagadora)','CNPJ/CPF da unidade','Horário de início','Período','Duração (h)','Profissional','Valor (R$)','Observações'];
+    const rows = inRange.slice().sort((a,b)=> a.date.localeCompare(b.date)).map(s=>{
+      const loc = locationById(s.locationId);
+      const p = shiftPeriod(s.startTime);
+      return [
+        s.date.split('-').reverse().join('/'),
+        s.locationName,
+        loc ? (loc.doc || '') : '',
+        s.startTime || '',
+        p==='noite' ? 'Noturno' : (p==='dia' ? 'Diurno' : ''),
+        s.duration,
+        s.professional || '',
+        s.value.toFixed(2).replace('.',','),
+        s.notes || ''
+      ];
+    });
+    const totalValue = inRange.reduce((a,s)=>a+s.value,0);
+    rows.push(['','','','','','','TOTAL', totalValue.toFixed(2).replace('.',','), '']);
+
+    const csv = '\uFEFF' + [header, ...rows].map(r=> r.map(csvEscape).join(';')).join('\n');
+    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `financplantoes_${startISO}_a_${endISO}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
   function initReportControls(){
     const monthSel = $('report-month');
     monthSel.innerHTML = MONTH_NAMES.map((m,i)=>`<option value="${i}">${m}</option>`).join('');
@@ -1281,6 +1452,7 @@
     }
     const startISO = toISO(start), endISO = toISO(end);
     const inRange = DATA.shifts.filter(s=> s.date>=startISO && s.date<=endISO);
+    lastReport = { startISO, endISO, inRange };
 
     const totalHours = inRange.reduce((a,s)=>a+s.duration,0);
     const totalValue = inRange.reduce((a,s)=>a+s.value,0);
@@ -1312,6 +1484,7 @@
   // ---------- Init ----------
   setAuthMode('login');
   initAuthFlow();
+  registerServiceWorker();
 
 })();
 </script>
