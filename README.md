@@ -1,6 +1,29 @@
-# Controle de Plantões
+# FinancPlantões
 
-Sistema web multiusuário para profissionais de saúde registrarem plantões (local, horário de início, duração e valor). Cada pessoa cria sua própria conta e enxerga **apenas os próprios dados**, acessíveis de qualquer dispositivo, com um banco de dados real por trás.
+Sistema web multiusuário para profissionais de saúde registrarem plantões (unidade, horário de início, duração e valor). Cada pessoa cria sua própria conta e enxerga **apenas os próprios dados**, acessíveis de qualquer dispositivo, com um banco de dados real por trás.
+
+## Atualizando um app que já está no ar
+
+Se você já publicou uma versão anterior, para aplicar estas novidades:
+
+1. **Rode o `supabase-schema.sql` de novo** no SQL Editor do Supabase — o script foi escrito para ser seguro mesmo rodando mais de uma vez, ele só adiciona o que ainda não existe (tabela de metas, tabela de lembretes, campo de CNPJ) sem duplicar nada.
+2. **Suba de novo no GitHub**: `index.html`, e também os arquivos novos `manifest.json`, `service-worker.js` e a pasta `icons/` (necessários para o app poder ser instalado). O GitHub substitui automaticamente os arquivos que já existirem com o mesmo nome.
+3. O recurso de lembretes por notificação é opcional e tem configuração própria — veja a seção específica mais abaixo, só siga ela se quiser ativar os avisos.
+4. Não precisa reconfigurar a URL/chave do Supabase nem mexer no GitHub Pages de novo.
+
+## Novidades desta versão
+
+- **Instalável como app** (PWA) — no iPhone via "Adicionar à Tela de Início", no computador via botão "Instalar" do navegador.
+- **Lembrete diário por notificação** — avisa no celular, no início do dia, quando há plantão marcado (recurso avançado, com configuração adicional no Supabase — veja seção própria abaixo).
+- **Exportar CSV para Imposto de Renda** — na tela Relatório, gera uma planilha do período com data, unidade, CNPJ/CPF da fonte pagadora, horário, valor etc., pronta para o Carnê-Leão ou para repassar ao contador.
+- Tema com fundo branco.
+- Etiqueta automática de plantão **Diurno** (08:00–19:59) ou **Noturno** (20:00–07:59).
+- Células do calendário com tamanho fixo, mesmo em dias com vários plantões.
+- Identificação visual de cada unidade por uma cor própria.
+- Recorrência de plantão fixo com intervalo personalizado (dias/semanas/meses).
+- Meta financeira do período, com barra de progresso.
+- Modais mais compactos, sem barra de rolagem.
+- Novo nome e logo: **FinancPlantões**. Assinatura do idealizador, Murilo Neder.
 
 **Fluxo do app:** inicialização → tela de login/cadastro → ambiente individual do usuário → dados gravados online (Supabase), acessíveis de qualquer lugar em que a pessoa fizer login.
 
@@ -95,10 +118,103 @@ git push -u origin main
 
 ```
 .
-├── index.html              # aplicativo (login + interface + lógica)
-├── supabase-schema.sql     # script para criar tabelas, login e isolamento por usuário
-└── README.md                # este arquivo
+├── index.html                          # aplicativo (login + interface + lógica)
+├── manifest.json                       # torna o app instalável (PWA)
+├── service-worker.js                   # permite instalar e receber notificações
+├── icons/
+│   ├── icon-192.png
+│   ├── icon-512.png
+│   └── apple-touch-icon.png
+├── supabase-schema.sql                 # cria/atualiza as tabelas no Supabase
+├── lembretes-supabase/                 # opcional — só se for usar lembretes por notificação
+│   ├── send-shift-reminders.ts         # código da Edge Function
+│   └── cron-schedule.sql               # agenda o envio diário
+└── README.md                            # este arquivo
 ```
+
+Ao subir para o GitHub, envie **todos** os arquivos acima (inclusive a pasta `icons`), mantendo essa mesma estrutura de pastas — o app depende dos caminhos relativos entre eles.
+
+## Instalar como app (PWA)
+
+**No iPhone:**
+1. Abra o link do app no **Safari** (tem que ser o Safari, outros navegadores no iPhone não funcionam para isso).
+2. Toque no ícone de compartilhar (o quadrado com uma seta para cima).
+3. Toque em **"Adicionar à Tela de Início"**.
+4. Pronto — o ícone do FinancPlantões aparece na tela do seu celular como um app normal, abrindo em tela cheia.
+
+**No computador (Chrome ou Edge):**
+1. Abra o link do app.
+2. Clique no ícone de instalação que aparece no final da barra de endereço (ou no menu ⋮ → "Instalar app…").
+3. O app abre numa janela própria, sem as abas do navegador.
+
+Como os dados ficam no Supabase, iPhone, computador e qualquer outro aparelho em que você fizer login mostram sempre os mesmos plantões, atualizados em tempo real.
+
+## Lembrete diário por notificação (recurso avançado)
+
+Esse recurso avisa no celular, todo início de dia, quando há um plantão marcado — mesmo com o app fechado. Ele tem uma configuração adicional porque depende de três peças: uma "chave" de identificação do seu servidor de notificações (VAPID), uma função que dispara o aviso, e um agendamento diário. Nenhuma dessas etapas expõe dados sensíveis, mas exigem alguns cliques a mais no painel do Supabase.
+
+<br>
+
+**Pré-requisito:** o lembrete só pode ser ativado depois que o app estiver **instalado na Tela de Início** (PWA — veja seção acima). Isso é uma regra do próprio iPhone, não do nosso app.
+
+### 1. Gerar as chaves VAPID
+
+No terminal do VS Code (ou em qualquer terminal com Node.js instalado), rode:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Isso mostra duas chaves: uma **Public Key** e uma **Private Key**. Guarde as duas.
+
+### 2. Colar a chave pública no `index.html`
+
+Abra o `index.html`, localize:
+
+```js
+const VAPID_PUBLIC_KEY = 'COLE_AQUI_SUA_VAPID_PUBLIC_KEY';
+```
+
+e substitua pela Public Key gerada no passo 1. Salve e suba esse arquivo atualizado no GitHub.
+
+### 3. Criar a Edge Function no Supabase
+
+1. No painel do Supabase, vá em **Edge Functions** → **Create a new function**.
+2. Nomeie exatamente como `send-shift-reminders`.
+3. Apague o código de exemplo e cole todo o conteúdo do arquivo [`lembretes-supabase/send-shift-reminders.ts`](./lembretes-supabase/send-shift-reminders.ts).
+4. Clique em **Deploy**.
+5. Nas configurações dessa função (aba **Settings** da função), **desative "Enforce JWT Verification"** — isso permite que o agendamento diário chame a função automaticamente.
+
+### 4. Configurar os Secrets da função
+
+Ainda na tela da função (ou em **Edge Functions → Manage secrets**), adicione:
+
+| Nome | Valor |
+|---|---|
+| `VAPID_PUBLIC_KEY` | a Public Key do passo 1 |
+| `VAPID_PRIVATE_KEY` | a Private Key do passo 1 |
+| `VAPID_SUBJECT` | `mailto:seuemail@exemplo.com` (um e-mail seu, é exigido pelo protocolo) |
+
+(`SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` já são fornecidos automaticamente pelo Supabase, não precisa configurar.)
+
+### 5. Agendar o envio diário
+
+No **SQL Editor**, cole e rode o conteúdo do arquivo [`lembretes-supabase/cron-schedule.sql`](./lembretes-supabase/cron-schedule.sql). Por padrão está configurado para rodar **7h da manhã (horário de São Paulo)** — para mudar o horário, edite o número indicado nos comentários do próprio arquivo.
+
+### 6. Ativar no app
+
+Abra o app (já instalado na Tela de Início), toque em **"Ativar lembretes"** na barra lateral e aceite a permissão de notificação quando o iPhone perguntar. Pronto.
+
+## Facilitar o Imposto de Renda
+
+Na tela **Relatório**, o botão **"Exportar CSV"** baixa uma planilha do período selecionado (mês ou intervalo) com: data, unidade (fonte pagadora), CNPJ/CPF da unidade (se você preencheu ao cadastrar o local), horário, se foi diurno/noturno, duração, valor recebido e o total do período.
+
+Isso não envia nada automaticamente à Receita Federal, mas consolida exatamente as informações usadas para preencher:
+- O **Carnê-Leão** mensal (rendimentos recebidos de pessoa física/jurídica sem vínculo empregatício).
+- A **Declaração Anual de Imposto de Renda**.
+- Ou para simplesmente repassar ao seu contador.
+
+Dica: preencha o campo "CNPJ ou CPF da fonte pagadora" ao cadastrar cada local — ele é exigido no Carnê-Leão e já sai pronto na planilha exportada.
 
 ## Testar localmente antes de publicar
 
