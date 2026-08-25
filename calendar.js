@@ -31,5 +31,13 @@
     $('calendarDayDetails').innerHTML=`<div class="day-detail-head"><strong>${new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'2-digit',month:'long'}).format(new Date(`${date}T12:00:00`))}</strong><button class="link-button" onclick="openForm('shift')">+ Plantão</button></div>`+(shifts.length?shifts.map(s=>`<div class="calendar-shift"><span class="shift-dot ${isNight(s)?'night':'day'}" style="--dot:${colorFor(s.location_name)}"></span><div><strong>${esc(s.location_name||'Local')}</strong><small>${esc(s.start_time?.slice(0,5)||'—')} · ${Number(s.duration||0)}h · ${isNight(s)?'Noturno':'Diurno'}</small></div><b>${typeof money==='function'?money(s.value??s.value12):''}</b></div>`).join(''):'<p class="muted">Nenhum plantão neste dia.</p>');
   }
   window.renderCalendar=render;
-  document.addEventListener('DOMContentLoaded',mount);
+  document.addEventListener('DOMContentLoaded',()=>{
+    mount();
+    if(!document.querySelector('script[data-finance-actions]')){
+      const script=document.createElement('script');
+      script.src='finance-actions.js?v=20260825-02';
+      script.dataset.financeActions='1';
+      document.body.appendChild(script);
+    }
+  });
 })();
