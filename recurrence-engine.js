@@ -15,61 +15,40 @@
     try {
       for (const rec of (cache.recurrences || [])) {
         if (rec.active === false) continue;
-        const base = (cache.shifts || [])
-          .filter(s => s.recurrence_id === rec.id)
-          .sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
+        const base = (cache.shifts || []).filter(s => s.recurrence_id === rec.id).sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
         if (!base) continue;
-
-        const { data: existing, error } = await db.from('shifts')
-          .select('id,date')
-          .eq('user_id', user.id)
-          .eq('recurrence_id', rec.id)
-          .order('date');
+        const { data: existing, error } = await db.from('shifts').select('id,date').eq('user_id', user.id).eq('recurrence_id', rec.id).order('date');
         if (error) continue;
-
         const dates = new Set((existing || []).map(s => s.date));
-        let date = base.date;
-        let count = existing?.length || 0;
-        let guard = 0;
-
+        let date = base.date, count = existing?.length || 0, guard = 0;
         while (guard++ < 5000) {
           if (rec.occurrences && count >= rec.occurrences) break;
           const next = add(date, rec.frequency, Number(rec.interval_value || 1));
           if (rec.end_date && next > rec.end_date) break;
           if (!next) break;
-          if (dates.has(next)) {
-            date = next;
-            continue;
-          }
-
+          if (dates.has(next)) { date = next; continue; }
           const id = crypto.randomUUID();
           const shift = { ...base, id, user_id: user.id, date: next, recurrence_id: rec.id, status: 'scheduled' };
-          delete shift.created_at;
-          delete shift.updated_at;
+          delete shift.created_at; delete shift.updated_at;
           const { error: insertError } = await db.from('shifts').insert(shift);
           if (insertError) break;
-
-          const expected = new Date(`${next}T12:00:00`);
-          expected.setDate(expected.getDate() + 30);
-          await db.from('receivables').insert({
-            user_id: user.id,
-            shift_id: id,
-            location_id: base.location_id || null,
-            description: `Plantão · ${base.location_name || 'Local'}`,
-            amount: Number(base.value ?? base.value12 ?? 0),
-            expected_date: expected.toISOString().slice(0, 10),
-            status: 'pending'
-          });
-
-          dates.add(next);
-          count++;
-          date = next;
+          const expected = new Date(`${next}T12:00:00`); expected.setDate(expected.getDate() + 30);
+          await db.from('receivables').insert({ user_id: user.id, shift_id: id, location_id: base.location_id || null, description: `Plantão · ${base.location_name || 'Local'}`, amount: Number(base.value ?? base.value12 ?? 0), expected_date: expected.toISOString().slice(0, 10), status: 'pending' });
+          dates.add(next); count++; date = next;
         }
       }
-    } finally {
-      busy = false;
-    }
+    } finally { busy = false; }
   }
 
   window.syncRecurrences = syncRecurrences;
+  const observeAuth = () => {
+    const shell = document.getElementById('appShell');
+    if (!shell) return;
+    const observer = new MutationObserver(() => {
+      if (!shell.hidden && typeof user !== 'undefined' && user) syncRecurrences();
+    });
+    observer.observe(shell, { attributes: true, attributeFilter: ['hidden'] });
+    if (!shell.hidden && typeof user !== 'undefined' && user) syncRecurrences();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observeAuth, { once: true }); else observeAuth();
 })();
