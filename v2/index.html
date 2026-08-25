@@ -9,44 +9,50 @@
 </head>
 <body>
   <section id="authScreen" class="auth-screen" aria-label="Autenticação">
-    <div class="auth-card">
-      <div class="auth-brand"><div class="brand-mark">FP</div><div><strong>FinancPlantões</strong><span>2.0</span></div></div>
-      <p class="eyebrow">ACESSO SEGURO</p>
-      <h1 id="authTitle">Entrar na sua conta</h1>
-      <p class="auth-subtitle">Acesse seus plantões, recebimentos e espaços compartilhados.</p>
-      <div class="auth-tabs" role="tablist">
-        <button id="loginTab" class="active" type="button">Entrar</button>
-        <button id="signupTab" type="button">Criar conta</button>
+    <div class="auth-layout">
+      <div class="auth-showcase">
+        <div class="brand auth-showcase-brand"><div class="brand-mark">FP</div><div><strong>FinancPlantões</strong><span>2.0</span></div></div>
+        <div class="auth-showcase-content">
+          <p class="eyebrow">SUA ROTINA PROFISSIONAL, ORGANIZADA</p>
+          <h1>Plantões, recebimentos e despesas em um só lugar.</h1>
+          <p>Uma nova experiência para profissionais de saúde acompanharem o trabalho, o dinheiro que têm a receber e as finanças compartilhadas.</p>
+          <div class="auth-feature-list">
+            <div><span>✓</span><div><strong>Plantões</strong><small>Agenda e recorrências sem perder o controle.</small></div></div>
+            <div><span>✓</span><div><strong>Recebimentos</strong><small>Saiba quando cada plantão está previsto para pagar.</small></div></div>
+            <div><span>✓</span><div><strong>Espaços compartilhados</strong><small>Divida despesas com colegas, viagens e equipes.</small></div></div>
+          </div>
+        </div>
+        <div class="auth-showcase-footer">FinancPlantões 2.0 · Controle profissional e financeiro</div>
       </div>
-      <form id="authForm" novalidate>
-        <div class="auth-field">
-          <label for="authEmail">E-mail</label>
-          <input id="authEmail" type="email" autocomplete="email" placeholder="voce@exemplo.com" required>
+
+      <div class="auth-panel">
+        <div class="auth-panel-inner">
+          <div class="auth-mobile-brand"><div class="brand-mark">FP</div><div><strong>FinancPlantões</strong><span>2.0</span></div></div>
+          <p class="eyebrow">ACESSO SEGURO</p>
+          <h2 id="authTitle">Entrar na sua conta</h2>
+          <p class="auth-subtitle">Acesse seus plantões, recebimentos e espaços compartilhados.</p>
+          <div class="auth-tabs" role="tablist">
+            <button id="loginTab" class="active" type="button">Entrar</button>
+            <button id="signupTab" type="button">Criar conta</button>
+          </div>
+          <form id="authForm" novalidate>
+            <div class="auth-field"><label for="authEmail">E-mail</label><input id="authEmail" type="email" autocomplete="email" placeholder="voce@exemplo.com" required></div>
+            <div class="auth-field"><label for="authPassword">Senha</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="Sua senha" required minlength="6"></div>
+            <button id="authSubmit" class="auth-submit" type="submit">Entrar</button>
+            <p id="authMessage" class="auth-message" role="alert" aria-live="polite"></p>
+          </form>
+          <p class="auth-note">Sua sessão é mantida pelo Supabase Auth. Cada conta acessa somente os dados permitidos pelas políticas de segurança.</p>
+          <div class="auth-trust"><span>🔒</span><span>Conexão segura</span><span>•</span><span>Dados separados por conta</span></div>
         </div>
-        <div class="auth-field">
-          <label for="authPassword">Senha</label>
-          <input id="authPassword" type="password" autocomplete="current-password" placeholder="Sua senha" required minlength="6">
-        </div>
-        <button id="authSubmit" class="auth-submit" type="submit">Entrar</button>
-        <p id="authMessage" class="auth-message" role="alert" aria-live="polite"></p>
-      </form>
-      <p class="auth-note">Sua sessão é mantida pelo Supabase Auth. O acesso aos dados continua protegido pelas políticas RLS do banco.</p>
+      </div>
     </div>
   </section>
 
   <div id="appShell" class="app-shell" hidden>
     <aside class="sidebar" aria-label="Navegação principal">
-      <div class="brand">
-        <div class="brand-mark">FP</div>
-        <div><strong>FinancPlantões</strong><span>2.0</span></div>
-      </div>
+      <div class="brand"><div class="brand-mark">FP</div><div><strong>FinancPlantões</strong><span>2.0</span></div></div>
       <nav class="nav">
-        <a class="nav-item active" href="#dashboard">Visão geral</a>
-        <a class="nav-item" href="#shifts">Plantões</a>
-        <a class="nav-item" href="#receivables">A receber</a>
-        <a class="nav-item" href="#spaces">Espaços</a>
-        <a class="nav-item" href="#expenses">Despesas</a>
-        <a class="nav-item" href="#reports">Relatórios</a>
+        <a class="nav-item active" href="#dashboard">Visão geral</a><a class="nav-item" href="#shifts">Plantões</a><a class="nav-item" href="#receivables">A receber</a><a class="nav-item" href="#spaces">Espaços</a><a class="nav-item" href="#expenses">Despesas</a><a class="nav-item" href="#reports">Relatórios</a>
       </nav>
       <div class="sidebar-bottom">
         <button class="theme-button" id="themeToggle" type="button" aria-label="Alternar tema">☾ <span>Tema escuro</span></button>
@@ -54,32 +60,16 @@
         <button class="logout-button" id="logoutButton" type="button">Sair da conta</button>
       </div>
     </aside>
-
     <main class="main">
-      <header class="topbar">
-        <div><p class="eyebrow">FINANCPLANTÕES 2.0</p><h1 id="welcomeTitle">Olá 👋</h1></div>
-        <div class="top-actions"><button class="icon-button" title="Notificações" type="button">◔</button><button class="primary-button" type="button">+ Novo lançamento</button></div>
-      </header>
-
+      <header class="topbar"><div><p class="eyebrow">FINANCPLANTÕES 2.0</p><h1 id="welcomeTitle">Olá 👋</h1></div><div class="top-actions"><button class="icon-button" title="Notificações" type="button">◔</button><button class="primary-button" type="button">+ Novo lançamento</button></div></header>
       <section id="dashboard" class="dashboard-grid">
         <article class="hero-card card"><div><p class="eyebrow">PROJEÇÃO DO MÊS</p><h2>R$ 10.240,00</h2><p class="muted">Receitas previstas em agosto</p></div><div class="hero-badge">+12,4%</div><div class="hero-line"><span style="width:72%"></span></div><div class="split"><span>Recebido <strong>R$ 7.180</strong></span><span>A receber <strong>R$ 3.060</strong></span></div></article>
-        <article class="metric card"><span class="metric-icon">▣</span><p>Próximo recebimento</p><strong>R$ 1.500</strong><small>24/09 · Hospital São José</small></article>
-        <article class="metric card"><span class="metric-icon">◷</span><p>Plantões no mês</p><strong>12</strong><small>144 horas registradas</small></article>
-        <article class="metric card"><span class="metric-icon">↔</span><p>Saldo compartilhado</p><strong>+ R$ 420</strong><small>3 espaços ativos</small></article>
+        <article class="metric card"><span class="metric-icon">▣</span><p>Próximo recebimento</p><strong>R$ 1.500</strong><small>24/09 · Hospital São José</small></article><article class="metric card"><span class="metric-icon">◷</span><p>Plantões no mês</p><strong>12</strong><small>144 horas registradas</small></article><article class="metric card"><span class="metric-icon">↔</span><p>Saldo compartilhado</p><strong>+ R$ 420</strong><small>3 espaços ativos</small></article>
       </section>
-
-      <section class="content-grid">
-        <article class="card panel" id="shifts"><div class="section-head"><div><p class="eyebrow">AGENDA</p><h3>Próximos plantões</h3></div><a href="#shifts">Ver todos</a></div><div class="shift-list"><div class="shift-row"><div class="date-chip"><strong>27</strong><span>AGO</span></div><div class="row-main"><strong>Hospital São José</strong><span>07:00 · 12h</span></div><div class="row-value">R$ 1.500</div><span class="status paid-pending">A receber</span></div><div class="shift-row"><div class="date-chip"><strong>29</strong><span>AGO</span></div><div class="row-main"><strong>Clínica Centro</strong><span>19:00 · 12h</span></div><div class="row-value">R$ 1.250</div><span class="status confirmed">Confirmado</span></div><div class="shift-row"><div class="date-chip"><strong>02</strong><span>SET</span></div><div class="row-main"><strong>Hospital Regional</strong><span>07:00 · 24h</span></div><div class="row-value">R$ 2.400</div><span class="status confirmed">Confirmado</span></div></div></article>
-        <article class="card panel" id="receivables"><div class="section-head"><div><p class="eyebrow">FLUXO FINANCEIRO</p><h3>Próximos recebimentos</h3></div><a href="#receivables">Abrir</a></div><div class="receivable-list"><div><span>10 SET</span><strong>Hospital São José</strong><b>R$ 1.500</b></div><div><span>15 SET</span><strong>Clínica Centro</strong><b>R$ 1.250</b></div><div><span>24 SET</span><strong>Hospital Regional</strong><b>R$ 2.400</b></div></div></article>
-      </section>
-
-      <section class="content-grid lower">
-        <article class="card panel" id="spaces"><div class="section-head"><div><p class="eyebrow">COMPARTILHADO</p><h3>Meus espaços</h3></div><button class="text-button" type="button">+ Criar espaço</button></div><div class="space-grid"><div class="space-card"><span>✈️</span><div><strong>Viagem São Paulo</strong><small>4 membros · R$ 680 a acertar</small></div></div><div class="space-card"><span>🏠</span><div><strong>Residência</strong><small>3 membros · tudo certo</small></div></div><div class="space-card"><span>🏥</span><div><strong>Equipe Clínica</strong><small>6 membros · R$ 420 a receber</small></div></div></div></article>
-        <article class="card panel" id="expenses"><div class="section-head"><div><p class="eyebrow">DESPESAS</p><h3>Resumo compartilhado</h3></div><a href="#expenses">Ver detalhes</a></div><div class="expense-summary"><div><span>Você paga</span><strong>R$ 280</strong></div><div><span>Você recebe</span><strong>R$ 700</strong></div><div class="net"><span>Saldo líquido</span><strong>+ R$ 420</strong></div></div></article>
-      </section>
+      <section class="content-grid"><article class="card panel" id="shifts"><div class="section-head"><div><p class="eyebrow">AGENDA</p><h3>Próximos plantões</h3></div><a href="#shifts">Ver todos</a></div><div class="shift-list"><div class="shift-row"><div class="date-chip"><strong>27</strong><span>AGO</span></div><div class="row-main"><strong>Hospital São José</strong><span>07:00 · 12h</span></div><div class="row-value">R$ 1.500</div><span class="status paid-pending">A receber</span></div><div class="shift-row"><div class="date-chip"><strong>29</strong><span>AGO</span></div><div class="row-main"><strong>Clínica Centro</strong><span>19:00 · 12h</span></div><div class="row-value">R$ 1.250</div><span class="status confirmed">Confirmado</span></div><div class="shift-row"><div class="date-chip"><strong>02</strong><span>SET</span></div><div class="row-main"><strong>Hospital Regional</strong><span>07:00 · 24h</span></div><div class="row-value">R$ 2.400</div><span class="status confirmed">Confirmado</span></div></div></article><article class="card panel" id="receivables"><div class="section-head"><div><p class="eyebrow">FLUXO FINANCEIRO</p><h3>Próximos recebimentos</h3></div><a href="#receivables">Abrir</a></div><div class="receivable-list"><div><span>10 SET</span><strong>Hospital São José</strong><b>R$ 1.500</b></div><div><span>15 SET</span><strong>Clínica Centro</strong><b>R$ 1.250</b></div><div><span>24 SET</span><strong>Hospital Regional</strong><b>R$ 2.400</b></div></div></article></section>
+      <section class="content-grid lower"><article class="card panel" id="spaces"><div class="section-head"><div><p class="eyebrow">COMPARTILHADO</p><h3>Meus espaços</h3></div><button class="text-button" type="button">+ Criar espaço</button></div><div class="space-grid"><div class="space-card"><span>✈️</span><div><strong>Viagem São Paulo</strong><small>4 membros · R$ 680 a acertar</small></div></div><div class="space-card"><span>🏠</span><div><strong>Residência</strong><small>3 membros · tudo certo</small></div></div><div class="space-card"><span>🏥</span><div><strong>Equipe Clínica</strong><small>6 membros · R$ 420 a receber</small></div></div></div></article><article class="card panel" id="expenses"><div class="section-head"><div><p class="eyebrow">DESPESAS</p><h3>Resumo compartilhado</h3></div><a href="#expenses">Ver detalhes</a></div><div class="expense-summary"><div><span>Você paga</span><strong>R$ 280</strong></div><div><span>Você recebe</span><strong>R$ 700</strong></div><div class="net"><span>Saldo líquido</span><strong>+ R$ 420</strong></div></div></article></section>
     </main>
   </div>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./supabase-config.js"></script>
   <script src="./app.js"></script>
