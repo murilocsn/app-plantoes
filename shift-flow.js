@@ -2,35 +2,34 @@
   const $ = (id) => document.getElementById(id);
   const esc = (v) => String(v ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
   const today = () => new Date().toISOString().slice(0,10);
-  let activeShiftId = null;
+  const previousOpenForm = typeof window.openForm === 'function' ? window.openForm : null;
 
   async function getContext() {
-    const cfg = window.FINANCPLTOES_SUPABASE || window.FINANCPLANTOES_SUPABASE;
+    const cfg = window.FINANCPLANTOES_SUPABASE;
     if (!window.supabase || !cfg) throw new Error('Supabase não conectado.');
     const client = window.supabase.createClient(cfg.url, cfg.publishableKey, {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-    const {data:{session},error:sessionError} = await client.auth.getSession();
-    if(sessionError) throw sessionError;
+    const {data:{session},error} = await client.auth.getSession();
+    if(error) throw error;
     if(!session?.user) throw new Error('Sua sessão expirou. Faça login novamente.');
     return {client,user:session.user};
   }
 
-  async function fetchLocations(client, userId){
+  async function fetchLocations(client, userId) {
     const {data,error}=await client.from('locations').select('id,name,value12,active').eq('user_id',userId).order('name');
     if(error) throw error;
     return (data||[]).filter(l=>l.active!==false);
   }
 
-  async function fetchShift(client,userId,id){
+  async function fetchShift(client,userId,id) {
     if(!id) return null;
     const {data,error}=await client.from('shifts').select('id,date,start_time,location_id,location_name,duration,value,value12,notes,status,recurrence_id').eq('id',id).eq('user_id',userId).maybeSingle();
     if(error) throw error;
     return data||null;
   }
 
-  function showShiftModal(old, locations, client, user){
-    activeShiftId = old?.id || null;
-    const selected = old ? locations.find(l=>l.id===old.location_id) : null;
-    const currentStatus = old?.status || 'scheduled';
+  function showShiftModal(old,locations,client,user) {
+    const selected=old?locations.find(l=>l.id===old.location_id):null;
+    const currentStatus=old?.status||'scheduled';
     const body=`<div class="modal-grid">
       <label>Data<input name="date" type="date" value="${esc(old?.date||today())}" required></label>
       <label>Horário de início<input name="start_time" type="time" value="${esc(old?.start_time?.slice(0,5)||'')}" required></label>
@@ -52,7 +51,9 @@
 
     $('shiftFlowForm').onsubmit=async event=>{
       event.preventDefault();
-      const save=$('shiftSave'); save.disabled=true; save.textContent=old?'Salvando...':'Adicionando...';
+      const save=$('shiftSave');
+      save.disabled=true;
+      save.textContent=old?'Salvando...':'Adicionando...';
       try{
         const f=new FormData(event.currentTarget);
         const date=String(f.get('date')||'').trim();
@@ -73,7 +74,7 @@
           if(shiftError)throw shiftError;
           const {error:recError}=await client.from('receivables').update({location_id:row.location_id,description:`Plantão · ${row.location_name}`,amount:row.value}).eq('shift_id',old.id).eq('user_id',user.id).neq('status','received');
           if(recError)throw recError;
-        } else {
+        }else{
           const shiftId=crypto.randomUUID();
           const {error:shiftError}=await client.from('shifts').insert({...row,id:shiftId,user_id:user.id});
           if(shiftError)throw shiftError;
@@ -99,8 +100,8 @@
           }
         }
         window.closeModal();
-        if(window.loadAll)await window.loadAll();
-      }catch(error){alert(window.friendly?window.friendly(error):(error?.message||'Não foi possível salvar o plantão.'));}
+        if(typeof window.loadAll==='function')await window.loadAll();
+      }catch(error){alert(typeof window.friendly==='function'?window.friendly(error):(error?.message||'Não foi possível salvar o plantão.'));}
       finally{save.disabled=false;save.textContent=old?'Salvar alterações':'Adicionar plantão';}
     };
   }
@@ -117,8 +118,7 @@
 
   window.openForm=function(type,id='',spaceId=''){
     if(type==='shift')return openShiftFlow(id);
-    if(typeof window.__originalOpenForm==='function')return window.__originalOpenForm(type,id,spaceId);
+    return previousOpenForm ? previousOpenForm(type,id,spaceId) : undefined;
   };
-  if(typeof window.openForm==='function')window.__originalOpenForm=window.openForm;
   ['newShiftButton','mobileNewShift','addShiftTop'].forEach(id=>{const button=$(id);if(button)button.onclick=()=>openShiftFlow();});
 })();
