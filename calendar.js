@@ -6,16 +6,15 @@
   const key = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const colorFor = (name) => { let n=0; for(const c of String(name||'Local').toLowerCase()) n=(n*31+c.charCodeAt(0))>>>0; return `hsl(${n%360} 70% 50%)`; };
   function mount(){
-    if(!$('calendarView') || $('calendarMounted')) return;
+    if(!$('calendarView') || $('calendarGrid')) return;
     $('calendarView').innerHTML=`<div class="calendar-head"><div><p class="eyebrow">AGENDA</p><h2 id="calendarTitle"></h2><p class="muted">● local · ◐ noturno · ○ diurno</p></div><div class="calendar-actions"><button class="secondary" id="calendarPrev">‹</button><button class="secondary" id="calendarToday">Hoje</button><button class="secondary" id="calendarNext">›</button></div></div><div id="calendarGrid" class="calendar-grid"></div><div id="calendarLegend" class="calendar-legend"></div><div id="calendarDayDetails" class="calendar-day-details"><p class="muted">Selecione um dia para ver os plantões.</p></div>`;
-    $('calendarMounted').value='1';
     $('calendarPrev').onclick=()=>{viewDate.setMonth(viewDate.getMonth()-1);render()};
     $('calendarNext').onclick=()=>{viewDate.setMonth(viewDate.getMonth()+1);render()};
     $('calendarToday').onclick=()=>{viewDate=new Date();render()};
     render();
   }
   function render(){
-    if(!$('calendarGrid')) return;
+    if(!$('calendarGrid')) { mount(); return; }
     const shifts=typeof cache!=='undefined'?(cache.shifts||[]):[];
     const y=viewDate.getFullYear(),m=viewDate.getMonth();
     $('calendarTitle').textContent=new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(viewDate).replace(/^./,x=>x.toUpperCase());
