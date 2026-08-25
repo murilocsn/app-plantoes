@@ -27,6 +27,30 @@
     return data||null;
   }
 
+  async function deleteShift(id) {
+    if(!id) return;
+    const confirmed = window.confirm('Excluir este plantão?\n\nO plantão e o recebível pendente vinculado serão removidos. Esta ação não pode ser desfeita.');
+    if(!confirmed) return;
+    try {
+      const {client,user}=await getContext();
+      const shift=await fetchShift(client,user.id,id);
+      if(!shift) throw new Error('Plantão não encontrado ou você não tem permissão para excluí-lo.');
+
+      const {error:receivableError}=await client.from('receivables').delete().eq('shift_id',id).eq('user_id',user.id).neq('status','received');
+      if(receivableError) throw receivableError;
+
+      const {error:shiftError}=await client.from('shifts').delete().eq('id',id).eq('user_id',user.id);
+      if(shiftError) throw shiftError;
+
+      if(typeof window.closeModal==='function') window.closeModal();
+      if(typeof window.loadAll==='function') await window.loadAll();
+      if(typeof window.renderCalendar==='function') window.renderCalendar();
+      alert('Plantão excluído com sucesso.');
+    } catch(error) {
+      alert(typeof window.friendly==='function' ? window.friendly(error) : (error?.message || 'Não foi possível excluir o plantão.'));
+    }
+  }
+
   function showShiftModal(old,locations,client,user) {
     const selected=old?locations.find(l=>l.id===old.location_id):null;
     const currentStatus=old?.status||'scheduled';
@@ -41,9 +65,10 @@
       ${old?'':`<fieldset class="wide"><legend>Recorrência</legend><label class="inline-check"><input name="repeat" type="checkbox"> Repetir este plantão</label><div class="repeat-fields"><label>Frequência<select name="frequency"><option value="weekly">Semanal</option><option value="biweekly">Quinzenal</option><option value="monthly">Mensal</option><option value="daily">Diária</option></select></label><label>Intervalo<input name="interval_value" type="number" min="1" max="365" value="1"></label><label>Data final<input name="end_date" type="date"></label><label>Quantidade<input name="occurrences" type="number" min="2" max="500" placeholder="Opcional"></label></div><small class="muted">Informe uma data final ou uma quantidade.</small></fieldset>`}
     </div>`;
     const root=$('modalRoot');
-    root.innerHTML=`<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><p class="eyebrow">${old?'EDITAR':'NOVO'} PLANTÃO</p><h3>${old?'Editar plantão':'Adicionar plantão'}</h3></div><button class="close-btn" type="button" id="shiftClose">×</button></div><form id="shiftFlowForm">${body}<div class="modal-actions"><button class="secondary" type="button" id="shiftCancel">Cancelar</button><button class="primary" type="submit" id="shiftSave">${old?'Salvar alterações':'Adicionar plantão'}</button></div></form></div></div>`;
+    root.innerHTML=`<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><p class="eyebrow">${old?'EDITAR':'NOVO'} PLANTÃO</p><h3>${old?'Editar plantão':'Adicionar plantão'}</h3></div><button class="close-btn" type="button" id="shiftClose">×</button></div><form id="shiftFlowForm">${body}<div class="modal-actions"><button class="secondary" type="button" id="shiftCancel">Cancelar</button>${old?`<button class="danger" type="button" id="shiftDelete">Excluir</button>`:''}<button class="primary" type="submit" id="shiftSave">${old?'Salvar alterações':'Adicionar plantão'}</button></div></form></div></div>`;
     $('shiftClose').onclick=window.closeModal;
     $('shiftCancel').onclick=window.closeModal;
+    if(old) $('shiftDelete').onclick=()=>deleteShift(old.id);
     const repeat=root.querySelector('[name="repeat"]');
     const fields=root.querySelector('.repeat-fields');
     const sync=()=>{if(fields)fields.style.opacity=repeat?.checked?'1':'0.5'};
@@ -51,74 +76,39 @@
 
     $('shiftFlowForm').onsubmit=async event=>{
       event.preventDefault();
-      const save=$('shiftSave');
-      save.disabled=true;
-      save.textContent=old?'Salvando...':'Adicionando...';
+      const save=$('shiftSave'); save.disabled=true; save.textContent=old?'Salvando...':'Adicionando...';
       try{
-        const f=new FormData(event.currentTarget);
-        const date=String(f.get('date')||'').trim();
-        const startTime=String(f.get('start_time')||'').trim();
-        const locationId=String(f.get('location_id')||'').trim();
-        const duration=Number(f.get('duration'));
-        const value=Number(f.get('value'));
-        const location=locations.find(l=>l.id===locationId);
-        if(!date)throw new Error('Informe a data do plantão.');
-        if(!startTime)throw new Error('Informe o horário de início.');
-        if(!location)throw new Error('Selecione um local de trabalho ativo.');
-        if(!Number.isFinite(duration)||duration<1||duration>48)throw new Error('A duração deve estar entre 1 e 48 horas.');
-        if(!Number.isFinite(value)||value<0)throw new Error('Informe um valor válido para o plantão.');
+        const f=new FormData(event.currentTarget), date=String(f.get('date')||'').trim(), startTime=String(f.get('start_time')||'').trim(), locationId=String(f.get('location_id')||'').trim(), duration=Number(f.get('duration')), value=Number(f.get('value')), location=locations.find(l=>l.id===locationId);
+        if(!date)throw new Error('Informe a data do plantão.'); if(!startTime)throw new Error('Informe o horário de início.'); if(!location)throw new Error('Selecione um local de trabalho ativo.'); if(!Number.isFinite(duration)||duration<1||duration>48)throw new Error('A duração deve estar entre 1 e 48 horas.'); if(!Number.isFinite(value)||value<0)throw new Error('Informe um valor válido para o plantão.');
         const row={date,start_time:startTime,location_id:location.id,location_name:location.name,duration,value,value12:value,notes:String(f.get('notes')||'').trim()||null,status:String(f.get('status')||'scheduled')};
-
         if(old){
-          const {error:shiftError}=await client.from('shifts').update(row).eq('id',old.id).eq('user_id',user.id);
-          if(shiftError)throw shiftError;
-          const {error:recError}=await client.from('receivables').update({location_id:row.location_id,description:`Plantão · ${row.location_name}`,amount:row.value}).eq('shift_id',old.id).eq('user_id',user.id).neq('status','received');
-          if(recError)throw recError;
+          const {error:shiftError}=await client.from('shifts').update(row).eq('id',old.id).eq('user_id',user.id); if(shiftError)throw shiftError;
+          const {error:recError}=await client.from('receivables').update({location_id:row.location_id,description:`Plantão · ${row.location_name}`,amount:row.value}).eq('shift_id',old.id).eq('user_id',user.id).neq('status','received'); if(recError)throw recError;
         }else{
-          const shiftId=crypto.randomUUID();
-          const {error:shiftError}=await client.from('shifts').insert({...row,id:shiftId,user_id:user.id});
-          if(shiftError)throw shiftError;
+          const shiftId=crypto.randomUUID(); const {error:shiftError}=await client.from('shifts').insert({...row,id:shiftId,user_id:user.id}); if(shiftError)throw shiftError;
           const expected=new Date(`${date}T12:00:00`); expected.setDate(expected.getDate()+30);
           const {error:receivableError}=await client.from('receivables').insert({user_id:user.id,shift_id:shiftId,location_id:location.id,description:`Plantão · ${location.name}`,amount:value,expected_date:expected.toISOString().slice(0,10),status:'pending'});
           if(receivableError){await client.from('shifts').delete().eq('id',shiftId).eq('user_id',user.id);throw receivableError;}
-
           if(f.get('repeat')==='on'){
-            const occurrences=f.get('occurrences')?Number(f.get('occurrences')):null;
-            const endDate=String(f.get('end_date')||'').trim()||null;
-            const frequency=String(f.get('frequency')||'weekly');
-            const interval=Number(f.get('interval_value')||1);
-            if(!occurrences&&!endDate)throw new Error('Para repetir o plantão, informe a data final ou a quantidade de ocorrências.');
-            if(occurrences&&(occurrences<2||occurrences>500))throw new Error('A quantidade de ocorrências deve estar entre 2 e 500.');
-            if(endDate&&endDate<=date)throw new Error('A data final da recorrência deve ser posterior ao primeiro plantão.');
-            if(interval<1||interval>365)throw new Error('O intervalo deve estar entre 1 e 365.');
-            const recurrenceId=crypto.randomUUID();
-            const {error:recurrenceError}=await client.from('recurrences').insert({id:recurrenceId,user_id:user.id,frequency,interval_value:interval,start_date:date,end_date:endDate,occurrences,active:true});
+            const occurrences=f.get('occurrences')?Number(f.get('occurrences')):null,endDate=String(f.get('end_date')||'').trim()||null,frequency=String(f.get('frequency')||'weekly'),interval=Number(f.get('interval_value')||1);
+            if(!occurrences&&!endDate)throw new Error('Para repetir o plantão, informe a data final ou a quantidade de ocorrências.'); if(occurrences&&(occurrences<2||occurrences>500))throw new Error('A quantidade de ocorrências deve estar entre 2 e 500.'); if(endDate&&endDate<=date)throw new Error('A data final da recorrência deve ser posterior ao primeiro plantão.'); if(interval<1||interval>365)throw new Error('O intervalo deve estar entre 1 e 365.');
+            const recurrenceId=crypto.randomUUID(); const {error:recurrenceError}=await client.from('recurrences').insert({id:recurrenceId,user_id:user.id,frequency,interval_value:interval,start_date:date,end_date:endDate,occurrences,active:true});
             if(recurrenceError){await client.from('receivables').delete().eq('shift_id',shiftId).eq('user_id',user.id);await client.from('shifts').delete().eq('id',shiftId).eq('user_id',user.id);throw recurrenceError;}
-            const {error:linkError}=await client.from('shifts').update({recurrence_id:recurrenceId}).eq('id',shiftId).eq('user_id',user.id);
-            if(linkError)throw linkError;
+            const {error:linkError}=await client.from('shifts').update({recurrence_id:recurrenceId}).eq('id',shiftId).eq('user_id',user.id); if(linkError)throw linkError;
             if(window.syncRecurrences)await window.syncRecurrences();
           }
         }
-        window.closeModal();
-        if(typeof window.loadAll==='function')await window.loadAll();
+        window.closeModal(); if(typeof window.loadAll==='function')await window.loadAll(); if(typeof window.renderCalendar==='function')window.renderCalendar();
       }catch(error){alert(typeof window.friendly==='function'?window.friendly(error):(error?.message||'Não foi possível salvar o plantão.'));}
       finally{save.disabled=false;save.textContent=old?'Salvar alterações':'Adicionar plantão';}
     };
   }
 
   async function openShiftFlow(id=''){
-    try{
-      const {client,user}=await getContext();
-      const locations=await fetchLocations(client,user.id);
-      if(!locations.length){alert('Cadastre e ative pelo menos um local de trabalho antes de criar um plantão.');return;}
-      const old=await fetchShift(client,user.id,id);
-      showShiftModal(old,locations,client,user);
-    }catch(error){alert(error?.message||'Não foi possível abrir o cadastro de plantão.');}
+    try{const {client,user}=await getContext();const locations=await fetchLocations(client,user.id);if(!locations.length){alert('Cadastre e ative pelo menos um local de trabalho antes de criar um plantão.');return;}const old=await fetchShift(client,user.id,id);showShiftModal(old,locations,client,user);}catch(error){alert(error?.message||'Não foi possível abrir o cadastro de plantão.');}
   }
 
-  window.openForm=function(type,id='',spaceId=''){
-    if(type==='shift')return openShiftFlow(id);
-    return previousOpenForm ? previousOpenForm(type,id,spaceId) : undefined;
-  };
+  window.deleteShift=deleteShift;
+  window.openForm=function(type,id='',spaceId=''){if(type==='shift')return openShiftFlow(id);return previousOpenForm ? previousOpenForm(type,id,spaceId) : undefined;};
   ['newShiftButton','mobileNewShift','addShiftTop'].forEach(id=>{const button=$(id);if(button)button.onclick=()=>openShiftFlow();});
 })();
