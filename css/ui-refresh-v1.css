@@ -1,0 +1,80 @@
+:root {
+  --fp-bg: #f6f7f9;
+  --fp-surface: #ffffff;
+  --fp-surface-soft: #f1f3f6;
+  --fp-border: #e2e5ea;
+  --fp-text: #17202b;
+  --fp-muted: #687384;
+  --fp-accent: #d98a24;
+  --fp-accent-soft: #fff1dc;
+  --fp-success: #1e9a66;
+  --fp-danger: #d2493f;
+  --fp-radius: 16px;
+  --fp-shadow: 0 8px 28px rgba(23, 32, 43, .07);
+}
+
+body.fp-refresh { background: var(--fp-bg); }
+body.fp-refresh .nav {
+  width: 236px;
+  padding: 24px 14px;
+  background: var(--fp-surface);
+  border-right: 1px solid var(--fp-border);
+}
+body.fp-refresh .main { max-width: 1240px; padding: 28px 34px 90px; }
+body.fp-refresh .card { border-radius: var(--fp-radius); box-shadow: var(--fp-shadow); border-color: var(--fp-border); }
+body.fp-refresh .view-head { margin-bottom: 20px; }
+body.fp-refresh .view-head h2 { font-size: 30px; letter-spacing: -.02em; }
+body.fp-refresh .btn { border-radius: 10px; min-height: 40px; }
+body.fp-refresh .btn.primary { box-shadow: 0 5px 14px rgba(217,138,36,.22); }
+
+.fp-dashboard { display: grid; gap: 18px; }
+.fp-dashboard-hero {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  padding: 22px 24px; border-radius: 20px;
+  background: linear-gradient(135deg, #fff8ee 0%, #ffffff 62%);
+  border: 1px solid #f0dfc5;
+}
+.fp-dashboard-hero h3 { margin: 0 0 5px; font-family: 'Fraunces', serif; font-size: 26px; }
+.fp-dashboard-hero p { margin: 0; color: var(--fp-muted); font-size: 13px; }
+.fp-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.fp-kpi { padding: 18px; border-radius: 16px; background: var(--fp-surface); border: 1px solid var(--fp-border); box-shadow: var(--fp-shadow); }
+.fp-kpi-label { color: var(--fp-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.fp-kpi-value { margin-top: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 23px; font-weight: 700; }
+.fp-kpi-note { margin-top: 5px; color: var(--fp-muted); font-size: 11px; }
+.fp-dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr); gap: 16px; }
+.fp-panel { padding: 20px; }
+.fp-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.fp-panel-title { margin: 0; font-family: 'Fraunces', serif; font-size: 18px; }
+.fp-next-shift { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px; border-radius: 12px; background: var(--fp-surface-soft); }
+.fp-next-shift strong { display: block; margin-bottom: 4px; }
+.fp-next-shift span { color: var(--fp-muted); font-size: 12px; }
+.fp-money { color: var(--fp-success); font-family: 'IBM Plex Mono', monospace; font-weight: 700; white-space: nowrap; }
+.fp-bottom-nav { display: none; }
+
+@media (max-width: 900px) {
+  body.fp-refresh .nav { width: 190px; }
+  body.fp-refresh .main { padding: 24px 22px 90px; }
+  .fp-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  body.fp-refresh .app { min-height: 100dvh; }
+  body.fp-refresh .nav { display: none; }
+  body.fp-refresh .main { width: 100%; padding: 18px 14px 90px; }
+  body.fp-refresh .view-head h2 { font-size: 25px; }
+  .fp-dashboard-hero { align-items: flex-start; flex-direction: column; padding: 18px; border-radius: 16px; }
+  .fp-dashboard-hero .btn { width: 100%; justify-content: center; }
+  .fp-kpis { gap: 9px; }
+  .fp-kpi { padding: 14px; border-radius: 13px; }
+  .fp-kpi-value { font-size: 18px; }
+  .fp-dashboard-grid { grid-template-columns: 1fr; }
+  .fp-bottom-nav {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    position: fixed; z-index: 1000; left: 10px; right: 10px; bottom: 10px;
+    padding: 7px; border: 1px solid var(--fp-border); border-radius: 18px;
+    background: rgba(255,255,255,.94); box-shadow: 0 10px 35px rgba(23,32,43,.14); backdrop-filter: blur(14px);
+  }
+  .fp-bottom-nav button { border: 0; background: transparent; color: var(--fp-muted); padding: 8px 4px; border-radius: 12px; font: 600 11px Inter, sans-serif; }
+  .fp-bottom-nav button.active { color: var(--fp-accent); background: var(--fp-accent-soft); }
+  .fp-bottom-nav button span { display: block; font-size: 17px; margin-bottom: 2px; }
+}
