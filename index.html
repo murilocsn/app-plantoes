@@ -467,8 +467,8 @@
         <div class="field full">
           <label>Frequência</label>
           <div class="seg" id="repeat-presets">
-            <button data-preset="7-days">Semanal</button>
-            <button data-preset="15-days" class="active">Quinzenal</button>
+            <button data-preset="6-days">Semanal</button>
+            <button data-preset="14-days" class="active">Quinzenal</button>
             <button data-preset="1-months">Mensal</button>
             <button data-preset="custom">Personalizado</button>
           </div>
@@ -865,7 +865,7 @@
   function computeValue(value12, duration){ return (value12/12) * duration; }
   function locationById(id){ return DATA.locations.find(l=>l.id===id); }
 
-  // Noturno: 20:00 até 07:59 · Diurno: 08:00 até 19:59
+  // Noturno: 20:00 até 04:59 · Diurno: 08:00 até 19:59
   function shiftPeriod(startTime){
     if(!startTime) return null;
     const [hh, mm] = startTime.split(':').map(Number);
