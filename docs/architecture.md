@@ -10,15 +10,21 @@ Esta branch inicia a reorganização estrutural sem substituir a aplicação atu
 index.html
   ├── HTML
   ├── CSS
-  ├── JavaScript
+  ├── JavaScript legado
   ├── Supabase Auth
   ├── operações de plantões
   └── navegação/relatórios
 
+js/core/
+  ├── supabase.js     # fronteira única do cliente Supabase
+  ├── auth.js         # autenticação
+  └── router.js       # rotas hash + guard de autenticação
+
 Supabase
   ├── locations
   ├── shifts
-  └── settings
+  ├── settings
+  └── push_subscriptions
 ```
 
 ## Direção da refatoração
@@ -30,6 +36,7 @@ js/
   core/
     supabase.js     # fronteira única do cliente Supabase
     auth.js         # autenticação
+    router.js       # navegação e proteção de rotas
     utils.js        # formatação e utilidades compartilhadas
   shifts.js         # operações de plantões
   locations.js      # operações de locais
@@ -39,6 +46,20 @@ js/
 ```
 
 O frontend continuará sendo estático e compatível com GitHub Pages. Não há necessidade de migrar para React/Next.js nesta etapa.
+
+## Rotas protegidas
+
+O router usa hash routes para funcionar em hospedagem estática sem depender de rewrites no servidor:
+
+```text
+#/login       → público
+#/app         → protegido, abre Calendário
+#/calendar    → protegido, Calendário
+#/locations   → protegido, Locais
+#/report      → protegido, Relatórios
+```
+
+O guard consulta a sessão do Supabase antes de apresentar uma rota protegida. Isso é uma camada de UX/roteamento; a proteção real dos dados permanece no RLS do banco.
 
 ## Modelo de dados alvo
 
@@ -61,7 +82,7 @@ User (Supabase Auth)
 
 ## Segurança
 
-Todas as novas tabelas usam RLS e validam `auth.uid() = user_id` em leitura e escrita. Nenhuma credencial privada deve ser colocada no frontend.
+As tabelas de dados do usuário usam RLS e validam `auth.uid() = user_id` em leitura e escrita. O papel `anon` não possui políticas de acesso aos dados. Nenhuma credencial privada deve ser colocada no frontend.
 
 ## Migração incremental
 
@@ -69,8 +90,9 @@ Todas as novas tabelas usam RLS e validam `auth.uid() = user_id` em leitura e es
 2. Aplicar a migration no projeto Supabase.
 3. Validar RLS com duas contas diferentes.
 4. Criar camada de acesso JavaScript.
-5. Migrar operações existentes uma área por vez.
-6. Remover código duplicado somente depois dos testes.
+5. Integrar o router ao `index.html` legado.
+6. Migrar operações existentes uma área por vez.
+7. Remover código duplicado somente depois dos testes.
 
 ## Regra de compatibilidade
 
