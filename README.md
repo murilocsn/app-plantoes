@@ -2,16 +2,12 @@
 
 Sistema web multiusuário para profissionais de saúde registrarem plantões (unidade, horário de início, duração e valor). Cada pessoa cria sua própria conta e enxerga **apenas os próprios dados**, acessíveis de qualquer dispositivo, com um banco de dados real por trás.
 
-## Atualizando um app que já está no ar
-
-Se você já publicou uma versão anterior, para aplicar estas novidades:
-
-1. **Rode o `supabase-schema.sql` de novo** no SQL Editor do Supabase — o script foi escrito para ser seguro mesmo rodando mais de uma vez, ele só adiciona o que ainda não existe (tabela de metas, tabela de lembretes, campo de CNPJ) sem duplicar nada.
-2. **Suba de novo no GitHub**: `index.html`, e também os arquivos novos `manifest.json`, `service-worker.js` e a pasta `icons/` (necessários para o app poder ser instalado). O GitHub substitui automaticamente os arquivos que já existirem com o mesmo nome.
-3. O recurso de lembretes por notificação é opcional e tem configuração própria — veja a seção específica mais abaixo, só siga ela se quiser ativar os avisos.
-4. Não precisa reconfigurar a URL/chave do Supabase nem mexer no GitHub Pages de novo.
 
 ## Novidades desta versão
+
+**Campo "Profissional" removido do formulário de lançar plantão.**
+**Corrigi** a causa raiz da rolagem horizontal: os campos usavam colunas de grade (1fr 1fr) que, por padrão, não encolhem além do conteúdo mínimo — então quando o campo de data/hora nativo do celular pedia mais espaço do que cabia, a página inteira ganhava uma barra de rolagem lateral. Agora as colunas podem encolher de verdade, e adicionei uma trava de segurança (overflow-x:hidden) para impedir que isso aconteça de novo em qualquer situação.
+**Modal maior:** aumentei a largura máxima de 460px para 560px (mais espaço em telas grandes) e reduzi a margem externa, aproveitando melhor a tela sem perder o visual compacto
 
 - **Instalável como app** (PWA) — no iPhone via "Adicionar à Tela de Início", no computador via botão "Instalar" do navegador.
 - **Lembrete diário por notificação** — avisa no celular, no início do dia, quando há plantão marcado (recurso avançado, com configuração adicional no Supabase — veja seção própria abaixo).
