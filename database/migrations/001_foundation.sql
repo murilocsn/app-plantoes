@@ -5,7 +5,7 @@
 create table if not exists public.recurrences (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  location_id uuid references public.locations(id) on delete set null,
+  location_id text references public.locations(id) on delete set null,
   start_date date not null,
   end_date date,
   frequency text not null default 'weekly' check (frequency in ('daily','weekly','monthly')),
@@ -49,7 +49,7 @@ create policy "Users can delete own recurrences"
 create table if not exists public.payments (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  shift_id uuid references public.shifts(id) on delete set null,
+  shift_id text references public.shifts(id) on delete set null,
   amount numeric(12,2) not null check (amount >= 0),
   due_date date,
   paid_date date,
