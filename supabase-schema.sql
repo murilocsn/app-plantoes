@@ -13,8 +13,8 @@ create table if not exists locations (
   created_at timestamptz not null default now()
 );
 
--- Compatibilidade com bancos criados antes da coluna doc existir.
 alter table locations add column if not exists doc text;
+create unique index if not exists locations_id_user_id_key on locations(id, user_id);
 
 create table if not exists shifts (
   id text primary key,
@@ -29,10 +29,14 @@ create table if not exists shifts (
   professional text,
   notes text,
   recurring_group_id text,
-  created_at timestamptz not null default now(),
-  constraint shifts_location_owner_fk foreign key (location_id, user_id)
-    references locations(id, user_id) on delete set null
+  created_at timestamptz not null default now()
 );
+
+-- Vincula o plantão ao local do MESMO usuário, impedindo referências cruzadas.
+alter table shifts drop constraint if exists shifts_location_owner_fk;
+alter table shifts add constraint shifts_location_owner_fk
+  foreign key (location_id, user_id)
+  references locations(id, user_id) on delete set null;
 
 create table if not exists settings (
   user_id uuid primary key references auth.users(id) on delete cascade,
