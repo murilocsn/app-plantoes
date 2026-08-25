@@ -38,7 +38,7 @@
     --radius: 10px;
   }
   *{ box-sizing:border-box; }
-  html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); overflow-x:hidden; }
   body{
     font-family:'Inter', sans-serif;
     min-height:100vh;
@@ -181,26 +181,28 @@
   .empty{ color:var(--text-faint); font-size:13px; padding:16px 4px; text-align:center; border:1px dashed var(--line); border-radius:8px; }
 
   /* ---- Forms ---- */
-  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; }
-  .field{ display:flex; flex-direction:column; gap:3px; }
+  .form-grid{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px 10px; }
+  .field{ display:flex; flex-direction:column; gap:3px; min-width:0; }
   .field.full{ grid-column:1 / -1; }
   .field label{ font-size:10.5px; font-weight:600; color:var(--text-muted); }
   .field input, .field select{
     background:var(--surface-2); border:1px solid var(--line); border-radius:6px; color:var(--text);
-    padding:6px 8px; font-size:12.5px; font-family:inherit;
+    padding:6px 8px; font-size:12.5px; font-family:inherit; width:100%; min-width:0; max-width:100%;
   }
   .field input:focus, .field select:focus{ outline:none; border-color:var(--accent); }
-  .seg{ display:flex; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+  .seg{ display:flex; border:1px solid var(--line); border-radius:6px; overflow:hidden; min-width:0; }
   .seg button{
-    flex:1; background:var(--surface-2); border:none; color:var(--text-muted); padding:6px 4px;
+    flex:1; min-width:0; background:var(--surface-2); border:none; color:var(--text-muted); padding:6px 4px;
     font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; border-right:1px solid var(--line);
+    white-space:normal; word-break:break-word; text-align:center; line-height:1.2;
   }
   .seg button:last-child{ border-right:none; }
   .seg button.active{ background:var(--accent); color:#241a06; }
   .duration-preview{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--text-muted); margin-top:2px; }
   .form-actions{ display:flex; gap:8px; margin-top:12px; }
-  .recur-box{ border:1px solid var(--line); border-radius:8px; padding:9px; margin-top:2px; background:var(--surface-2); display:none; grid-column:1/-1; }
+  .recur-box{ border:1px solid var(--line); border-radius:8px; padding:9px; margin-top:2px; background:var(--surface-2); display:none; grid-column:1/-1; min-width:0; }
   .recur-box.show{ display:flex; flex-direction:column; gap:8px; }
+  .recur-row3{ display:grid; grid-template-columns:minmax(0,60px) minmax(0,1fr) minmax(0,1fr); gap:8px; }
   .toggle-row{ display:flex; align-items:center; gap:7px; grid-column:1/-1; font-size:12px; color:var(--text-muted); }
 
   /* ---- Locations ---- */
@@ -227,10 +229,10 @@
   td{ padding:9px 10px; border-bottom:1px solid var(--line); }
   td.num, th.num{ text-align:right; font-family:'IBM Plex Mono',monospace; }
 
-  .modal-bg{ position:fixed; inset:0; background:rgba(23,32,43,0.45); display:none; align-items:center; justify-content:center; z-index:50; padding:16px; }
+  .modal-bg{ position:fixed; inset:0; background:rgba(23,32,43,0.45); display:none; align-items:center; justify-content:center; z-index:50; padding:10px; overflow:hidden; }
   .modal-bg.show{ display:flex; }
-  .modal{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; width:100%; max-width:460px; max-height:96vh; overflow:auto; }
-  .modal h3{ font-family:'Fraunces',serif; margin:0 0 10px; font-size:16px; }
+  .modal{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px 20px; width:100%; max-width:560px; max-height:96vh; overflow-y:auto; overflow-x:hidden; box-sizing:border-box; }
+  .modal h3{ font-family:'Fraunces',serif; margin:0 0 12px; font-size:17px; }
 
   @media (max-width: 860px){
     .app{ flex-direction:column; }
@@ -240,6 +242,7 @@
     .main{ padding:20px; }
     .cal-wrap{ grid-template-columns:1fr; }
     .form-grid{ grid-template-columns:1fr; }
+    .recur-row3{ grid-template-columns:1fr; }
     .stat-row{ grid-template-columns:1fr; }
   }
 </style>
@@ -441,10 +444,6 @@
           <button data-dur="24">24h</button>
         </div>
       </div>
-      <div class="field full">
-        <label>Profissional (opcional)</label>
-        <input type="text" id="f-professional" placeholder="Nome de quem cobriu o plantão, se diferente de você">
-      </div>
       <div class="field">
         <label>Valor do plantão de 12h (R$)</label>
         <input type="number" id="f-value12" step="0.01" min="0">
@@ -467,13 +466,13 @@
         <div class="field full">
           <label>Frequência</label>
           <div class="seg" id="repeat-presets">
-            <button data-preset="6-days">Semanal</button>
-            <button data-preset="14-days" class="active">Quinzenal</button>
+            <button data-preset="7-days">Semanal</button>
+            <button data-preset="15-days" class="active">Quinzenal</button>
             <button data-preset="1-months">Mensal</button>
             <button data-preset="custom">Personalizado</button>
           </div>
         </div>
-        <div style="display:grid; grid-template-columns:64px 1fr 1.3fr; gap:8px;">
+        <div class="recur-row3">
           <div class="field">
             <label>A cada</label>
             <input type="number" id="f-repeat-interval" min="1" value="15">
@@ -865,7 +864,7 @@
   function computeValue(value12, duration){ return (value12/12) * duration; }
   function locationById(id){ return DATA.locations.find(l=>l.id===id); }
 
-  // Noturno: 20:00 até 04:59 · Diurno: 08:00 até 19:59
+  // Noturno: 20:00 até 07:59 · Diurno: 08:00 até 19:59
   function shiftPeriod(startTime){
     if(!startTime) return null;
     const [hh, mm] = startTime.split(':').map(Number);
@@ -1061,7 +1060,6 @@
       $('f-start-time').value = s.startTime || '';
       $('f-location').value = s.locationId;
       $('f-value12').value = s.value12;
-      $('f-professional').value = s.professional || '';
       $('f-notes').value = s.notes || '';
       currentDuration = s.duration;
       $('f-recurring').checked = false;
@@ -1074,7 +1072,6 @@
       $('f-start-time').value = '';
       $('f-location').selectedIndex = 0;
       $('f-value12').value = DATA.locations[0] ? DATA.locations[0].value12 : '';
-      $('f-professional').value = '';
       $('f-notes').value = '';
       currentDuration = 12;
       $('f-recurring').checked = false;
@@ -1086,11 +1083,7 @@
     document.querySelectorAll('#f-duration-seg button').forEach(b=>{
       b.classList.toggle('active', Number(b.dataset.dur)===currentDuration);
     });
-    document.querySelectorAll('#repeat-presets button').forEach(b=>{
-      b.classList.toggle('active', b.dataset.preset==='15-days');
-    });
-    $('f-repeat-interval').value = 15;
-    $('f-repeat-unit').value = 'days';
+    applyRepeatPreset('15-days');
     $('f-repeat-until').value = '';
     updateValuePreview();
     $('shift-modal-bg').classList.add('show');
@@ -1114,16 +1107,19 @@
     });
   });
 
-  document.querySelectorAll('#repeat-presets button').forEach(b=>{
-    b.addEventListener('click', ()=>{
-      document.querySelectorAll('#repeat-presets button').forEach(x=>x.classList.remove('active'));
-      b.classList.add('active');
-      if(b.dataset.preset !== 'custom'){
-        const [n, unit] = b.dataset.preset.split('-');
-        $('f-repeat-interval').value = n;
-        $('f-repeat-unit').value = unit;
-      }
+  function applyRepeatPreset(presetKey){
+    document.querySelectorAll('#repeat-presets button').forEach(x=>{
+      x.classList.toggle('active', x.dataset.preset===presetKey);
     });
+    if(presetKey !== 'custom'){
+      const [n, unit] = presetKey.split('-');
+      $('f-repeat-interval').value = n;
+      $('f-repeat-unit').value = unit;
+    }
+  }
+
+  document.querySelectorAll('#repeat-presets button').forEach(b=>{
+    b.addEventListener('click', ()=> applyRepeatPreset(b.dataset.preset));
   });
   // Editar manualmente o intervalo/unidade marca o preset como "Personalizado"
   function markCustomPreset(){
@@ -1147,7 +1143,7 @@
     const locationId = $('f-location').value;
     const loc = locationById(locationId);
     const value12 = parseFloat($('f-value12').value) || 0;
-    const professional = $('f-professional').value.trim();
+    const professional = '';
     const notes = $('f-notes').value.trim();
 
     if(!date || !loc){ alert('Preencha a data e o local.'); return; }
