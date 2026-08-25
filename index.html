@@ -231,7 +231,8 @@
 
   .modal-bg{ position:fixed; inset:0; background:rgba(23,32,43,0.45); display:none; align-items:center; justify-content:center; z-index:50; padding:10px; overflow:hidden; }
   .modal-bg.show{ display:flex; }
-  .modal{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px 20px; width:100%; max-width:560px; max-height:96vh; overflow-y:auto; overflow-x:hidden; box-sizing:border-box; }
+  .modal{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px 20px; width:100%; max-width:560px; max-height:96vh; overflow-y:auto; overflow-x:hidden; box-sizing:border-box; min-width:0; }
+  .modal *{ min-width:0; box-sizing:border-box; }
   .modal h3{ font-family:'Fraunces',serif; margin:0 0 12px; font-size:17px; }
 
   @media (max-width: 860px){
@@ -466,11 +467,12 @@
         <div class="field full">
           <label>Frequência</label>
           <div class="seg" id="repeat-presets">
-            <button data-preset="7-days">Semanal</button>
-            <button data-preset="15-days" class="active">Quinzenal</button>
+            <button data-preset="6-days">Semanal</button>
+            <button data-preset="14-days" class="active">Quinzenal</button>
             <button data-preset="1-months">Mensal</button>
             <button data-preset="custom">Personalizado</button>
           </div>
+          <div style="font-size:10.5px; color:var(--text-faint); margin-top:4px;">O dia de hoje conta como 1º dia — "A cada" é quantos dias somar a partir dele.</div>
         </div>
         <div class="recur-row3">
           <div class="field">
@@ -1083,7 +1085,7 @@
     document.querySelectorAll('#f-duration-seg button').forEach(b=>{
       b.classList.toggle('active', Number(b.dataset.dur)===currentDuration);
     });
-    applyRepeatPreset('15-days');
+    applyRepeatPreset('14-days');
     $('f-repeat-until').value = '';
     updateValuePreview();
     $('shift-modal-bg').classList.add('show');
