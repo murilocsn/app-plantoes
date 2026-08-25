@@ -8,36 +8,22 @@
   function mount(){
     if(!$('calendarView') || $('calendarGrid')) return;
     $('calendarView').innerHTML=`<div class="calendar-head"><div><p class="eyebrow">AGENDA</p><h2 id="calendarTitle"></h2><p class="muted">● local · ◐ noturno · ○ diurno</p></div><div class="calendar-actions"><button class="secondary" id="calendarPrev">‹</button><button class="secondary" id="calendarToday">Hoje</button><button class="secondary" id="calendarNext">›</button></div></div><div id="calendarGrid" class="calendar-grid"></div><div id="calendarLegend" class="calendar-legend"></div><div id="calendarDayDetails" class="calendar-day-details"><p class="muted">Selecione um dia para ver os plantões.</p></div>`;
-    $('calendarPrev').onclick=()=>{viewDate.setMonth(viewDate.getMonth()-1);render()};
-    $('calendarNext').onclick=()=>{viewDate.setMonth(viewDate.getMonth()+1);render()};
-    $('calendarToday').onclick=()=>{viewDate=new Date();render()};
-    render();
+    $('calendarPrev').onclick=()=>{viewDate.setMonth(viewDate.getMonth()-1);render()}; $('calendarNext').onclick=()=>{viewDate.setMonth(viewDate.getMonth()+1);render()}; $('calendarToday').onclick=()=>{viewDate=new Date();render()}; render();
   }
   function render(){
     if(!$('calendarGrid')) { mount(); return; }
-    const shifts=typeof cache!=='undefined'?(cache.shifts||[]):[];
-    const y=viewDate.getFullYear(),m=viewDate.getMonth();
+    const shifts=typeof cache!=='undefined'?(cache.shifts||[]):[],y=viewDate.getFullYear(),m=viewDate.getMonth();
     $('calendarTitle').textContent=new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(viewDate).replace(/^./,x=>x.toUpperCase());
-    const first=new Date(y,m,1),start=new Date(y,m,1-first.getDay());
-    const days=Array.from({length:42},(_,i)=>new Date(start.getFullYear(),start.getMonth(),start.getDate()+i));
-    const byDay=new Map(); shifts.forEach(s=>{if(!byDay.has(s.date))byDay.set(s.date,[]);byDay.get(s.date).push(s)});
+    const first=new Date(y,m,1),start=new Date(y,m,1-first.getDay()),days=Array.from({length:42},(_,i)=>new Date(start.getFullYear(),start.getMonth(),start.getDate()+i)),byDay=new Map();
+    shifts.forEach(s=>{if(!byDay.has(s.date))byDay.set(s.date,[]);byDay.get(s.date).push(s)});
     $('calendarGrid').innerHTML=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(d=>`<div class="calendar-weekday">${d}</div>`).join('')+days.map(d=>{const k=key(d),items=byDay.get(k)||[],muted=d.getMonth()!==m,dots=items.slice(0,5).map(s=>`<span class="shift-dot ${isNight(s)?'night':'day'}" title="${esc(s.location_name||'Local')} · ${isNight(s)?'Noturno':'Diurno'}" style="--dot:${colorFor(s.location_name)}"></span>`).join('');return `<button class="calendar-day ${muted?'muted-day':''} ${key(new Date())===k?'today':''}" data-date="${k}"><strong>${d.getDate()}</strong><span class="dots">${dots}</span>${items.length>5?`<small>+${items.length-5}</small>`:''}</button>`}).join('');
     document.querySelectorAll('.calendar-day').forEach(b=>b.onclick=()=>showDay(b.dataset.date));
-    const names=[...new Set(shifts.map(s=>s.location_name||'Local'))];
-    $('calendarLegend').innerHTML=names.map(n=>`<span><i style="background:${colorFor(n)}"></i>${esc(n)}</span>`).join('')||'<span class="muted">Nenhum local com plantão cadastrado.</span>';
+    const names=[...new Set(shifts.map(s=>s.location_name||'Local'))]; $('calendarLegend').innerHTML=names.map(n=>`<span><i style="background:${colorFor(n)}"></i>${esc(n)}</span>`).join('')||'<span class="muted">Nenhum local com plantão cadastrado.</span>';
   }
   function showDay(date){
     const shifts=typeof cache!=='undefined'?(cache.shifts||[]).filter(s=>s.date===date):[];
-    $('calendarDayDetails').innerHTML=`<div class="day-detail-head"><strong>${new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'2-digit',month:'long'}).format(new Date(`${date}T12:00:00`))}</strong><button class="link-button" onclick="openForm('shift')">+ Plantão</button></div>`+(shifts.length?shifts.map(s=>`<div class="calendar-shift"><span class="shift-dot ${isNight(s)?'night':'day'}" style="--dot:${colorFor(s.location_name)}"></span><div><strong>${esc(s.location_name||'Local')}</strong><small>${esc(s.start_time?.slice(0,5)||'—')} · ${Number(s.duration||0)}h · ${isNight(s)?'Noturno':'Diurno'}</small></div><b>${typeof money==='function'?money(s.value??s.value12):''}</b></div>`).join(''):'<p class="muted">Nenhum plantão neste dia.</p>');
+    $('calendarDayDetails').innerHTML=`<div class="day-detail-head"><strong>${new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'2-digit',month:'long'}).format(new Date(`${date}T12:00:00`))}</strong><button class="link-button" onclick="openForm('shift')">+ Plantão</button></div>`+(shifts.length?shifts.map(s=>`<div class="calendar-shift" data-shift-id="${esc(s.id)}"><span class="shift-dot ${isNight(s)?'night':'day'}" style="--dot:${colorFor(s.location_name)}"></span><div><strong>${esc(s.location_name||'Local')}</strong><small>${esc(s.start_time?.slice(0,5)||'—')} · ${Number(s.duration||0)}h · ${isNight(s)?'Noturno':'Diurno'}</small></div><b>${typeof money==='function'?money(s.value??s.value12):''}</b><div class="shift-actions"><button class="secondary" type="button" onclick="openForm('shift','${esc(s.id)}')">Editar</button><button class="danger" type="button" onclick="deleteShift('${esc(s.id)}')">Excluir</button></div></div>`).join(''):'<p class="muted">Nenhum plantão neste dia.</p>');
   }
   window.renderCalendar=render;
-  document.addEventListener('DOMContentLoaded',()=>{
-    mount();
-    if(!document.querySelector('script[data-finance-actions]')){
-      const script=document.createElement('script');
-      script.src='finance-actions.js?v=20260825-02';
-      script.dataset.financeActions='1';
-      document.body.appendChild(script);
-    }
-  });
+  document.addEventListener('DOMContentLoaded',()=>{mount();if(!document.querySelector('script[data-finance-actions]')){const script=document.createElement('script');script.src='finance-actions.js?v=20260825-02';script.dataset.financeActions='1';document.body.appendChild(script);}});
 })();
