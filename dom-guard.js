@@ -1,7 +1,6 @@
 // Compatibility guard loaded before app.js.
-// It never overrides DOM APIs. It only restores legacy elements that the
-// dashboard renderer still expects while Financeiro, Despesas and Espacos
-// live on their own pages.
+// It never overrides DOM APIs. It restores legacy targets and protects
+// navigation to the standalone Financeiro / Despesas / Espaços pages.
 (() => {
   const ensure = (id, tag = 'div') => {
     let el = document.getElementById(id);
@@ -14,25 +13,30 @@
     return el;
   };
 
-  // Legacy render targets.
   ['receivableList', 'expenseList', 'reportSummary'].forEach(id => ensure(id));
-
-  // Legacy action targets still bound by app.js. They remain hidden because
-  // these functions now live on their dedicated workspace pages.
   ['addReceivable', 'addPersonalExpense', 'addSharedExpense', 'exportCsv'].forEach(id => ensure(id, 'button'));
 
-  // Older logout binding expected this id. Keep it as an invisible
-  // compatibility target; the visible logout remains topLogoutButton.
   const legacyLogout = ensure('logoutButton', 'button');
   legacyLogout.type = 'button';
   legacyLogout.tabIndex = -1;
   legacyLogout.setAttribute('aria-hidden', 'true');
   legacyLogout.style.display = 'none';
 
-  // Spaces is now a standalone page. Keep the legacy DOM target available
-  // for app.js, but never show the old dashboard section.
   const hide = document.createElement('style');
   hide.id = 'dashboard-workspace-visibility';
   hide.textContent = '#spaces{display:none!important}#receivables,#expenses,#reports{display:none!important}';
   document.head.appendChild(hide);
+
+  // app.js historically intercepts all navigation anchors and scrolls to an
+  // id. That is correct for dashboard anchors, but wrong for standalone
+  // workspace pages. Capture those clicks before app.js sees them.
+  document.addEventListener('click', event => {
+    const anchor = event.target.closest?.('a[href]');
+    if (!anchor) return;
+    const href = anchor.getAttribute('href') || '';
+    if (!/^(finance|expenses|spaces)\.html(?:\?.*)?$/.test(href)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    window.location.href = href;
+  }, true);
 })();
