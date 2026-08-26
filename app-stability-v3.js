@@ -19,7 +19,7 @@
     ['newShiftButton','mobileNewShift','addShiftTop'].forEach(id=>{const b=$(id);if(b){b.onclick=e=>{e.preventDefault();e.stopImmediatePropagation();if(typeof window.openShiftFlow==='function')window.openShiftFlow();else if(typeof window.openForm==='function')window.openForm('shift')}}});
     const rec=$('addRecurrence');if(rec)rec.onclick=e=>{e.preventDefault();e.stopImmediatePropagation();if(typeof window.openRecurringShift==='function')window.openRecurringShift();};
   }
-  function fixDashboardCopy(){const el=$('dashboardStatus');if(!el)return;const m=(el.textContent||'').match(/^(\d+) plantão(?:ões)? neste mês · (\d+) locais?$/i);if(!m)return;const s=Number(m[1]),l=Number(m[2]);el.textContent=`${s} ${s===1?'plantão':'plantões'} neste mês · ${l} ${l===1?'local':'locais'}`}
+  function fixDashboardCopy(){const el=$('dashboardStatus');if(!el)return;const m=(el.textContent||'').match(/^(\d+) plantão(?:ões)? neste mês · (\d+) locais?$/i);if(!m)return;const s=Number(m[1]),l=Number(m[2]);const next=`${s} ${s===1?'plantão':'plantões'} neste mês · ${l} ${l===1?'local':'locais'}`;if(el.textContent!==next)el.textContent=next}
   function addProjectCredit(){const panel=document.querySelector('.auth-panel');if(!panel||panel.querySelector('.project-credit'))return;const p=document.createElement('p');p.className='project-credit muted';p.innerHTML='<strong>FinancPlantões</strong><br>Projeto idealizado e desenvolvido por Murilo Neder.<br>Organização de plantões, recebimentos e despesas compartilhadas.';p.style.cssText='margin-top:18px;font-size:12px;line-height:1.5;text-align:center';panel.appendChild(p)}
   function enforceDuration(){const f=$('shiftFlowForm');if(!f||f.dataset.durationGuard==='1')return;const input=f.elements.duration;if(!input)return;f.dataset.durationGuard='1';input.min='6';input.max='24';input.step='6';if(![6,12,18,24].includes(Number(input.value)))input.value='12';f.addEventListener('submit',e=>{const n=Number(f.elements.duration?.value);if(![6,12,18,24].includes(n)){e.preventDefault();e.stopImmediatePropagation();alert('A duração do plantão deve ser 6, 12, 18 ou 24 horas.')}},true)}
   async function openRecurring(){
@@ -36,6 +36,6 @@
   }
   function addMonthN(date,n){let d=new Date(`${date}T12:00:00`);const original=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+n);const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(original,last));return d.toISOString().slice(0,10)}
   window.openRecurringShift=openRecurring;
-  const boot=()=>{bindTop();addProjectCredit();fixDashboardCopy();enforceDuration();new MutationObserver(()=>{cleanLogout();fixDashboardCopy();addProjectCredit();enforceDuration()}).observe(document.body,{childList:true,subtree:true,characterData:true})};
+  const boot=()=>{bindTop();addProjectCredit();fixDashboardCopy();enforceDuration()};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
