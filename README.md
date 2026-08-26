@@ -10,8 +10,8 @@ O FinancPlantões está sendo construído para ir além de uma agenda de plantõ
 
 Referências de produto utilizadas para decisões de UX e funcionalidades:
 
-- **Plantãozinho:** referência de rapidez para cadastrar, visualizar e acompanhar plantões e recebimentos, incluindo recorrência, filtros e organização visual. O produto destaca cadastro rápido de plantões, controle de pagamentos e sincronização entre dispositivos. citeturn0search12turn0search14
-- **Splitwise:** referência para grupos, participantes, saldos, despesas compartilhadas, pagamentos/ajustes e redução de complexidade na divisão financeira. citeturn0search0turn0search4
+- **Plantãozinho:** referência de rapidez para cadastrar, visualizar e acompanhar plantões e recebimentos, incluindo recorrência, filtros e organização visual. O produto destaca cadastro rápido de plantões, controle de pagamentos e sincronização entre dispositivos.
+- **Splitwise:** referência para grupos, participantes, saldos, despesas compartilhadas, pagamentos/ajustes e redução de complexidade na divisão financeira.
 
 A intenção não é copiar esses produtos, mas combinar aprendizados de usabilidade com as necessidades específicas de profissionais de saúde.
 
@@ -255,8 +255,8 @@ Antes de considerar uma alteração pronta:
 
 ## Referências de produto
 
-- Plantãozinho: urlsite oficialhttps://plantaozinho.com/
-- Splitwise: urlsite oficialhttps://www.splitwise.com/
+- [Plantãozinho — site oficial](https://plantaozinho.com/)
+- [Splitwise — site oficial](https://www.splitwise.com/)
 
 Essas referências são usadas somente para benchmarking de experiência, organização de fluxos e ideias de produto. O objetivo é desenvolver uma identidade própria para o FinancPlantões.
 
