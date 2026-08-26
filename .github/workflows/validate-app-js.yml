@@ -17,3 +17,5 @@ jobs:
           node-version: 22
       - name: Check app.js syntax
         run: node --check app.js
+      - name: Report
+        run: echo "app.js syntax check completed"
