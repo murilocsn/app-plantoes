@@ -1,10 +1,9 @@
 /**
  * Supabase client boundary.
  *
- * The current application may still initialize Supabase in index.html.
- * New modules should import this boundary instead of creating another client.
- * Keep project URL and anon key out of this file until the existing runtime
- * configuration has been migrated deliberately.
+ * The legacy/static application initializes the browser client in
+ * supabase-config.js. New modules use this boundary so Auth is configured in
+ * exactly one place and the publishable key remains the only frontend key.
  */
 
 let client = null;
@@ -18,12 +17,28 @@ export function configureSupabase(supabaseClient) {
 }
 
 export function getSupabase() {
-  if (!client) {
-    throw new Error('Supabase ainda não foi configurado. Chame configureSupabase() primeiro.');
+  if (client) return client;
+
+  if (globalThis.FINANCPLANTOES_DB) {
+    client = globalThis.FINANCPLANTOES_DB;
+    return client;
   }
-  return client;
+
+  const cfg = globalThis.FINANCPLANTOES_SUPABASE;
+  if (cfg && globalThis.supabase?.createClient) {
+    client = globalThis.supabase.createClient(cfg.url, cfg.publishableKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
+    return client;
+  }
+
+  throw new Error('Supabase ainda não foi configurado.');
 }
 
 export function hasSupabase() {
-  return Boolean(client);
+  return Boolean(client || globalThis.FINANCPLANTOES_DB || globalThis.FINANCPLANTOES_SUPABASE);
 }
