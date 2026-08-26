@@ -5,15 +5,18 @@
 -- ============================================================
 
 create table if not exists locations (
-  id text primary key,
+  id text primary key default gen_random_uuid()::text,
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   name text not null,
   value12 numeric not null default 0,
   doc text,
+  active boolean not null default true,
   created_at timestamptz not null default now()
 );
 
 alter table locations add column if not exists doc text;
+alter table locations add column if not exists active boolean not null default true;
+alter table locations alter column id set default gen_random_uuid()::text;
 create unique index if not exists locations_id_user_id_key on locations(id, user_id);
 
 create table if not exists shifts (
@@ -32,7 +35,6 @@ create table if not exists shifts (
   created_at timestamptz not null default now()
 );
 
--- Vincula o plantão ao local do MESMO usuário, impedindo referências cruzadas.
 alter table shifts drop constraint if exists shifts_location_owner_fk;
 alter table shifts add constraint shifts_location_owner_fk
   foreign key (location_id, user_id)
