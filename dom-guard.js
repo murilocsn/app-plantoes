@@ -14,21 +14,20 @@
     return el;
   };
 
-  // Legacy dashboard targets still referenced by the current app.js.
-  ensure('receivableList');
-  ensure('expenseList');
-  ensure('reportSummary');
+  // Legacy render targets.
+  ['receivableList', 'expenseList', 'reportSummary'].forEach(id => ensure(id));
+
+  // Legacy action targets still bound by app.js. They remain hidden because
+  // these functions now live on their dedicated workspace pages.
+  ['addReceivable', 'addPersonalExpense', 'addSharedExpense', 'exportCsv'].forEach(id => ensure(id, 'button'));
 
   // Older logout binding expected this id. Keep it as an invisible
   // compatibility target; the visible logout remains topLogoutButton.
-  ensure('logoutButton', 'button');
-  const legacyLogout = document.getElementById('logoutButton');
-  if (legacyLogout) {
-    legacyLogout.type = 'button';
-    legacyLogout.tabIndex = -1;
-    legacyLogout.setAttribute('aria-hidden', 'true');
-    legacyLogout.style.display = 'none';
-  }
+  const legacyLogout = ensure('logoutButton', 'button');
+  legacyLogout.type = 'button';
+  legacyLogout.tabIndex = -1;
+  legacyLogout.setAttribute('aria-hidden', 'true');
+  legacyLogout.style.display = 'none';
 
   // Spaces is now a standalone page. Keep the legacy DOM target available
   // for app.js, but never show the old dashboard section.
