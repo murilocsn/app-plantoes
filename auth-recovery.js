@@ -42,9 +42,9 @@
         const {data,error}=await sb.auth.signInWithPassword({email,password});
         if(error) throw error;
         showApp(data.user);
-        // Let the existing app initialize its own state from the persisted Supabase session.
-        setTimeout(()=>location.reload(),120);
+        if(typeof window.loadAll==='function') await window.loadAll();
       }catch(err){message(err?.message==='Invalid login credentials'?'E-mail ou senha inválidos.':(err?.message||'Não foi possível entrar.'),'error');if(submit)submit.disabled=false;}
+      finally{if(submit)submit.disabled=false;}
     },true);
     recover();
   }
