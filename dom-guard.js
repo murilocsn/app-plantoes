@@ -27,8 +27,8 @@
   hide.textContent = '#spaces{display:none!important}#receivables,#expenses,#reports{display:none!important}';
   document.head.appendChild(hide);
 
-  // Logout is handled in capture phase so it still works if another script
-  // has stopped propagation or the dashboard is busy loading data.
+  // Logout is handled in capture phase, but never reloads or redirects the page.
+  // app.js owns the auth state; after signOut it receives SIGNED_OUT and shows login.
   document.addEventListener('click', async event => {
     const button = event.target.closest?.('#topLogoutButton, #logoutButton, [data-action="logout"]');
     if (!button) return;
@@ -38,14 +38,14 @@
       const client = window.FINANCPLANTOES_DB;
       if (client) await client.auth.signOut({ scope: 'local' });
     } catch (_) {
-      // Local cleanup below is enough to leave the current device signed out.
+      // Continue with local UI cleanup even if the network sign-out fails.
     } finally {
       try {
         localStorage.removeItem('financplantoes-theme');
         Object.keys(localStorage).filter(k => k.startsWith('sb-')).forEach(k => localStorage.removeItem(k));
         Object.keys(sessionStorage).forEach(k => sessionStorage.removeItem(k));
       } catch (_) {}
-      window.location.replace('index.html#/login');
+      if (typeof window.showAuth === 'function') window.showAuth();
     }
   }, true);
 
