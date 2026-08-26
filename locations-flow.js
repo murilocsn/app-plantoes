@@ -16,10 +16,6 @@
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[char]));
 
-  const money = (value) => new Intl.NumberFormat('pt-BR', {
-    style: 'currency', currency: 'BRL'
-  }).format(Number(value || 0));
-
   function closeLocationModal() {
     const root = document.getElementById('modalRoot');
     if (root) root.innerHTML = '';
@@ -127,6 +123,7 @@
             .eq('user_id', user.id);
           if (error) throw error;
         } else {
+          payload.id = crypto.randomUUID();
           payload.user_id = user.id;
           payload.active = true;
           const { error } = await db.from('locations').insert(payload);
@@ -136,7 +133,7 @@
         closeLocationModal();
         window.location.reload();
       } catch (error) {
-        console.error(error);
+        console.error('Erro ao salvar local:', error);
         message.textContent = error?.message || 'Não foi possível salvar o local.';
         message.className = 'message error';
         button.disabled = false;
@@ -151,12 +148,11 @@
       const location = id ? await getLocation(id) : null;
       renderLocationModal(location);
     } catch (error) {
-      console.error(error);
+      console.error('Erro ao abrir local:', error);
       alert(error?.message || 'Não foi possível abrir o cadastro do local.');
     }
   }
 
-  // Override the legacy generic form entry point used by the location list.
   window.openForm = (type, id, ...args) => {
     if (type === 'location') return openLocationForm(id || '');
     if (typeof window.__legacyOpenForm === 'function') return window.__legacyOpenForm(type, id, ...args);
