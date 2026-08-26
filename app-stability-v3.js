@@ -2,12 +2,16 @@
   const $=id=>document.getElementById(id); const db=()=>window.FINANCPLANTOES_DB||window.db;
   const getUser=async()=>{const c=db();if(!c)throw new Error('Supabase não conectado.');const {data,error}=await c.auth.getSession();if(error)throw error;if(!data.session?.user)throw new Error('Sessão expirada.');return data.session.user};
   const today=()=>new Date().toISOString().slice(0,10);
+  const addDays=(date,n)=>{const d=new Date(`${date}T12:00:00`);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+  const addMonth=(date)=>{const d=new Date(`${date}T12:00:00`);d.setMonth(d.getMonth()+1);return d.toISOString().slice(0,10)};
+  const endTime=(start,duration)=>{if(!start)return '';const [h,m]=start.split(':').map(Number);const t=(h*60+m+Number(duration)*60)%1440;return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`};
+  const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
   async function logout(){try{const c=db();if(!c)throw new Error('Supabase não conectado.');const {error}=await c.auth.signOut();if(error)throw error;location.href='index.html'}catch(e){alert(e.message||'Não foi possível sair.')}}
   function cleanLogout(){
     const keep=$('topLogoutButton');
     document.querySelectorAll('.sidebar .logout-button,.sidebar [data-action="logout"]').forEach(el=>el.remove());
-    document.querySelectorAll('.topbar button').forEach(el=>{if(el!==keep && ((el.textContent||'').trim().toLowerCase()==='sair' || el.classList.contains('logout-top-button')))el.remove()});
-    document.querySelectorAll('[data-action="logout"]').forEach(el=>{if(el!==keep){el.onclick=logout}});
+    document.querySelectorAll('.topbar button').forEach(el=>{if(el!==keep&&((el.textContent||'').trim().toLowerCase()==='sair'||el.classList.contains('logout-top-button')))el.remove()});
+    document.querySelectorAll('[data-action="logout"]').forEach(el=>{if(el!==keep)el.onclick=logout});
     if(keep){keep.onclick=logout;keep.type='button';keep.setAttribute('aria-label','Sair da conta')}
   }
   function bindTop(){
@@ -15,24 +19,23 @@
     ['newShiftButton','mobileNewShift','addShiftTop'].forEach(id=>{const b=$(id);if(b){b.onclick=e=>{e.preventDefault();e.stopImmediatePropagation();if(typeof window.openShiftFlow==='function')window.openShiftFlow();else if(typeof window.openForm==='function')window.openForm('shift')}}});
     const rec=$('addRecurrence');if(rec)rec.onclick=e=>{e.preventDefault();e.stopImmediatePropagation();if(typeof window.openRecurringShift==='function')window.openRecurringShift();};
   }
-  function fixDashboardCopy(){
-    const el=$('dashboardStatus');if(!el)return;
-    const original=el.textContent||'';
-    const match=original.match(/^(\d+) plantão(?:ões)? neste mês · (\d+) locais?$/i);
-    if(!match)return;
-    const shifts=Number(match[1]),locations=Number(match[2]);
-    el.textContent=`${shifts} ${shifts===1?'plantão':'plantões'} neste mês · ${locations} ${locations===1?'local':'locais'}`;
+  function fixDashboardCopy(){const el=$('dashboardStatus');if(!el)return;const m=(el.textContent||'').match(/^(\d+) plantão(?:ões)? neste mês · (\d+) locais?$/i);if(!m)return;const s=Number(m[1]),l=Number(m[2]);el.textContent=`${s} ${s===1?'plantão':'plantões'} neste mês · ${l} ${l===1?'local':'locais'}`}
+  function addProjectCredit(){const panel=document.querySelector('.auth-panel');if(!panel||panel.querySelector('.project-credit'))return;const p=document.createElement('p');p.className='project-credit muted';p.innerHTML='<strong>FinancPlantões</strong><br>Projeto idealizado e desenvolvido por Murilo Neder.<br>Organização de plantões, recebimentos e despesas compartilhadas.';p.style.cssText='margin-top:18px;font-size:12px;line-height:1.5;text-align:center';panel.appendChild(p)}
+  function enforceDuration(){const f=$('shiftFlowForm');if(!f||f.dataset.durationGuard==='1')return;const input=f.elements.duration;if(!input)return;f.dataset.durationGuard='1';input.min='6';input.max='24';input.step='6';if(![6,12,18,24].includes(Number(input.value)))input.value='12';f.addEventListener('submit',e=>{const n=Number(f.elements.duration?.value);if(![6,12,18,24].includes(n)){e.preventDefault();e.stopImmediatePropagation();alert('A duração do plantão deve ser 6, 12, 18 ou 24 horas.')}},true)}
+  async function openRecurring(){
+    try{
+      const c=db(),u=await getUser();const {data:locs,error}=await c.from('locations').select('id,name,value12').eq('user_id',u.id).eq('active',true).order('name');if(error)throw error;if(!locs?.length)throw new Error('Cadastre e ative um local antes de criar um plantão.');
+      const root=$('modalRoot');root.innerHTML=`<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><p class="eyebrow">RECORRÊNCIA</p><h3>Adicionar plantão recorrente</h3><p class="muted">O mesmo local, horário e duração serão repetidos automaticamente.</p></div><button class="close-btn" type="button" id="rvClose">×</button></div><form id="rvForm"><div class="modal-grid"><label>Primeira data<input name="date" type="date" value="${today()}" required></label><label>Horário de início<input name="start_time" type="time" required></label><label>Local<select name="location_id" required><option value="">Selecione</option>${locs.map(l=>`<option value="${esc(l.id)}">${esc(l.name)}</option>`).join('')}</select></label><label>Duração<select name="duration" required><option value="6">6 horas</option><option value="12" selected>12 horas</option><option value="18">18 horas</option><option value="24">24 horas</option></select></label><label>Horário de término<input name="end_time" type="time" readonly></label><label>Valor do plantão<input name="value" type="number" min="0" step="0.01" required></label><fieldset class="wide"><legend>Como repetir?</legend><label>Frequência<select name="pattern"><option value="weekly">Toda semana — mesmo dia da semana</option><option value="biweekly">A cada 2 semanas — mesmo dia da semana</option><option value="monthly">Todo mês — mesma data</option></select></label><label>Encerrar por<select name="limitType"><option value="count">Quantidade de plantões</option><option value="date">Data final</option></select></label><label id="countWrap">Quantidade<input name="occurrences" type="number" min="2" max="500" value="4"></label><label id="dateWrap" hidden>Data final<input name="end_date" type="date"></label><p class="muted wide" id="rvExplanation">Toda semana: segunda-feira, depois a próxima segunda-feira, sempre no mesmo horário.</p></fieldset></div><div class="modal-actions"><button class="secondary" type="button" id="rvCancel">Cancelar</button><button class="primary" type="submit" id="rvSave">Criar recorrência</button></div></form></div></div>`;
+      const f=$('rvForm'),start=f.elements.start_time,dur=f.elements.duration,end=f.elements.end_time,pattern=f.elements.pattern,limit=f.elements.limitType,cw=$('countWrap'),dw=$('dateWrap');
+      const syncEnd=()=>end.value=endTime(start.value,dur.value);start.addEventListener('input',syncEnd);dur.addEventListener('change',syncEnd);syncEnd();
+      limit.addEventListener('change',()=>{cw.hidden=limit.value!=='count';dw.hidden=limit.value!=='date'});
+      pattern.addEventListener('change',()=>{$('rvExplanation').textContent=pattern.value==='weekly'?'Toda semana: +7 dias, mesmo dia da semana e horário.':pattern.value==='biweekly'?'Quinzenal: +14 dias, mesmo dia da semana e horário.':'Mensal: mesma data em cada mês.'});
+      $('rvClose').onclick=$('rvCancel').onclick=()=>window.closeModal?.();
+      f.onsubmit=async e=>{e.preventDefault();const b=$('rvSave');b.disabled=true;b.textContent='Criando...';try{const fd=new FormData(f),first=String(fd.get('date')||''),time=String(fd.get('start_time')||''),loc=locs.find(x=>x.id===fd.get('location_id')),duration=Number(fd.get('duration')),value=Number(fd.get('value')),pat=String(fd.get('pattern')),limitType=String(fd.get('limitType'));if(!first||!time)throw new Error('Informe a data e o horário de início.');if(!loc)throw new Error('Selecione um local.');if(![6,12,18,24].includes(duration))throw new Error('A duração deve ser 6, 12, 18 ou 24 horas.');if(!Number.isFinite(value)||value<0)throw new Error('Informe um valor válido.');let dates=[];if(limitType==='count'){const n=Number(fd.get('occurrences'));if(!Number.isInteger(n)||n<2||n>500)throw new Error('Informe entre 2 e 500 plantões.');for(let i=0;i<n;i++)dates.push(pat==='weekly'?addDays(first,7*i):pat==='biweekly'?addDays(first,14*i):addMonthN(first,i))}else{const endDate=String(fd.get('end_date')||'');if(!endDate||endDate<=first)throw new Error('A data final deve ser posterior à primeira data.');let d=first,guard=0;while(d<=endDate&&guard++<500){dates.push(d);d=pat==='weekly'?addDays(d,7):pat==='biweekly'?addDays(d,14):addMonth(d)}}const rid=crypto.randomUUID(),gid=crypto.randomUUID();const rr=await c.from('recurrences').insert({id:rid,user_id:u.id,frequency:pat,interval_value:1,start_date:first,end_date:limitType==='date'?fd.get('end_date'):null,occurrences:dates.length,active:true});if(rr.error)throw rr.error;const rows=dates.map(d=>({id:crypto.randomUUID(),user_id:u.id,date:d,start_time:time,location_id:loc.id,location_name:loc.name,duration,value,value12:value,notes:null,status:'scheduled',recurrence_id:rid,recurring_group_id:gid}));const sr=await c.from('shifts').insert(rows);if(sr.error){await c.from('recurrences').delete().eq('id',rid);throw sr.error}const rs=rows.map(r=>{const x=new Date(`${r.date}T12:00:00`);x.setDate(x.getDate()+30);return{id:crypto.randomUUID(),user_id:u.id,shift_id:r.id,location_id:loc.id,description:`Plantão · ${loc.name}`,amount:value,expected_date:x.toISOString().slice(0,10),status:'pending'}});const er=await c.from('receivables').insert(rs);if(er.error){await c.from('shifts').delete().eq('recurrence_id',rid).eq('user_id',u.id);await c.from('recurrences').delete().eq('id',rid).eq('user_id',u.id);throw er.error}window.closeModal?.();await window.loadAll?.();window.renderCalendar?.();alert(`${rows.length} plantões criados com sucesso.`)}catch(err){alert(err.message||'Não foi possível criar a recorrência.')}finally{b.disabled=false;b.textContent='Criar recorrência'}};
+    }catch(err){alert(err.message||'Não foi possível abrir a recorrência.')}
   }
-  function addProjectCredit(){
-    const panel=document.querySelector('.auth-panel');if(!panel||panel.querySelector('.project-credit'))return;
-    const p=document.createElement('p');p.className='project-credit muted';p.innerHTML='<strong>FinancPlantões</strong><br>Projeto idealizado e desenvolvido por Murilo Neder.<br>Organização de plantões, recebimentos e despesas compartilhadas.';
-    p.style.cssText='margin-top:18px;font-size:12px;line-height:1.5;text-align:center';panel.appendChild(p);
-  }
-  const observeDashboard=()=>{fixDashboardCopy();addProjectCredit()};
-  const boot=()=>{
-    bindTop();
-    observeDashboard();
-    new MutationObserver(()=>{cleanLogout();fixDashboardCopy();addProjectCredit()}).observe(document.body,{childList:true,subtree:true,characterData:true});
-  };
+  function addMonthN(date,n){let d=new Date(`${date}T12:00:00`);const original=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+n);const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(original,last));return d.toISOString().slice(0,10)}
+  window.openRecurringShift=openRecurring;
+  const boot=()=>{bindTop();addProjectCredit();fixDashboardCopy();enforceDuration();new MutationObserver(()=>{cleanLogout();fixDashboardCopy();addProjectCredit();enforceDuration()}).observe(document.body,{childList:true,subtree:true,characterData:true})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
