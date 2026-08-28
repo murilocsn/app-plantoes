@@ -54,6 +54,9 @@ export function LocationsPage() {
                 <div>
                   <strong>{location.name}</strong>
                   <span>{money(location.value12)} por 12h</span>
+                  <small>
+                    Ref. {location.reference_start_day ?? 1} a {location.reference_end_day ?? 28} · paga ate dia {location.payment_due_day ?? 10} do mes seguinte
+                  </small>
                   {location.doc && <small>{location.doc}</small>}
                 </div>
                 <div className="entity-status">{location.active === false ? "Inativo" : "Ativo"}</div>

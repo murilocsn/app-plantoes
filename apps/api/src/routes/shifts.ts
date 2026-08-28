@@ -93,11 +93,22 @@ function recurrenceForDatabase(recurrence: z.infer<typeof recurrenceInputSchema>
   };
 }
 
+type PaymentLocation = {
+  id: string;
+  name: string;
+  value12: number;
+  active: boolean | null;
+  reference_start_day: number;
+  reference_end_day: number;
+  payment_due_day: number;
+  payment_due_months_after: number;
+};
+
 async function getLocation(request: Request, id: string) {
-  const location = await expectData<{ id: string; name: string; value12: number; active: boolean | null }>(
+  const location = await expectData<PaymentLocation>(
     request.auth.supabase
       .from("locations")
-      .select("id,name,value12,active")
+      .select("id,name,value12,active,reference_start_day,reference_end_day,payment_due_day,payment_due_months_after")
       .eq("id", id)
       .eq("user_id", request.auth.user.id)
       .single(),
@@ -109,6 +120,38 @@ async function getLocation(request: Request, id: string) {
   }
 
   return location;
+}
+
+function expectedPaymentDate(shiftDate: string, location: PaymentLocation) {
+  const date = new Date(`${shiftDate}T12:00:00Z`);
+  const day = date.getUTCDate();
+  let periodMonth = date.getUTCMonth();
+  let periodYear = date.getUTCFullYear();
+
+  if (location.reference_start_day <= location.reference_end_day) {
+    if (day > location.reference_end_day) {
+      periodMonth += 1;
+    } else if (day < location.reference_start_day) {
+      periodMonth -= 1;
+    }
+  } else if (day < location.reference_start_day) {
+    periodMonth -= 1;
+  }
+
+  const periodDate = new Date(Date.UTC(periodYear, periodMonth, 1));
+  const paymentDate = new Date(
+    Date.UTC(
+      periodDate.getUTCFullYear(),
+      periodDate.getUTCMonth() + location.payment_due_months_after,
+      1,
+    ),
+  );
+  const lastDay = new Date(
+    Date.UTC(paymentDate.getUTCFullYear(), paymentDate.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  paymentDate.setUTCDate(Math.min(location.payment_due_day, lastDay));
+
+  return paymentDate.toISOString().slice(0, 10);
 }
 
 shiftsRouter.get(
@@ -193,7 +236,7 @@ shiftsRouter.post(
         location_id: row.location_id,
         description: `Plantao - ${row.location_name}`,
         amount: row.value,
-        expected_date: addDays(row.date, 30),
+        expected_date: expectedPaymentDate(row.date, location),
         status: "pending",
       }));
 
@@ -235,14 +278,16 @@ shiftsRouter.patch(
         .single(),
     );
 
-    if (location || input.value !== undefined) {
+    if (location || input.date || input.value !== undefined) {
+      const paymentLocation = location ?? (shift.location_id ? await getLocation(request, shift.location_id) : null);
       await optionalData(
         request.auth.supabase
           .from("receivables")
           .update({
-            location_id: location?.id,
+            location_id: paymentLocation?.id,
             description: location ? `Plantao - ${location.name}` : undefined,
             amount: input.value,
+            expected_date: paymentLocation ? expectedPaymentDate(shift.date, paymentLocation) : undefined,
           })
           .eq("shift_id", id)
           .eq("user_id", request.auth.user.id)

@@ -15,6 +15,23 @@ alter table public.shifts
   add column if not exists status text not null default 'scheduled'
     check (status in ('scheduled', 'completed', 'cancelled'));
 
+alter table public.locations
+  add column if not exists reference_start_day integer not null default 1,
+  add column if not exists reference_end_day integer not null default 28,
+  add column if not exists payment_due_day integer not null default 10,
+  add column if not exists payment_due_months_after integer not null default 1;
+
+alter table public.locations
+  drop constraint if exists locations_payment_rules_check;
+
+alter table public.locations
+  add constraint locations_payment_rules_check check (
+    reference_start_day between 1 and 31 and
+    reference_end_day between 1 and 31 and
+    payment_due_day between 1 and 31 and
+    payment_due_months_after between 0 and 12
+  );
+
 create table if not exists public.receivables (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,

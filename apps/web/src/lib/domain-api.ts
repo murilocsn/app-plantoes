@@ -28,5 +28,12 @@ export const domainApi = {
     api<Space>(`/spaces/${id}`, { method: "PATCH", body: payload }),
   deleteSpace: (id: string) => api(`/spaces/${id}`, { method: "DELETE" }),
   updateSettings: (payload: unknown) => api("/settings", { method: "PUT", body: payload }),
-  exportCsv: () => download("/reports/export.csv"),
+  exportCsv: (filters?: { from?: string; to?: string; location_id?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.from) params.set("from", filters.from);
+    if (filters?.to) params.set("to", filters.to);
+    if (filters?.location_id) params.set("location_id", filters.location_id);
+    const query = params.toString();
+    return download(`/reports/export.csv${query ? `?${query}` : ""}`);
+  },
 };

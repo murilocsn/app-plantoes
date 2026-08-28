@@ -29,6 +29,10 @@ export const locationSchema = z.object({
   value12: z.coerce.number(),
   doc: z.string().nullable().optional(),
   active: z.boolean().nullable().optional(),
+  reference_start_day: z.coerce.number().int().min(1).max(31).default(1),
+  reference_end_day: z.coerce.number().int().min(1).max(31).default(28),
+  payment_due_day: z.coerce.number().int().min(1).max(31).default(10),
+  payment_due_months_after: z.coerce.number().int().min(0).max(12).default(1),
   created_at: z.string().optional(),
 });
 
@@ -37,6 +41,10 @@ export const locationInputSchema = z.object({
   value12: z.coerce.number().min(0, "O valor nao pode ser negativo"),
   doc: optionalText,
   active: z.boolean().optional(),
+  reference_start_day: z.coerce.number().int().min(1).max(31).default(1),
+  reference_end_day: z.coerce.number().int().min(1).max(31).default(28),
+  payment_due_day: z.coerce.number().int().min(1).max(31).default(10),
+  payment_due_months_after: z.coerce.number().int().min(0).max(12).default(1),
 });
 
 export const shiftStatusSchema = z.enum(["scheduled", "completed", "cancelled"]);

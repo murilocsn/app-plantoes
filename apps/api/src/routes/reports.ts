@@ -1,5 +1,6 @@
-import type { Expense, Receivable, Shift } from "@financplantoes/shared";
+import { dateRangeQuerySchema, type Expense, type Receivable, type Shift } from "@financplantoes/shared";
 import { Router } from "express";
+import { z } from "zod";
 import { asyncHandler } from "../lib/async-handler";
 import { optionalData } from "../lib/db";
 
@@ -13,13 +14,17 @@ reportsRouter.get(
   "/export.csv",
   asyncHandler(async (request, response) => {
     const userId = request.auth.user.id;
+    const query = dateRangeQuerySchema.extend({ location_id: z.string().optional() }).parse(request.query);
+    let shiftsQuery = request.auth.supabase
+      .from("shifts")
+      .select("date,location_name,value,value12")
+      .eq("user_id", userId);
+    if (query.from) shiftsQuery = shiftsQuery.gte("date", query.from);
+    if (query.to) shiftsQuery = shiftsQuery.lte("date", query.to);
+    if (query.location_id) shiftsQuery = shiftsQuery.eq("location_id", query.location_id);
     const [shifts, receivables, expenses] = await Promise.all([
       optionalData<Shift[]>(
-        request.auth.supabase
-          .from("shifts")
-          .select("date,location_name,value,value12")
-          .eq("user_id", userId)
-          .order("date", { ascending: true }),
+        shiftsQuery.order("date", { ascending: true }),
         [],
       ),
       optionalData<Receivable[]>(

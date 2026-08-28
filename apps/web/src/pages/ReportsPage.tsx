@@ -11,8 +11,17 @@ import { money } from "../lib/formatters";
 export function ReportsPage() {
   const bootstrap = useBootstrap();
   const [exporting, setExporting] = useState(false);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [locationId, setLocationId] = useState("");
+  const filteredShifts = useMemo(
+    () => (bootstrap.data?.shifts ?? []).filter((shift) => {
+      return (!from || shift.date >= from) && (!to || shift.date <= to) && (!locationId || shift.location_id === locationId);
+    }),
+    [bootstrap.data?.shifts, from, locationId, to],
+  );
   const byLocation = useMemo(() => {
-    const rows = (bootstrap.data?.shifts ?? []).reduce<Record<string, number>>((acc, shift) => {
+    const rows = filteredShifts.reduce<Record<string, number>>((acc, shift) => {
       const name = shift.location_name || "Local";
       acc[name] = (acc[name] ?? 0) + Number(shift.value ?? shift.value12 ?? 0);
       return acc;
@@ -22,7 +31,7 @@ export function ReportsPage() {
       .map(([name, total]) => ({ name, total }))
       .sort((left, right) => right.total - left.total)
       .slice(0, 8);
-  }, [bootstrap.data?.shifts]);
+  }, [filteredShifts]);
 
   if (bootstrap.isLoading) {
     return <LoadingBlock />;
@@ -36,7 +45,7 @@ export function ReportsPage() {
     setExporting(true);
 
     try {
-      const blob = await domainApi.exportCsv();
+      const blob = await domainApi.exportCsv({ from, to, location_id: locationId });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -60,7 +69,7 @@ export function ReportsPage() {
           icon={WalletCards}
           label="Receita projetada"
           tone="blue"
-          value={money(bootstrap.data.shifts.reduce((sum, shift) => sum + Number(shift.value ?? shift.value12 ?? 0), 0))}
+          value={money(filteredShifts.reduce((sum, shift) => sum + Number(shift.value ?? shift.value12 ?? 0), 0))}
         />
         <StatCard icon={Download} label="Recebido" tone="green" value={money(bootstrap.data.summary.received)} />
         <StatCard icon={FileSpreadsheet} label="Despesas" tone="coral" value={money(totalExpenses)} />
@@ -77,6 +86,12 @@ export function ReportsPage() {
             <span>Exportar CSV</span>
           </Button>
         </header>
+
+        <div className="report-filters">
+          <label>Plantões de<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
+          <label>Até<input type="date" value={to} onChange={(event) => setTo(event.target.value)} /></label>
+          <label>Local<select value={locationId} onChange={(event) => setLocationId(event.target.value)}><option value="">Todos os locais</option>{bootstrap.data.locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select></label>
+        </div>
 
         {byLocation.length ? (
           <div className="bar-list">

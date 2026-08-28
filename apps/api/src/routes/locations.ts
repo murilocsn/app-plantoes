@@ -13,7 +13,7 @@ locationsRouter.get(
     const locations = await optionalData<Location[]>(
       request.auth.supabase
         .from("locations")
-        .select("id,name,value12,doc,active,created_at")
+        .select("id,name,value12,doc,active,reference_start_day,reference_end_day,payment_due_day,payment_due_months_after,created_at")
         .eq("user_id", request.auth.user.id)
         .order("name", { ascending: true }),
       [],
@@ -36,7 +36,7 @@ locationsRouter.post(
           ...input,
           active: input.active ?? true,
         })
-        .select("id,name,value12,doc,active,created_at")
+        .select("id,name,value12,doc,active,reference_start_day,reference_end_day,payment_due_day,payment_due_months_after,created_at")
         .single(),
     );
 
@@ -55,7 +55,7 @@ locationsRouter.patch(
         .update(input)
         .eq("id", id)
         .eq("user_id", request.auth.user.id)
-        .select("id,name,value12,doc,active,created_at")
+        .select("id,name,value12,doc,active,reference_start_day,reference_end_day,payment_due_day,payment_due_months_after,created_at")
         .single(),
     );
 

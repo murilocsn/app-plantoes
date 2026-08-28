@@ -12,6 +12,10 @@ import { useAppMutation, useBootstrap } from "../hooks/useBootstrap";
 import { domainApi } from "../lib/domain-api";
 import { dateLabel, money } from "../lib/formatters";
 
+function isOverdue(item: Receivable) {
+  return item.status !== "received" && Boolean(item.expected_date && item.expected_date < new Date().toISOString().slice(0, 10));
+}
+
 type ReceivableModal =
   | { type: "create" }
   | { type: "edit"; receivable: Receivable }
@@ -47,6 +51,7 @@ export function FinancePage() {
   const pending = receivables
     .filter((item) => item.status === "pending" || item.status === "overdue")
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const overdue = receivables.filter(isOverdue);
 
   return (
     <>
@@ -54,6 +59,13 @@ export function FinancePage() {
         <StatCard icon={Check} label="Recebido" tone="green" value={money(received)} />
         <StatCard icon={Banknote} label="Pendente" tone="amber" value={money(pending)} />
       </section>
+
+      {overdue.length > 0 && (
+        <section className="page-section finance-alert" role="alert">
+          <strong>{overdue.length} recebimento{overdue.length === 1 ? "" : "s"} atrasado{overdue.length === 1 ? "" : "s"}</strong>
+          <span>O prazo previsto passou. Confira a nota fiscal e registre o pagamento.</span>
+        </section>
+      )}
 
       <section className="page-section">
         <header className="section-head">
@@ -73,7 +85,7 @@ export function FinancePage() {
               <article className="table-row" key={item.id}>
                 <div>
                   <strong>{item.description}</strong>
-                  <span>{dateLabel(item.expected_date)} - {item.status}</span>
+                  <span>{dateLabel(item.expected_date)} - {isOverdue(item) ? "Atrasado" : item.status === "received" ? "Recebido" : "Pendente"}</span>
                 </div>
                 <b>{money(item.amount)}</b>
                 <div className="row-actions">

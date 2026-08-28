@@ -108,6 +108,48 @@ h3 {
   width: 100%;
 }
 
+.form-hint {
+  color: var(--muted);
+  font-size: 0.82rem;
+  grid-column: 1 / -1;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.finance-alert {
+  align-items: flex-start;
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
+  color: var(--danger);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.finance-alert span {
+  color: var(--text);
+}
+
+.report-filters {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 1.25rem;
+}
+
+.report-filters label {
+  color: var(--muted);
+  display: grid;
+  font-size: 0.78rem;
+  gap: 0.35rem;
+}
+
+@media (max-width: 720px) {
+  .report-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
 .brand {
   align-items: center;
   display: flex;
