@@ -179,3 +179,29 @@ export const sharedExpenseInputSchema = z.object({
 export const settingsInputSchema = z.object({
   monthly_goal: z.coerce.number().min(0),
 });
+
+export const billingIntervalSchema = z.enum(["monthly", "annual"]);
+
+export const planSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1),
+  slug: z.string().min(1),
+  description: z.string().nullable().optional(),
+  price_cents: z.coerce.number().min(0),
+  currency: z.string().min(1).default("BRL"),
+  billing_interval: billingIntervalSchema,
+  features: z.array(z.string()).optional().default([]),
+  active: z.boolean().optional().default(true),
+  created_at: z.string().optional(),
+});
+
+export const planInputSchema = z.object({
+  name: z.string().trim().min(1, "Informe o nome do plano"),
+  slug: z.string().trim().min(1).optional(),
+  description: z.string().trim().optional().nullable(),
+  price_cents: z.coerce.number().min(0),
+  currency: z.string().optional().default("BRL"),
+  billing_interval: billingIntervalSchema,
+  features: z.array(z.string()).optional(),
+  active: z.boolean().optional(),
+});

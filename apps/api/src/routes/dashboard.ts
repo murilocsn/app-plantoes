@@ -139,6 +139,7 @@ dashboardRouter.get(
         personalExpenses,
         sharedExpenses: directSharedExpenses,
         spaces,
+        plans: [],
       }),
     );
   }),

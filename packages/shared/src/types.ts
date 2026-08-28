@@ -46,4 +46,9 @@ export type AppBootstrap = {
   personalExpenses: Expense[];
   sharedExpenses: Expense[];
   spaces: Space[];
+  plans: Plan[];
 };
+
+import type { planSchema } from "./schemas";
+
+export type Plan = z.infer<typeof planSchema>;
