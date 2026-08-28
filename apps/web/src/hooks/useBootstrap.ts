@@ -20,6 +20,7 @@ export function useAppMutation<TInput>(
   action: (input: TInput) => Promise<unknown>,
   options?: {
     onSuccess?: () => void;
+    onError?: (error: Error) => void;
   },
 ) {
   const refresh = useRefreshBootstrap();
@@ -29,6 +30,9 @@ export function useAppMutation<TInput>(
     onSuccess: () => {
       void refresh();
       options?.onSuccess?.();
+    },
+    onError: (error) => {
+      options?.onError?.(error instanceof Error ? error : new Error("Falha ao concluir a operacao."));
     },
   });
 }

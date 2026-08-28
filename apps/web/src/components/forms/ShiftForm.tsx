@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { Location, Shift } from "@financplantoes/shared";
 import { recurrenceInputSchema, shiftInputSchema } from "@financplantoes/shared";
 import { Save } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "../Button";
@@ -41,7 +41,10 @@ export function ShiftForm({
   onCancel,
   onSubmit,
 }: ShiftFormProps) {
-  const activeLocations = locations.filter((location) => location.active !== false);
+  const activeLocations = useMemo(
+    () => locations.filter((location) => location.active !== false),
+    [locations],
+  );
   const {
     register,
     handleSubmit,

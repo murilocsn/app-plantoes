@@ -1,5 +1,6 @@
 import type { Location, Shift } from "@financplantoes/shared";
 import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
 import { useAppMutation } from "../hooks/useBootstrap";
 import { domainApi } from "../lib/domain-api";
 import { Button } from "./Button";
@@ -20,6 +21,7 @@ type ShiftCrudModalsProps = {
 };
 
 export function ShiftCrudModals({ locations, modal, onClose }: ShiftCrudModalsProps) {
+  const [errorMessage, setErrorMessage] = useState("");
   const createShift = useAppMutation(domainApi.createShift, { onSuccess: onClose });
   const updateShift = useAppMutation(
     (input: { id: string; payload: unknown }) => domainApi.updateShift(input.id, input.payload),
@@ -34,6 +36,8 @@ export function ShiftCrudModals({ locations, modal, onClose }: ShiftCrudModalsPr
   if (!modal) {
     return null;
   }
+
+  const showError = (error: Error) => setErrorMessage(error.message);
 
   if (!locations.filter((location) => location.active !== false).length && modal.type !== "delete") {
     return (
@@ -54,9 +58,13 @@ export function ShiftCrudModals({ locations, modal, onClose }: ShiftCrudModalsPr
           initialDate={modal.date}
           locations={locations}
           onCancel={onClose}
-          onSubmit={(values) => createShift.mutate(values)}
+          onSubmit={(values) => {
+            setErrorMessage("");
+            createShift.mutate(values, { onError: showError });
+          }}
           submitting={createShift.isPending}
         />
+        {errorMessage && <p className="form-message">{errorMessage}</p>}
       </Modal>
     );
   }
@@ -67,10 +75,14 @@ export function ShiftCrudModals({ locations, modal, onClose }: ShiftCrudModalsPr
         <ShiftForm
           locations={locations}
           onCancel={onClose}
-          onSubmit={(values) => updateShift.mutate({ id: modal.shift.id, payload: values.shift })}
+          onSubmit={(values) => {
+            setErrorMessage("");
+            updateShift.mutate({ id: modal.shift.id, payload: values.shift }, { onError: showError });
+          }}
           shift={modal.shift}
           submitting={updateShift.isPending}
         />
+        {errorMessage && <p className="form-message">{errorMessage}</p>}
       </Modal>
     );
   }

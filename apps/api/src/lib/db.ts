@@ -1,8 +1,8 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { HttpError } from "./http-error";
 
-type SupabaseResult<T> = {
-  data: T | null;
+type SupabaseResult = {
+  data: unknown;
   error: PostgrestError | null;
 };
 
@@ -14,7 +14,7 @@ export function toHttpError(error: PostgrestError, fallbackMessage = "Falha ao a
   return new HttpError(status, error.message || fallbackMessage, error.code, error.details);
 }
 
-export async function expectData<T>(result: PromiseLike<SupabaseResult<T>>, fallbackMessage?: string) {
+export async function expectData<T>(result: PromiseLike<SupabaseResult>, fallbackMessage?: string) {
   const { data, error } = await result;
 
   if (error) {
@@ -25,7 +25,7 @@ export async function expectData<T>(result: PromiseLike<SupabaseResult<T>>, fall
 }
 
 export async function optionalData<T>(
-  result: PromiseLike<SupabaseResult<T>>,
+  result: PromiseLike<SupabaseResult>,
   fallback: T,
   optionalErrorCodes = optionalCodes,
 ) {
