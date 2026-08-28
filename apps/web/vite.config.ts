@@ -6,7 +6,6 @@ export default defineConfig(({ mode }) => {
   const apiTarget = env.API_TARGET || "http://localhost:3333";
 
   return {
-    base: env.VITE_BASE_PATH || "/",
     plugins: [react()],
     server: {
       port: Number(env.WEB_PORT || 5173),
