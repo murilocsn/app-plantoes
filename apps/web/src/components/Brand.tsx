@@ -4,9 +4,9 @@ export function Brand({ compact = false }: { compact?: boolean }) {
       <img
         alt=""
         className="brand-logo"
-        height="40"
+        height="48"
         src={`${import.meta.env.BASE_URL}icons/icon-192.png`}
-        width="40"
+        width="48"
       />
       {!compact && (
         <div>
