@@ -33,7 +33,7 @@
     const db = supabaseClient();
     const user = await currentUser();
     const { data, error } = await db.from('locations')
-      .select('id,name,value12,doc,active')
+      .select('id,name,value12,doc,active,reference_start_day,reference_end_day,payment_due_day,payment_due_months_after')
       .eq('id', id)
       .eq('user_id', user.id)
       .maybeSingle();
@@ -68,6 +68,18 @@
               <label>Documento / identificação
                 <input name="doc" type="text" maxlength="120" value="${escapeHtml(location?.doc || '')}" placeholder="Opcional">
               </label>
+              <label>Início do período
+                <input name="reference_start_day" type="number" min="1" max="31" required value="${location?.reference_start_day ?? 1}">
+              </label>
+              <label>Fim do período
+                <input name="reference_end_day" type="number" min="1" max="31" required value="${location?.reference_end_day ?? 28}">
+              </label>
+              <label>Dia do pagamento
+                <input name="payment_due_day" type="number" min="1" max="31" required value="${location?.payment_due_day ?? 10}">
+              </label>
+              <label>Meses após o período
+                <input name="payment_due_months_after" type="number" min="0" max="12" required value="${location?.payment_due_months_after ?? 1}">
+              </label>
               ${editing ? `<label class="inline-check wide"><input name="active" type="checkbox" ${location.active !== false ? 'checked' : ''}> Local ativo para novos plantões</label>` : ''}
             </div>
             <p id="locationFormMessage" class="message" role="alert"></p>
@@ -94,6 +106,10 @@
       const name = String(formData.get('name') || '').trim();
       const value12 = Number(formData.get('value12'));
       const doc = String(formData.get('doc') || '').trim() || null;
+      const reference_start_day = Number(formData.get('reference_start_day'));
+      const reference_end_day = Number(formData.get('reference_end_day'));
+      const payment_due_day = Number(formData.get('payment_due_day'));
+      const payment_due_months_after = Number(formData.get('payment_due_months_after'));
 
       if (!name) {
         message.textContent = 'Informe o nome do local.';
@@ -105,6 +121,11 @@
         message.className = 'message error';
         return;
       }
+      if (![reference_start_day, reference_end_day, payment_due_day, payment_due_months_after].every(Number.isInteger) || reference_start_day < 1 || reference_start_day > 31 || reference_end_day < 1 || reference_end_day > 31 || payment_due_day < 1 || payment_due_day > 31 || payment_due_months_after < 0 || payment_due_months_after > 12) {
+        message.textContent = 'Informe corretamente as regras de período e pagamento.';
+        message.className = 'message error';
+        return;
+      }
 
       button.disabled = true;
       message.textContent = editing ? 'Salvando alterações...' : 'Adicionando local...';
@@ -113,7 +134,7 @@
       try {
         const db = supabaseClient();
         const user = await currentUser();
-        const payload = { name, value12, doc };
+        const payload = { name, value12, doc, reference_start_day, reference_end_day, payment_due_day, payment_due_months_after };
 
         if (editing) {
           payload.active = formData.get('active') === 'on';

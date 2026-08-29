@@ -1,6 +1,6 @@
 import type { Shift } from "@financplantoes/shared";
 import { Banknote, Building2, CalendarDays, Clock, Plus, TrendingUp } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "../components/Button";
 import { CalendarMonth } from "../components/CalendarMonth";
 import { EmptyState } from "../components/EmptyState";
@@ -10,9 +10,14 @@ import { StatCard } from "../components/StatCard";
 import { useBootstrap } from "../hooks/useBootstrap";
 import { dateLabel, money } from "../lib/formatters";
 
+function sumBy<T>(items: T[], getValue: (item: T) => unknown) {
+  return items.reduce((sum, item) => sum + Number(getValue(item) || 0), 0);
+}
+
 export function DashboardPage() {
   const bootstrap = useBootstrap();
   const [shiftModal, setShiftModal] = useState<ShiftModalState>(null);
+  const [viewDate, setViewDate] = useState(() => new Date());
 
   if (bootstrap.isLoading) {
     return <LoadingBlock />;
@@ -22,7 +27,48 @@ export function DashboardPage() {
     return <ErrorBlock error={bootstrap.error} />;
   }
 
-  const { summary, shifts, locations, receivables, spaces } = bootstrap.data;
+  const { shifts, locations, receivables, spaces, personalExpenses } = bootstrap.data;
+  const monthKey = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}`;
+
+  const summary = useMemo(() => {
+    const monthShifts = shifts.filter((shift) => String(shift.date ?? "").startsWith(monthKey));
+    const monthReceivables = receivables.filter((item) => String(item.expected_date ?? "").startsWith(monthKey));
+    const activeReceivables = monthReceivables.filter((item) => item.status !== "cancelled");
+    const received = sumBy(
+      activeReceivables.filter((item) => item.status === "received"),
+      (item) => item.amount,
+    );
+    const pending = sumBy(
+      activeReceivables.filter((item) => item.status === "pending" || item.status === "overdue"),
+      (item) => item.amount,
+    );
+    const expenses = sumBy(
+      personalExpenses.filter((item) => String(item.expense_date ?? "").startsWith(monthKey)),
+      (item) => item.amount,
+    );
+    const incomeProjected = sumBy(monthShifts, (item) => item.value ?? item.value12);
+    const nextReceivable =
+      activeReceivables
+        .filter((item) => item.status === "pending" || item.status === "overdue")
+        .sort((left, right) =>
+          String(left.expected_date ?? "").localeCompare(String(right.expected_date ?? "")),
+        )[0] ?? null;
+
+    return {
+      ...bootstrap.data.summary,
+      monthKey,
+      incomeProjected,
+      received,
+      pending,
+      expenses,
+      net: received - expenses,
+      shiftCount: monthShifts.length,
+      shiftHours: sumBy(monthShifts, (item) => item.duration),
+      activeLocationCount: locations.filter((item) => item.active !== false).length,
+      nextReceivable,
+    };
+  }, [bootstrap.data.summary, locations, monthKey, personalExpenses, receivables, shifts]);
+
   const upcoming = shifts
     .filter((shift) => shift.date >= new Date().toISOString().slice(0, 10))
     .slice(0, 6);
@@ -68,7 +114,9 @@ export function DashboardPage() {
         onCreate={(date) => setShiftModal({ type: "create", date })}
         onDelete={(shift) => setShiftModal({ type: "delete", shift })}
         onEdit={editShift}
+        onViewDateChange={setViewDate}
         shifts={shifts}
+        viewDate={viewDate}
       />
 
       <section className="dashboard-columns">

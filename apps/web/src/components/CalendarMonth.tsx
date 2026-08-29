@@ -8,6 +8,8 @@ import { EmptyState } from "./EmptyState";
 
 type CalendarMonthProps = {
   shifts: Shift[];
+  viewDate?: Date;
+  onViewDateChange?: (date: Date) => void;
   onCreate: (date?: string) => void;
   onEdit: (shift: Shift) => void;
   onDelete: (shift: Shift) => void;
@@ -15,8 +17,16 @@ type CalendarMonthProps = {
 
 const weekdays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
-export function CalendarMonth({ shifts, onCreate, onEdit, onDelete }: CalendarMonthProps) {
-  const [viewDate, setViewDate] = useState(() => new Date());
+export function CalendarMonth({
+  shifts,
+  viewDate: controlledViewDate,
+  onViewDateChange,
+  onCreate,
+  onEdit,
+  onDelete,
+}: CalendarMonthProps) {
+  const [internalViewDate, setInternalViewDate] = useState(() => new Date());
+  const viewDate = controlledViewDate ?? internalViewDate;
   const [selectedDate, setSelectedDate] = useState(() => dateKey(new Date()));
   const days = useMemo(() => monthDays(viewDate), [viewDate]);
   const shiftsByDay = useMemo(() => {
@@ -31,7 +41,19 @@ export function CalendarMonth({ shifts, onCreate, onEdit, onDelete }: CalendarMo
   function changeMonth(offset: number) {
     const next = new Date(viewDate);
     next.setMonth(viewDate.getMonth() + offset);
-    setViewDate(next);
+    if (onViewDateChange) {
+      onViewDateChange(next);
+    } else {
+      setInternalViewDate(next);
+    }
+  }
+
+  function updateViewDate(next: Date) {
+    if (onViewDateChange) {
+      onViewDateChange(next);
+    } else {
+      setInternalViewDate(next);
+    }
   }
 
   return (
@@ -45,7 +67,7 @@ export function CalendarMonth({ shifts, onCreate, onEdit, onDelete }: CalendarMo
           <Button aria-label="Mes anterior" onClick={() => changeMonth(-1)} size="icon" title="Mes anterior">
             <ChevronLeft size={18} />
           </Button>
-          <Button onClick={() => setViewDate(new Date())}>Hoje</Button>
+          <Button onClick={() => updateViewDate(new Date())}>Hoje</Button>
           <Button aria-label="Proximo mes" onClick={() => changeMonth(1)} size="icon" title="Proximo mes">
             <ChevronRight size={18} />
           </Button>

@@ -14,10 +14,15 @@ function sumBy<T>(items: T[], getValue: (item: T) => unknown) {
   return items.reduce((sum, item) => sum + Number(getValue(item) || 0), 0);
 }
 
+function inMonth(value: string | null | undefined, monthKey: string) {
+  return String(value ?? "").startsWith(monthKey);
+}
+
 function calculateBootstrap(data: Omit<AppBootstrap, "summary">): AppBootstrap {
   const monthKey = getMonthKey();
-  const monthShifts = data.shifts.filter((shift) => String(shift.date).startsWith(monthKey));
-  const activeReceivables = data.receivables.filter((item) => item.status !== "cancelled");
+  const monthShifts = data.shifts.filter((shift) => inMonth(shift.date, monthKey));
+  const monthReceivables = data.receivables.filter((item) => inMonth(item.expected_date, monthKey));
+  const activeReceivables = monthReceivables.filter((item) => item.status !== "cancelled");
   const received = sumBy(
     activeReceivables.filter((item) => item.status === "received"),
     (item) => item.amount,
@@ -26,7 +31,10 @@ function calculateBootstrap(data: Omit<AppBootstrap, "summary">): AppBootstrap {
     activeReceivables.filter((item) => item.status === "pending" || item.status === "overdue"),
     (item) => item.amount,
   );
-  const expenses = sumBy(data.personalExpenses, (item) => item.amount);
+  const expenses = sumBy(
+    data.personalExpenses.filter((item) => inMonth(item.expense_date, monthKey)),
+    (item) => item.amount,
+  );
   const incomeProjected = sumBy(monthShifts, (item) => item.value ?? item.value12);
   const nextReceivable =
     activeReceivables

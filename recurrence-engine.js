@@ -9,6 +9,18 @@
     return d.toISOString().slice(0, 10);
   };
 
+  const expectedPaymentDate = (shiftDate, location) => {
+    const date = new Date(`${shiftDate}T12:00:00Z`), day = date.getUTCDate();
+    let month = date.getUTCMonth(), year = date.getUTCFullYear();
+    const start = Number(location?.reference_start_day ?? 1), end = Number(location?.reference_end_day ?? 28);
+    if (start <= end) { if (day > end) month += 1; else if (day < start) month -= 1; }
+    else if (day < start) month -= 1;
+    const paymentMonth = new Date(Date.UTC(year, month + Number(location?.payment_due_months_after ?? 1), 1));
+    const lastDay = new Date(Date.UTC(paymentMonth.getUTCFullYear(), paymentMonth.getUTCMonth() + 1, 0)).getUTCDate();
+    paymentMonth.setUTCDate(Math.min(Number(location?.payment_due_day ?? 10), lastDay));
+    return paymentMonth.toISOString().slice(0, 10);
+  };
+
   async function syncRecurrences() {
     if (busy || typeof db === 'undefined' || !db || typeof user === 'undefined' || !user || typeof cache === 'undefined') return;
     busy = true;
@@ -32,8 +44,8 @@
           delete shift.created_at; delete shift.updated_at;
           const { error: insertError } = await db.from('shifts').insert(shift);
           if (insertError) break;
-          const expected = new Date(`${next}T12:00:00`); expected.setDate(expected.getDate() + 30);
-          await db.from('receivables').insert({ user_id: user.id, shift_id: id, location_id: base.location_id || null, description: `Plantão · ${base.location_name || 'Local'}`, amount: Number(base.value ?? base.value12 ?? 0), expected_date: expected.toISOString().slice(0, 10), status: 'pending' });
+          const location = (cache.locations || []).find(item => item.id === base.location_id);
+          await db.from('receivables').insert({ user_id: user.id, shift_id: id, location_id: base.location_id || null, description: `Plantão · ${base.location_name || 'Local'}`, amount: Number(base.value ?? base.value12 ?? 0), expected_date: expectedPaymentDate(next, location), status: 'pending' });
           dates.add(next); count++; date = next;
         }
       }

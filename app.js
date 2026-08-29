@@ -8,6 +8,16 @@ const money=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).
 const dateBR=v=>v?new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(`${v}T12:00:00`)):'—';
 const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
 const typeLabels={residence:'Residência',clinic:'Clínica',trip:'Viagem',event:'Evento',team:'Equipe',project:'Projeto',other:'Outro'};
+const monthKey=()=>new Date().toISOString().slice(0,7);
+const inMonth=(value,key=monthKey())=>String(value??'').startsWith(key);
+
+function expectedPaymentDate(shiftDate,location){
+  const date=new Date(`${shiftDate}T12:00:00Z`),day=date.getUTCDate();let month=date.getUTCMonth(),year=date.getUTCFullYear();
+  if(location.reference_start_day<=location.reference_end_day){if(day>location.reference_end_day)month+=1;else if(day<location.reference_start_day)month-=1;}else if(day<location.reference_start_day)month-=1;
+  const paymentMonth=new Date(Date.UTC(year,month+Number(location.payment_due_months_after||0),1));
+  const lastDay=new Date(Date.UTC(paymentMonth.getUTCFullYear(),paymentMonth.getUTCMonth()+1,0)).getUTCDate();
+  paymentMonth.setUTCDate(Math.min(Number(location.payment_due_day||1),lastDay));return paymentMonth.toISOString().slice(0,10);
+}
 
 const saved=localStorage.getItem('financplantoes-theme');
 if(saved)root.dataset.theme=saved;
@@ -34,7 +44,7 @@ async function loadAll(){
   $('dashboardStatus').textContent='Atualizando...';
   const results=await Promise.all([
     db.from('shifts').select('id,date,start_time,location_id,location_name,duration,value,value12,notes,status,recurrence_id,recurring_group_id').eq('user_id',user.id).order('date').order('start_time'),
-    db.from('locations').select('id,name,value12,doc,active').eq('user_id',user.id).order('name'),
+    db.from('locations').select('id,name,value12,doc,active,reference_start_day,reference_end_day,payment_due_day,payment_due_months_after').eq('user_id',user.id).order('name'),
     db.from('receivables').select('*').eq('user_id',user.id).order('expected_date'),
     db.from('recurrences').select('*').eq('user_id',user.id).order('start_date'),
     db.from('personal_expenses').select('*').eq('user_id',user.id).order('expense_date',{ascending:false}),
@@ -50,8 +60,8 @@ async function loadAll(){
 }
 
 function render(){
-  const now=new Date(),key=now.toISOString().slice(0,7),month=cache.shifts.filter(s=>String(s.date).startsWith(key));
-  const projection=month.reduce((a,s)=>a+Number(s.value??s.value12),0),received=cache.receivables.filter(r=>r.status==='received').reduce((a,r)=>a+Number(r.amount),0),pending=cache.receivables.filter(r=>r.status==='pending'||r.status==='overdue').reduce((a,r)=>a+Number(r.amount),0),hours=month.reduce((a,s)=>a+Number(s.duration||0),0);
+  const key=monthKey(),month=cache.shifts.filter(s=>inMonth(s.date,key)),monthReceivables=cache.receivables.filter(r=>inMonth(r.expected_date,key));
+  const projection=month.reduce((a,s)=>a+Number(s.value??s.value12),0),received=monthReceivables.filter(r=>r.status==='received').reduce((a,r)=>a+Number(r.amount),0),pending=monthReceivables.filter(r=>r.status==='pending'||r.status==='overdue').reduce((a,r)=>a+Number(r.amount),0),hours=month.reduce((a,s)=>a+Number(s.duration||0),0);
   $('monthProjection').textContent=money(projection);$('monthReceived').textContent=money(received);$('monthPending').textContent=money(pending);$('monthProgress').style.width=`${projection?Math.min(100,received/projection*100):0}%`;$('monthShiftCount').textContent=month.length;$('monthShiftHours').textContent=`${hours} horas registradas`;$('locationCount').textContent=cache.locations.filter(l=>l.active!==false).length;
   const next=cache.receivables.find(r=>r.status==='pending'||r.status==='overdue');$('nextReceivableValue').textContent=next?money(next.amount):money(0);$('nextReceivableLabel').textContent=next?`${dateBR(next.expected_date)} · ${esc(next.description)}`:'Nenhum recebimento previsto';$('dashboardStatus').textContent=`${month.length} plantão${month.length===1?'':'ões'} neste mês · ${cache.locations.filter(l=>l.active!==false).length} locais`;
   renderShifts();renderReceivables();renderLocations();renderSpaces();renderExpenses();renderReport();if(window.renderCalendar)window.renderCalendar();
@@ -76,8 +86,8 @@ function shiftForm(old){
   modal(old?'Editar plantão':'Novo plantão',`<label>Data<input name="date" type="date" value="${old?.date||''}" required></label><label>Horário<input name="start_time" type="time" value="${old?.start_time?.slice(0,5)||''}"></label><label>Local<select name="location_id"><option value="">Selecionar</option>${locs.map(x=>`<option value="${x.id}" ${x.id===l?.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label><label>Duração (h)<input name="duration" type="number" min="1" step="1" value="${old?.duration||12}" required></label><label>Valor<input name="value" type="number" step="0.01" min="0" value="${old?.value??old?.value12??0}" required></label><label>Status<select name="status"><option value="scheduled">Agendado</option><option value="completed">Concluído</option><option value="cancelled">Cancelado</option></select></label><label class="wide">Observações<textarea name="notes">${esc(old?.notes||'')}</textarea></label>`,async f=>{
     const selected=cache.locations.find(x=>x.id===f.get('location_id'));
     const row={date:f.get('date'),start_time:f.get('start_time')||null,location_id:selected?.id||null,location_name:selected?.name||'Local não informado',duration:Number(f.get('duration')),value:Number(f.get('value')),value12:Number(f.get('value')),notes:f.get('notes')||null,status:f.get('status')};
-    if(old){const r=await db.from('shifts').update(row).eq('id',old.id).eq('user_id',user.id);if(r.error)throw r.error;}
-    else{const id=crypto.randomUUID();row.id=id;row.user_id=user.id;const r=await db.from('shifts').insert(row);if(r.error)throw r.error;const expected=new Date(`${row.date}T12:00:00`);expected.setDate(expected.getDate()+30);const rr=await db.from('receivables').insert({user_id:user.id,shift_id:id,location_id:row.location_id,description:`Plantão · ${row.location_name}`,amount:row.value,expected_date:expected.toISOString().slice(0,10),status:'pending'});if(rr.error)throw rr.error;}
+    if(old){const r=await db.from('shifts').update(row).eq('id',old.id).eq('user_id',user.id);if(r.error)throw r.error;const expected=selected?expectedPaymentDate(row.date,selected):null;const rr=await db.from('receivables').update({location_id:row.location_id,description:`Plantão · ${row.location_name}`,amount:row.value,expected_date:expected}).eq('shift_id',old.id).eq('user_id',user.id).neq('status','received');if(rr.error)throw rr.error;}
+    else{const id=crypto.randomUUID();row.id=id;row.user_id=user.id;const r=await db.from('shifts').insert(row);if(r.error)throw r.error;const expected=selected?expectedPaymentDate(row.date,selected):null;const rr=await db.from('receivables').insert({user_id:user.id,shift_id:id,location_id:row.location_id,description:`Plantão · ${row.location_name}`,amount:row.value,expected_date:expected,status:'pending'});if(rr.error)throw rr.error;}
   });
 }
 async function openShift(id){const s=cache.shifts.find(x=>x.id===id);if(!s)return;modal('Detalhes do plantão',`<div class="detail-card wide"><span class="eyebrow">${s.start_time&&(Number(s.start_time.slice(0,2))>=18||Number(s.start_time.slice(0,2))<6)?'NOTURNO':'DIURNO'}</span><h3>${esc(s.location_name)}</h3><strong>${dateBR(s.date)}</strong><p>${esc(s.start_time?.slice(0,5)||'—')} · ${Number(s.duration)} horas</p><b>${money(s.value??s.value12)}</b>${s.notes?`<p class="muted">${esc(s.notes)}</p>`:''}</div>`,async()=>{},`<button class="secondary" type="button" onclick="closeModal();openForm('shift','${s.id}')">Editar</button><button class="secondary danger-text" type="button" onclick="closeModal();deleteShift('${s.id}')">Excluir</button>`);}
@@ -87,7 +97,7 @@ function openForm(type,id='',spaceId=''){
   if(type==='shift'){shiftForm(id?cache.shifts.find(x=>x.id===id):null);return;}
   if(type==='location'){
     const old=cache.locations.find(x=>x.id===id);
-    modal(old?'Editar local':'Novo local',`<label>Nome<input name="name" value="${esc(old?.name||'')}" required></label><label>Valor padrão<input name="value12" type="number" step="0.01" value="${old?.value12||0}" required></label><label>Documento/CRM<input name="doc" value="${esc(old?.doc||'')}"></label>`,async f=>{const row={name:f.get('name'),value12:Number(f.get('value12')),doc:f.get('doc')||null};const r=old?await db.from('locations').update(row).eq('id',old.id).eq('user_id',user.id):await db.from('locations').insert({id:crypto.randomUUID(),user_id:user.id,...row});if(r.error)throw r.error;});
+    modal(old?'Editar local':'Novo local',`<label>Nome<input name="name" value="${esc(old?.name||'')}" required></label><label>Valor padrão<input name="value12" type="number" step="0.01" value="${old?.value12||0}" required></label><label>Documento/CRM<input name="doc" value="${esc(old?.doc||'')}"></label><label>Início do período<input name="reference_start_day" type="number" min="1" max="31" value="${old?.reference_start_day??1}" required></label><label>Fim do período<input name="reference_end_day" type="number" min="1" max="31" value="${old?.reference_end_day??28}" required></label><label>Dia do pagamento<input name="payment_due_day" type="number" min="1" max="31" value="${old?.payment_due_day??10}" required></label><label>Meses após o período<input name="payment_due_months_after" type="number" min="0" max="12" value="${old?.payment_due_months_after??1}" required></label>`,async f=>{const row={name:f.get('name'),value12:Number(f.get('value12')),doc:f.get('doc')||null,reference_start_day:Number(f.get('reference_start_day')),reference_end_day:Number(f.get('reference_end_day')),payment_due_day:Number(f.get('payment_due_day')),payment_due_months_after:Number(f.get('payment_due_months_after'))};const r=old?await db.from('locations').update(row).eq('id',old.id).eq('user_id',user.id):await db.from('locations').insert({id:crypto.randomUUID(),user_id:user.id,...row});if(r.error)throw r.error;});
     return;
   }
   if(type==='receivable'){modal('Novo recebível',`<label>Descrição<input name="description" required></label><label>Valor<input name="amount" type="number" step="0.01" required></label><label>Data prevista<input name="expected_date" type="date" required></label><label>Status<select name="status"><option value="pending">A receber</option><option value="received">Recebido</option><option value="overdue">Atrasado</option><option value="cancelled">Cancelado</option></select></label>`,async f=>{const r=await db.from('receivables').insert({user_id:user.id,description:f.get('description'),amount:Number(f.get('amount')),expected_date:f.get('expected_date'),status:f.get('status')});if(r.error)throw r.error;});return;}
