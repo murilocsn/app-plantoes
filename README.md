@@ -1,262 +1,266 @@
 # FinancPlantões
 
-Aplicação web para profissionais de saúde organizarem **plantões, locais de trabalho, recebimentos, despesas e rotina financeira**, com conta individual e dados protegidos por usuário.
+A web application for healthcare professionals to organize shifts, work locations, payments, expenses, and personal financial routines in one place, with per-user isolation and secure access.
 
-> **Status:** MVP em evolução ativa. O foco atual é estabilidade, segurança e uma experiência simples o suficiente para uso diário.
+> Status: active MVP under continuous refinement. The current focus is stability, security, and a simple daily workflow that remains easy to use.
 
-## Visão do produto
+## Product vision
 
-O FinancPlantões está sendo construído para ir além de uma agenda de plantões: a proposta é unir a praticidade de um gestor de escalas com uma camada de controle financeiro pessoal e, progressivamente, recursos de colaboração inspirados em apps de divisão de despesas.
+FinancPlantões is designed to go beyond a schedule tool. The goal is to combine shift management with personal financial tracking and, over time, shared-expense workflows inspired by collaboration-oriented apps.
 
-Referências de produto utilizadas para decisões de UX e funcionalidades:
+The product is informed by practical patterns from tools such as:
 
-- **Plantãozinho:** referência de rapidez para cadastrar, visualizar e acompanhar plantões e recebimentos, incluindo recorrência, filtros e organização visual. O produto destaca cadastro rápido de plantões, controle de pagamentos e sincronização entre dispositivos.
-- **Splitwise:** referência para grupos, participantes, saldos, despesas compartilhadas, pagamentos/ajustes e redução de complexidade na divisão financeira.
+- Plantãozinho: fast shift creation, payment tracking, recurring patterns, and a clear overview of upcoming work.
+- Splitwise: shared balances, participant tracking, expense management, and a simple way to understand shared responsibilities.
 
-A intenção não é copiar esses produtos, mas combinar aprendizados de usabilidade com as necessidades específicas de profissionais de saúde.
+The intention is not to copy either product directly, but to adapt the best parts of their usability to the specific needs of healthcare professionals.
 
-## Estado atual
+## Current state
 
-A versão principal é servida pela raiz do projeto (`index.html`). O aplicativo não deve depender de uma rota `/v2` para funcionar.
+The active application is being organized around the modern structure under the workspace apps folder. The repository still contains older static files in the project root as part of the migration from a legacy web app to the current modular setup.
 
-Já existem no projeto:
+The project already includes:
 
-- Supabase Auth;
-- isolamento de dados por usuário com PostgreSQL + RLS;
-- calendário de plantões;
-- cadastro, edição e exclusão de plantões;
-- locais de trabalho;
-- recorrências;
-- cálculo de duração e valores;
-- indicadores financeiros;
-- relatórios e exportação;
-- PWA e estrutura de notificações;
-- espaços compartilhados em evolução;
-- despesas e recursos financeiros em evolução.
+- Supabase Auth
+- user-level isolation with PostgreSQL + RLS
+- shift calendar
+- shift creation, update, and deletion
+- work locations
+- recurring patterns
+- duration and value calculations
+- financial indicators
+- reports and export flows
+- PWA support and notification infrastructure
+- shared space features in progress
+- personal and shared financial tracking in progress
 
-## Funcionalidades e regras de produto
+## Core product features
 
-### Plantões
+### Shifts
 
-- Data, horário, duração, local e valor;
-- plantões diurnos e noturnos;
-- recorrências;
-- calendário mensal;
-- edição e exclusão;
-- controle do que foi recebido e do que permanece pendente.
+- date, time, duration, location, and value
+- day and night shifts
+- recurring schedules
+- monthly calendar view
+- editing and deletion
+- tracking of received and outstanding amounts
 
-### Locais
+### Locations
 
-Cada usuário deve poder criar, editar e excluir seus próprios locais.
+Each user can create, update, and delete their own work locations.
 
-A evolução do cadastro prevê também informações relacionadas à regra de pagamento do local, para que o recebimento possa ser acompanhado de forma mais inteligente.
+The next version of this flow is expected to also include payment rules per location so that receivables and follow-up can be managed more intelligently.
 
-### Pagamentos
+### Payments
 
-Os meios de pagamento aceitos pelo produto devem permanecer flexíveis, incluindo:
+Accepted payment methods should remain flexible, including:
 
-- transferência bancária;
-- PIX;
-- dinheiro;
-- outros meios informados pelo usuário.
+- bank transfer
+- PIX
+- cash
+- other user-defined methods
 
-O sistema deve registrar o pagamento sem obrigar o usuário a utilizar um provedor de pagamento específico.
+The system should record payment details without forcing the user to rely on a specific provider.
 
-### Recorrências
+### Recurrences
 
-Ao excluir uma repetição, o usuário deve escolher claramente entre:
+When deleting a recurring pattern, the user should be clearly asked to choose between:
 
-1. somente este;
-2. este e próximos;
-3. toda a repetição;
-4. cancelar.
+1. this occurrence only
+2. this and following occurrences
+3. the entire series
+4. cancel
 
-Essa decisão é parte da regra de produto e deve ser preservada em futuras refatorações.
+This rule is part of the product behavior and should be preserved in future refactors.
 
-### Espaços compartilhados
+### Shared spaces
 
-A ideia de **Espaços** é permitir contextos como residência, clínica, viagem, evento ou outro grupo de interesse.
+The idea behind Spaces is to support contexts such as a residence, clinic, trip, event, or other shared group.
 
-A evolução prevista inclui:
+Planned evolution includes:
 
-- criação de espaço;
-- convite de participantes;
-- permissões por participante;
-- despesas compartilhadas;
-- visão de saldos e responsabilidades;
-- separação entre dados pessoais e dados compartilhados.
+- space creation
+- participant invites
+- per-user permissions
+- shared expenses
+- balance and responsibility views
+- separation between personal and shared data
 
-O modelo de privacidade deve seguir uma regra simples: o usuário só visualiza dados pessoais próprios e dados compartilhados dos espaços dos quais participa.
+Privacy should remain straightforward: a user can only see their own personal data and shared data from spaces they participate in.
 
-## Arquitetura atual
+## Current architecture
 
-O projeto ainda é uma aplicação web estática em processo de modularização. O estado real do repositório é mais próximo desta estrutura:
+The project is transitioning from a static web application to a modular structure. The real active application is now centered around the workspace packages and app folders, while the root still contains legacy files from the earlier implementation.
 
 ```text
 FinancPlantões
-├── index.html                 # shell principal e interface
-├── app.js                     # inicialização, sessão e dados principais
-├── supabase-config.js         # configuração pública do Supabase
-├── calendar.js                # calendário
-├── locations-flow.js          # fluxo de locais
-├── shift-flow.js              # fluxo de plantões
-├── recurrence-engine.js       # recorrências
-├── space-flow-v2.js           # fluxo de espaços
-├── finance-actions-core.js    # ações financeiras
-├── dashboard-compat.js        # compatibilidade do dashboard
-├── dom-guard.js               # proteções/interações de DOM
-├── app-stability-v3.js        # estabilidade e compatibilidade
-├── auth-guard.js              # proteção de autenticação
-├── auth-recovery.js           # legado/recovery; não deve duplicar o cliente Auth
-├── logout.js                  # legado; não deve criar outro cliente Supabase
-├── service-worker.js          # PWA/cache de assets estáticos
-├── manifest.json
-├── icons/
-├── css/
+├── apps/
+│   ├── api/                    # Express API and backend logic
+│   └── web/                   # React frontend
+├── packages/
+│   └── shared/                # shared schemas, types, and utilities
 ├── database/
+│   └── migrations/
 ├── docs/
-└── supabase-schema.sql
+├── public assets and legacy files
+├── README.md
+├── package.json
+├── tsconfig.base.json
+└── .env.example
 ```
 
-### Regra crítica de autenticação
+### Critical authentication rule
 
-O navegador deve possuir **uma única instância de `GoTrueClient`/Supabase Client para a aplicação**. Criar clientes concorrentes usando a mesma chave de armazenamento pode causar comportamento indefinido.
+The browser should use a single Supabase client instance for the application. Creating multiple clients using the same storage key can lead to undefined behavior and authentication issues.
 
-O `app.js` é o ponto principal responsável pelo cliente atualmente. Arquivos auxiliares não devem criar uma segunda instância.
+The active frontend code should manage session state consistently through a single provider and shared client instance.
 
-### Service Worker
+### Service worker
 
-O Service Worker foi ajustado para não transformar os arquivos dinâmicos do aplicativo em uma cópia antiga do sistema. HTML, JavaScript e CSS devem ser buscados pela rede; o cache fica restrito a assets estáticos.
+The service worker should not serve stale copies of dynamic files. HTML, JavaScript, and CSS should be fetched from the network when needed, while static assets can be cached selectively.
 
-Isso é importante durante a evolução do projeto porque impede que uma versão antiga de `app.js` ou outro módulo continue sendo executada por causa de cache.
+This matters because it prevents older versions of the application from continuing to run after a deployment or code change.
 
-## Segurança
+## Security
 
-O Supabase Auth identifica o usuário e o PostgreSQL aplica Row Level Security.
+Supabase Auth identifies the user, while PostgreSQL applies Row Level Security.
 
 ```text
-Usuário
-   ↓
+User
+  ↓
 Supabase Auth
-   ↓
-Sessão única no frontend
-   ↓
+  ↓
+Single frontend session
+  ↓
 Supabase PostgreSQL
-   ↓
+  ↓
 RLS: auth.uid() = user_id
 ```
 
-A chave pública (`anon`/publishable) pode ser utilizada no frontend. **Nunca** publicar `service_role` ou outra credencial privada no código do navegador.
+The public anon/publishable key may be used in the frontend. The service role or any private key must never be exposed in browser code.
 
-## Banco de dados
+## Database
 
-O banco utiliza, entre outras, entidades para:
+The project uses, among others, tables for:
 
-- `locations`;
-- `shifts`;
-- `settings`;
-- `push_subscriptions`;
-- estruturas de recorrência;
-- estruturas financeiras e de espaços em evolução.
+- locations
+- shifts
+- settings
+- push subscriptions
+- recurrence structures
+- financial and shared-space data
 
-A tabela `locations` utiliza `id` como chave primária. O frontend também deve gerar identificadores quando apropriado, enquanto o banco pode possuir um valor padrão para evitar registros sem ID.
+The locations table uses id as its primary key. The frontend should generate identifiers when needed, while the database may provide a default value to avoid missing records.
 
-## UX e princípios de design
+## UX and product principles
 
-O produto deve privilegiar:
+The product should prioritize:
 
-1. **Velocidade:** cadastrar um plantão precisa ser mais rápido que abrir uma planilha.
-2. **Clareza financeira:** o usuário deve entender rapidamente quanto tem a receber, quanto já recebeu e o que está pendente.
-3. **Calendário como centro da rotina:** a agenda deve ser visual, legível e não pode travar a aplicação.
-4. **Ações óbvias:** botões como `+ Plantão`, `+ Local` e `+ Espaço` precisam ter comportamento imediato e previsível.
-5. **Pouca fricção:** evitar telas e confirmações desnecessárias.
-6. **Privacidade:** dados individuais nunca devem vazar para outro usuário.
-7. **Colaboração explícita:** dados compartilhados devem mostrar claramente quem participa e quais permissões possui.
-8. **Mobile first:** profissionais de saúde frequentemente acessam o sistema em deslocamento ou entre atendimentos.
-9. **Estabilidade antes de novas funcionalidades:** uma funcionalidade nova não deve ser considerada pronta se causar regressão em login, calendário ou dados existentes.
+1. Speed: creating a shift should be faster than editing a spreadsheet.
+2. Financial clarity: the user should understand what is due, what has been received, and what remains pending.
+3. Calendar as the working center: the agenda must be visual, readable, and stable.
+4. Obvious actions: buttons like “+ Shift”, “+ Location”, and “+ Space” should be immediate and predictable.
+5. Low friction: avoid unnecessary screens and confirmations.
+6. Privacy: personal data must never leak across users.
+7. Explicit collaboration: shared data should make participation and permissions visible.
+8. Mobile-first workflow: healthcare professionals often work while moving between shifts or facilities.
+9. Stability before new features: a new feature should not be considered ready if it causes regressions in login, calendar flow, or user data integrity.
 
 ## Roadmap
 
-### P0 — Recuperação e estabilidade
+### P0 — Recovery and stability
 
-- [x] Supabase Auth;
-- [x] RLS por usuário;
-- [x] cliente Supabase único no fluxo principal;
-- [x] remoção do cache agressivo de arquivos dinâmicos pelo Service Worker;
-- [ ] validar login/logout em navegador limpo;
-- [ ] validar ausência de `Multiple GoTrueClient instances`;
-- [ ] validar recuperação de sessão sem reload infinito;
-- [ ] validar calendário sem congelamento;
-- [ ] validar CRUD de locais;
-- [ ] validar CRUD de plantões;
-- [ ] validar espaços;
-- [ ] validar isolamento entre duas contas.
+- [x] Supabase Auth
+- [x] user-level RLS
+- [x] single Supabase client in the main flow
+- [x] removal of aggressive dynamic cache behavior
+- [ ] validate login and logout in a clean browser session
+- [ ] validate absence of duplicate GoTrue client instances
+- [ ] validate session recovery without infinite reload loops
+- [ ] validate calendar stability
+- [ ] validate CRUD for locations
+- [ ] validate CRUD for shifts
+- [ ] validate spaces
+- [ ] validate isolation between two accounts
 
-### P1 — Experiência central
+### P1 — Core experience
 
-- [ ] calendário rápido e responsivo;
-- [ ] cadastro de plantão em poucos passos;
-- [ ] edição simples de locais;
-- [ ] regras de recebimento por local;
-- [ ] visão de recebidos x pendentes;
-- [ ] filtros por período/local;
-- [ ] recorrências com exclusão granular;
-- [ ] melhorias mobile/PWA.
+- [ ] fast and responsive calendar
+- [ ] quick shift creation flow
+- [ ] simple location editing
+- [ ] location-based payment rules
+- [ ] received vs pending overview
+- [ ] filters by period and location
+- [ ] recurrence handling with granular deletion rules
+- [ ] mobile and PWA improvements
 
-### P2 — Financeiro e colaboração
+### P2 — Finance and collaboration
 
-- [ ] recebíveis estruturados;
-- [ ] despesas recorrentes;
-- [ ] Espaços com convites e permissões;
-- [ ] despesas compartilhadas;
-- [ ] saldos por espaço;
-- [ ] registro de pagamentos em dinheiro, PIX, transferência ou outros;
-- [ ] simplificação de saldos entre participantes;
-- [ ] relatórios financeiros mais completos.
+- [ ] structured receivables
+- [ ] recurring expenses
+- [ ] spaces with invites and permissions
+- [ ] shared expenses
+- [ ] balances by space
+- [ ] payment tracking for cash, PIX, transfer, and other methods
+- [ ] simplified balance sharing between participants
+- [ ] richer financial reporting
 
-### P3 — Produto rentável
+### P3 — Product maturity
 
-- [ ] métricas de uso e estabilidade;
-- [ ] onboarding simples;
-- [ ] diferenciação clara entre plano gratuito e recursos premium;
-- [ ] backup/sincronização confiáveis;
-- [ ] notificações úteis;
-- [ ] testes automatizados dos fluxos críticos;
-- [ ] monitoramento de erros;
-- [ ] estratégia de monetização antes de escalar funcionalidades.
+- [ ] usage and stability metrics
+- [ ] simple onboarding flow
+- [ ] clear separation between free and premium features
+- [ ] reliable backup and sync strategy
+- [ ] useful notifications
+- [ ] automated regression tests for critical flows
+- [ ] error monitoring
+- [ ] monetization strategy before scaling features
 
-## Desenvolvimento local
+## Local development
 
-Como o projeto usa JavaScript e recursos web, recomenda-se um servidor HTTP local:
+Because the project uses modern frontend and API tooling, it is recommended to run the project through the workspace scripts.
 
 ```bash
-python -m http.server 8000
+npm install
+npm run typecheck
+npm run dev
 ```
 
-Depois acesse `http://localhost:8000`.
+Or run each application separately:
 
-## Checklist de regressão
+```bash
+npm run dev:api
+npm run dev:web
+```
 
-Antes de considerar uma alteração pronta:
+Then open the frontend in the browser, usually at:
 
-- [ ] abrir o aplicativo sem reload/reboot;
-- [ ] sessão persistente funcionar;
-- [ ] login funcionar;
-- [ ] logout funcionar;
-- [ ] nenhum `Multiple GoTrueClient instances` no console;
-- [ ] calendário renderizar uma única vez e permanecer responsivo;
-- [ ] adicionar/editar/excluir local;
-- [ ] adicionar/editar/excluir plantão;
-- [ ] recorrência preservar as opções de exclusão;
-- [ ] criar/editar espaço;
-- [ ] dados continuarem isolados por usuário;
-- [ ] testar em desktop e mobile;
-- [ ] verificar cache/Service Worker após alterações de frontend.
+```text
+http://localhost:5173
+```
 
-## Referências de produto
+## Regression checklist
 
-- [Plantãozinho — site oficial](https://plantaozinho.com/)
-- [Splitwise — site oficial](https://www.splitwise.com/)
+Before considering a change ready to merge:
+
+- [ ] open the app without reloading the page repeatedly
+- [ ] session persists correctly
+- [ ] login works
+- [ ] logout works
+- [ ] no duplicate GoTrue client warnings appear in console
+- [ ] calendar renders once and remains responsive
+- [ ] add, edit, and remove a location
+- [ ] add, edit, and remove a shift
+- [ ] recurrence rules are preserved correctly
+- [ ] create and manage spaces
+- [ ] data remains isolated by user
+- [ ] verify behavior on desktop and mobile
+- [ ] verify cache and service worker behavior after frontend changes
+
+## Product references
+
+- [Plantãozinho](https://plantaozinho.com/)
+- [Splitwise](https://www.splitwise.com/)
 
 Essas referências são usadas somente para benchmarking de experiência, organização de fluxos e ideias de produto. O objetivo é desenvolver uma identidade própria para o FinancPlantões.
 
