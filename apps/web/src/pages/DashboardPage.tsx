@@ -19,18 +19,18 @@ export function DashboardPage() {
   const [shiftModal, setShiftModal] = useState<ShiftModalState>(null);
   const [viewDate, setViewDate] = useState(() => new Date());
 
-  if (bootstrap.isLoading) {
-    return <LoadingBlock />;
-  }
-
-  if (bootstrap.error || !bootstrap.data) {
-    return <ErrorBlock error={bootstrap.error} />;
-  }
-
-  const { shifts, locations, receivables, spaces, personalExpenses } = bootstrap.data;
+  // ⚠️ Regras dos Hooks: todos os hooks devem rodar em TODAS as renderizações,
+  // antes de qualquer return condicional. Caso contrário o React detecta mudança
+  // na ordem dos hooks e desmonta o componente (tela em branco).
+  const data = bootstrap.data;
   const monthKey = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}`;
 
   const summary = useMemo(() => {
+    if (!data) {
+      return null;
+    }
+
+    const { shifts, locations, receivables, personalExpenses } = data;
     const monthShifts = shifts.filter((shift) => String(shift.date ?? "").startsWith(monthKey));
     const monthReceivables = receivables.filter((item) => String(item.expected_date ?? "").startsWith(monthKey));
     const activeReceivables = monthReceivables.filter((item) => item.status !== "cancelled");
@@ -55,7 +55,7 @@ export function DashboardPage() {
         )[0] ?? null;
 
     return {
-      ...bootstrap.data.summary,
+      ...data.summary,
       monthKey,
       incomeProjected,
       received,
@@ -67,7 +67,17 @@ export function DashboardPage() {
       activeLocationCount: locations.filter((item) => item.active !== false).length,
       nextReceivable,
     };
-  }, [bootstrap.data.summary, locations, monthKey, personalExpenses, receivables, shifts]);
+  }, [data, monthKey]);
+
+  if (bootstrap.isLoading) {
+    return <LoadingBlock />;
+  }
+
+  if (bootstrap.error || !data || !summary) {
+    return <ErrorBlock error={bootstrap.error} />;
+  }
+
+  const { shifts, locations, receivables, spaces, personalExpenses } = data;
 
   const upcoming = shifts
     .filter((shift) => shift.date >= new Date().toISOString().slice(0, 10))

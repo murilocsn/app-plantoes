@@ -18,13 +18,13 @@ Test timeout of 30000ms exceeded.
 ```
 Error: expect(locator).toBeVisible() failed
 
-Locator: locator('.calendar-grid')
+Locator: locator('.shift-group-head').first()
 Expected: visible
 Error: element(s) not found
 
 Call log:
   - Expect "toBeVisible" with timeout 30000ms
-  - waiting for locator('.calendar-grid')
+  - waiting for locator('.shift-group-head').first()
   - Test timeout of 30000ms exceeded.
 
 ```
@@ -69,8 +69,7 @@ Call log:
   35 | 
   36 |     test("lista de plantoes aparece agrupada por unidade e data", async ({ page }) => {
   37 |       await login(page, user);
-> 38 |       await expect(page.locator(".calendar-grid")).toBeVisible({ timeout: 30000 });
-     |                                                    ^ Error: expect(locator).toBeVisible() failed
+  38 |       await expect(page.locator(".calendar-grid")).toBeVisible({ timeout: 30000 });
   39 | 
   40 |       await page.goto("/shifts");
   41 | 
@@ -80,7 +79,8 @@ Call log:
   45 |         test.skip();
   46 |       }
   47 | 
-  48 |       await expect(page.locator(".shift-group-head").first()).toBeVisible({ timeout: 30000 });
+> 48 |       await expect(page.locator(".shift-group-head").first()).toBeVisible({ timeout: 30000 });
+     |                                                               ^ Error: expect(locator).toBeVisible() failed
   49 |       await expect(page.locator(".shift-day-label").first()).toBeVisible({ timeout: 30000 });
   50 |     });
   51 |   });
