@@ -1,0 +1,23 @@
+{
+  "output": {
+    "filePath": "project-context.txt",
+    "style": "markdown",
+    "parsableStyle": true
+  },
+  "ignore": {
+    "customPatterns": [
+      ".env",
+      ".env.*",
+      "!.env.example",
+      "node_modules/**",
+      ".git/**",
+      ".next/**",
+      "dist/**",
+      "build/**",
+      "coverage/**",
+      "*.log",
+      "**/*.tsbuildinfo",
+      "**/*.map"
+    ]
+  }
+}
