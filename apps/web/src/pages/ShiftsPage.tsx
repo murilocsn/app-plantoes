@@ -7,6 +7,7 @@ import { EmptyState } from "../components/EmptyState";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { ShiftCrudModals, type ShiftModalState } from "../components/ShiftCrudModals";
 import { useBootstrap } from "../hooks/useBootstrap";
+import { colorFor } from "../lib/calendar";
 import { dateLabel, money } from "../lib/formatters";
 
 export function ShiftsPage() {
@@ -45,6 +46,34 @@ export function ShiftsPage() {
     return <ErrorBlock error={bootstrap.error} />;
   }
 
+  const grouped = useMemo(() => {
+    const byLocation = new Map<string, Shift[]>();
+
+    for (const shift of filtered) {
+      const key = shift.location_name || "Local";
+      byLocation.set(key, [...(byLocation.get(key) ?? []), shift]);
+    }
+
+    return [...byLocation.entries()]
+      .sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
+      .map(([location, locationShifts]) => {
+        const sorted = [...locationShifts].sort((a, b) => a.date.localeCompare(b.date));
+        const days: Array<{ date: string; shifts: Shift[] }> = [];
+
+        for (const shift of sorted) {
+          const last = days[days.length - 1];
+
+          if (last && last.date === shift.date) {
+            last.shifts.push(shift);
+          } else {
+            days.push({ date: shift.date, shifts: [shift] });
+          }
+        }
+
+        return { location, days, total: sorted.length };
+      });
+  }, [filtered]);
+
   function edit(shift: Shift) {
     setShiftModal({ type: "edit", shift });
   }
@@ -74,33 +103,51 @@ export function ShiftsPage() {
           </label>
         </div>
 
-        {filtered.length ? (
-          <div className="table-list">
-            {filtered.map((shift) => (
-              <article className="table-row" key={shift.id}>
-                <div>
-                  <strong>{shift.location_name}</strong>
-                  <span>
-                    {dateLabel(shift.date)} - {String(shift.start_time ?? "--:--").slice(0, 5)}
-                  </span>
-                </div>
-                <span>{shift.duration}h</span>
-                <b>{money(shift.value ?? shift.value12)}</b>
-                <div className="row-actions">
-                  <Button aria-label="Editar" onClick={() => edit(shift)} size="icon" title="Editar">
-                    <Pencil size={16} />
-                  </Button>
-                  <Button
-                    aria-label="Excluir"
-                    onClick={() => setShiftModal({ type: "delete", shift })}
-                    size="icon"
-                    title="Excluir"
-                    variant="danger"
-                  >
-                    <Trash2 size={16} />
-                  </Button>
-                </div>
-              </article>
+        {grouped.length ? (
+          <div className="shift-groups">
+            {grouped.map((group) => (
+              <section className="shift-group" key={group.location}>
+                <header className="shift-group-head">
+                  <i
+                    style={{ backgroundColor: colorFor(group.location) }}
+                    aria-hidden="true"
+                  />
+                  <strong>{group.location}</strong>
+                  <small>
+                    {group.total} {group.total === 1 ? "plantao" : "plantoes"}
+                  </small>
+                </header>
+                {group.days.map((day) => (
+                  <div key={day.date}>
+                    <span className="shift-day-label">{dateLabel(day.date)}</span>
+                    <div className="table-list">
+                      {day.shifts.map((shift) => (
+                        <article className="table-row" key={shift.id}>
+                          <div>
+                            <strong>{String(shift.start_time ?? "--:--").slice(0, 5)}</strong>
+                            <span>{shift.duration}h</span>
+                          </div>
+                          <b>{money(shift.value ?? shift.value12)}</b>
+                          <div className="row-actions">
+                            <Button aria-label="Editar" onClick={() => edit(shift)} size="icon" title="Editar">
+                              <Pencil size={16} />
+                            </Button>
+                            <Button
+                              aria-label="Excluir"
+                              onClick={() => setShiftModal({ type: "delete", shift })}
+                              size="icon"
+                              title="Excluir"
+                              variant="danger"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </section>
             ))}
           </div>
         ) : (
