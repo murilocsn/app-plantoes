@@ -24,6 +24,12 @@ export default defineConfig({
         viewport: { height: 844, width: 390 },
       },
     },
+    {
+      name: "mobile-safari",
+      use: {
+        ...devices["iPhone 13"],
+      },
+    },
   ],
   testDir: "./e2e",
   use: {
