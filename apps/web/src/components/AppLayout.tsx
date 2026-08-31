@@ -1,6 +1,5 @@
 import {
   Banknote,
-  Building2,
   CalendarDays,
   ClipboardList,
   Download,

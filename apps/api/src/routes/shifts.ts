@@ -11,7 +11,7 @@ import type { Request } from "express";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { asyncHandler } from "../lib/async-handler";
-import { addDays, expectData, normalizeShiftStatus, optionalData } from "../lib/db";
+import { expectData, normalizeShiftStatus, optionalData } from "../lib/db";
 import { HttpError } from "../lib/http-error";
 import { ok } from "../lib/respond";
 
@@ -126,7 +126,7 @@ function expectedPaymentDate(shiftDate: string, location: PaymentLocation) {
   const date = new Date(`${shiftDate}T12:00:00Z`);
   const day = date.getUTCDate();
   let periodMonth = date.getUTCMonth();
-  let periodYear = date.getUTCFullYear();
+  const periodYear = date.getUTCFullYear();
 
   if (location.reference_start_day <= location.reference_end_day) {
     if (day > location.reference_end_day) {

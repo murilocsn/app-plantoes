@@ -17,7 +17,9 @@ export default tseslint.config(
       "finance*.js",
       "workspace-page.js",
       "ui-workspaces.js",
-      "ux-members-navigation.js"
+      "ux-members-navigation.js",
+      "js/**",
+      "legacy/**"
     ]
   },
   js.configs.recommended,
