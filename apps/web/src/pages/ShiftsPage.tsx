@@ -38,14 +38,8 @@ export function ShiftsPage() {
     );
   }, [bootstrap.data?.shifts, search]);
 
-  if (bootstrap.isLoading) {
-    return <LoadingBlock />;
-  }
-
-  if (bootstrap.error || !bootstrap.data) {
-    return <ErrorBlock error={bootstrap.error} />;
-  }
-
+  // ⚠️ Regras dos Hooks: este useMemo precisa rodar em TODAS as renderizações,
+  // antes de qualquer return condicional (mesmo padrão da correção do Dashboard).
   const grouped = useMemo(() => {
     const byLocation = new Map<string, Shift[]>();
 
@@ -73,6 +67,14 @@ export function ShiftsPage() {
         return { location, days, total: sorted.length };
       });
   }, [filtered]);
+
+  if (bootstrap.isLoading) {
+    return <LoadingBlock />;
+  }
+
+  if (bootstrap.error || !bootstrap.data) {
+    return <ErrorBlock error={bootstrap.error} />;
+  }
 
   function edit(shift: Shift) {
     setShiftModal({ type: "edit", shift });

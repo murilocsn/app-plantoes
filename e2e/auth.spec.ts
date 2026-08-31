@@ -39,13 +39,18 @@ for (const user of usersFromEnv()) {
 
       await page.goto("/shifts");
 
+      // Espera até a página carregar E mostrar um dos dois estados possíveis
+      // (lista com plantoes OU estado vazio), evitando corrida na checagem.
       const emptyState = page.getByText("Sem plantoes");
+      const firstGroup = page.locator(".shift-group-head").first();
+
+      await expect(emptyState.or(firstGroup)).toBeVisible({ timeout: 30000 });
 
       if (await emptyState.isVisible()) {
         test.skip();
       }
 
-      await expect(page.locator(".shift-group-head").first()).toBeVisible({ timeout: 30000 });
+      await expect(firstGroup).toBeVisible({ timeout: 30000 });
       await expect(page.locator(".shift-day-label").first()).toBeVisible({ timeout: 30000 });
     });
   });

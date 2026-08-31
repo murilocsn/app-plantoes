@@ -18,13 +18,13 @@ Test timeout of 30000ms exceeded.
 ```
 Error: expect(locator).toBeVisible() failed
 
-Locator: locator('.shift-group-head').first()
+Locator: getByText('Sem plantoes').or(locator('.shift-group-head').first())
 Expected: visible
 Error: element(s) not found
 
 Call log:
   - Expect "toBeVisible" with timeout 30000ms
-  - waiting for locator('.shift-group-head').first()
+  - waiting for getByText('Sem plantoes').or(locator('.shift-group-head').first())
   - Test timeout of 30000ms exceeded.
 
 ```
@@ -73,17 +73,22 @@ Call log:
   39 | 
   40 |       await page.goto("/shifts");
   41 | 
-  42 |       const emptyState = page.getByText("Sem plantoes");
-  43 | 
-  44 |       if (await emptyState.isVisible()) {
-  45 |         test.skip();
-  46 |       }
-  47 | 
-> 48 |       await expect(page.locator(".shift-group-head").first()).toBeVisible({ timeout: 30000 });
-     |                                                               ^ Error: expect(locator).toBeVisible() failed
-  49 |       await expect(page.locator(".shift-day-label").first()).toBeVisible({ timeout: 30000 });
-  50 |     });
-  51 |   });
-  52 | }
-  53 | 
+  42 |       // Espera até a página carregar E mostrar um dos dois estados possíveis
+  43 |       // (lista com plantoes OU estado vazio), evitando corrida na checagem.
+  44 |       const emptyState = page.getByText("Sem plantoes");
+  45 |       const firstGroup = page.locator(".shift-group-head").first();
+  46 | 
+> 47 |       await expect(emptyState.or(firstGroup)).toBeVisible({ timeout: 30000 });
+     |                                               ^ Error: expect(locator).toBeVisible() failed
+  48 | 
+  49 |       if (await emptyState.isVisible()) {
+  50 |         test.skip();
+  51 |       }
+  52 | 
+  53 |       await expect(firstGroup).toBeVisible({ timeout: 30000 });
+  54 |       await expect(page.locator(".shift-day-label").first()).toBeVisible({ timeout: 30000 });
+  55 |     });
+  56 |   });
+  57 | }
+  58 | 
 ```
