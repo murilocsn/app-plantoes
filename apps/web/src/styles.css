@@ -299,13 +299,26 @@ h3 {
 }
 
 .auth-switch {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  display: grid;
-  gap: 0.35rem;
-  grid-template-columns: 1fr 1fr;
-  padding: 0.35rem;
+  margin: 0;
+  text-align: center;
+}
+
+.auth-link {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.25rem;
+}
+
+.auth-link strong {
+  color: var(--blue);
+}
+
+.auth-link:hover strong {
+  text-decoration: underline;
 }
 
 .input-icon {

@@ -102,22 +102,17 @@ export function LoginPage() {
           </Button>
           {message && <p className="form-message">{message}</p>}
         </form>
-        <div className="auth-switch">
-          <Button
-            aria-pressed={mode === "login"}
-            onClick={() => setMode("login")}
-            variant={mode === "login" ? "primary" : "secondary"}
-          >
-            Entrar
-          </Button>
-          <Button
-            aria-pressed={mode === "signup"}
-            onClick={() => setMode("signup")}
-            variant={mode === "signup" ? "primary" : "secondary"}
-          >
-            Criar conta
-          </Button>
-        </div>
+        <p className="auth-switch">
+          {mode === "login" ? (
+            <button className="auth-link" onClick={() => setMode("signup")} type="button">
+              Você não possui conta? <strong>Criar conta</strong>
+            </button>
+          ) : (
+            <button className="auth-link" onClick={() => setMode("login")} type="button">
+              Já tem conta? <strong>Entrar</strong>
+            </button>
+          )}
+        </p>
       </section>
     </main>
   );
