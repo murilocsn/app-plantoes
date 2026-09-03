@@ -1129,6 +1129,40 @@ h3 {
     grid-template-columns: 1fr;
   }
 
+  .stat-grid {
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Cards compactos no celular: mais baixos, mantendo 1 por linha */
+  .stat-card {
+    gap: 0.15rem;
+    min-height: 0;
+    padding: 0.65rem 0.8rem;
+  }
+
+  .stat-card span {
+    font-size: 0.74rem;
+  }
+
+  .stat-card strong {
+    font-size: 1.15rem;
+  }
+
+  .stat-card small {
+    font-size: 0.7rem;
+  }
+
+  .stat-icon {
+    height: 28px;
+    width: 28px;
+  }
+
+  .stat-icon svg {
+    height: 14px;
+    width: 14px;
+  }
+
   .form-actions .button,
   .modal-actions .button {
     flex: 1;
