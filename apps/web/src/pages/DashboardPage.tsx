@@ -89,7 +89,7 @@ export function DashboardPage() {
 
   return (
     <>
-      <section className="stat-grid">
+      <section className="stat-grid" data-testid="dashboard-stats">
         <StatCard
           detail={`${summary.shiftCount} plantoes no mes`}
           icon={TrendingUp}
@@ -129,8 +129,8 @@ export function DashboardPage() {
         viewDate={viewDate}
       />
 
-      <section className="dashboard-columns">
-        <article className="work-panel">
+      <section className="dashboard-columns" data-testid="dashboard-columns">
+        <article className="work-panel" data-testid="upcoming-shifts-panel">
           <header className="section-head">
             <div>
               <p className="eyebrow">Proximos</p>
@@ -142,7 +142,7 @@ export function DashboardPage() {
             </Button>
           </header>
           {upcoming.length ? (
-            <div className="stack">
+            <div className="stack" data-testid="upcoming-shifts-list">
               {upcoming.map((shift) => (
                 <button className="list-button" key={shift.id} onClick={() => editShift(shift)} type="button">
                   <span>
@@ -160,7 +160,7 @@ export function DashboardPage() {
           )}
         </article>
 
-        <article className="work-panel">
+        <article className="work-panel" data-testid="receivables-panel">
           <header className="section-head">
             <div>
               <p className="eyebrow">Financeiro</p>
@@ -168,7 +168,7 @@ export function DashboardPage() {
             </div>
           </header>
           {receivables.length ? (
-            <div className="stack">
+            <div className="stack" data-testid="receivables-list">
               {receivables.slice(0, 6).map((item) => (
                 <div className="row-item" key={item.id}>
                   <span>
@@ -184,7 +184,7 @@ export function DashboardPage() {
           )}
         </article>
 
-        <article className="work-panel compact-panel">
+        <article className="work-panel compact-panel" data-testid="spaces-panel">
           <header className="section-head">
             <div>
               <p className="eyebrow">Contextos</p>

@@ -51,6 +51,9 @@
 html {
   min-width: 320px;
   background: var(--bg);
+  /* Renderizacao identica em todos os iPhones: impede o Safari iOS de inflar fontes */
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -1134,28 +1137,51 @@ h3 {
     margin-bottom: 0.75rem;
   }
 
-  /* Cards compactos no celular: mais baixos, mantendo 1 por linha */
+  /* Cards resumidos no celular: linha horizontal unica (icone | rotulo+detalhe | valor) */
   .stat-card {
-    gap: 0.15rem;
+    align-items: center;
+    column-gap: 0.6rem;
+    grid-template-areas:
+      "icon label value"
+      "icon detail value";
+    grid-template-columns: auto minmax(0, 1fr) auto;
     min-height: 0;
-    padding: 0.65rem 0.8rem;
+    padding: 0.5rem 0.7rem;
+    row-gap: 0;
   }
 
   .stat-card span {
-    font-size: 0.74rem;
+    font-size: 0.72rem;
+    grid-area: label;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .stat-card strong {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
+    grid-area: value;
+    justify-self: end;
+    line-height: 1.2;
+    padding-left: 0.4rem;
+    text-align: right;
+    white-space: nowrap;
   }
 
   .stat-card small {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
+    grid-area: detail;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .stat-icon {
-    height: 28px;
-    width: 28px;
+    grid-area: icon;
+    height: 30px;
+    width: 30px;
   }
 
   .stat-icon svg {

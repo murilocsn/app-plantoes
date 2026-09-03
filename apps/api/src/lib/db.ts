@@ -8,8 +8,20 @@ type SupabaseResult = {
 
 const optionalCodes = new Set(["42P01", "42703", "PGRST200", "PGRST204", "PGRST205"]);
 
+// Sessao expirada/invalida reportada pelo PostgREST: nao e erro de dados do cliente,
+// e um problema de token que deve virar 401 para o frontend renovar e repetir.
+const sessionErrorCodes = new Set(["PGRST301", "PGRST302"]);
+
 export function toHttpError(error: PostgrestError, fallbackMessage = "Falha ao acessar os dados.") {
-  const status = error.code === "PGRST116" ? 404 : 400;
+  let status = 400;
+
+  if (error.code === "PGRST116") {
+    status = 404;
+  }
+
+  if (sessionErrorCodes.has(error.code)) {
+    status = 401;
+  }
 
   return new HttpError(status, error.message || fallbackMessage, error.code, error.details);
 }
