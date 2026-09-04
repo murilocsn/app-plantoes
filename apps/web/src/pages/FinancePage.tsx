@@ -13,7 +13,11 @@ import { domainApi } from "../lib/domain-api";
 import { dateLabel, money } from "../lib/formatters";
 
 function isOverdue(item: Receivable) {
-  return item.status !== "received" && Boolean(item.expected_date && item.expected_date < new Date().toISOString().slice(0, 10));
+  if (item.status === "received" || item.status === "cancelled") {
+    return false;
+  }
+
+  return Boolean(item.expected_date && item.expected_date < new Date().toISOString().slice(0, 10));
 }
 
 type ReceivableModal =
@@ -25,16 +29,30 @@ type ReceivableModal =
 export function FinancePage() {
   const bootstrap = useBootstrap();
   const [modal, setModal] = useState<ReceivableModal>(null);
-  const createReceivable = useAppMutation(domainApi.createReceivable, { onSuccess: () => setModal(null) });
+  const [formError, setFormError] = useState("");
+
+  const showError = (error: Error) => setFormError(error.message);
+  const onSuccess = () => {
+    setModal(null);
+    setFormError("");
+  };
+
+  const createReceivable = useAppMutation(domainApi.createReceivable, {
+    onSuccess,
+    onError: showError,
+  });
   const updateReceivable = useAppMutation(
     (input: { id: string; payload: unknown }) => domainApi.updateReceivable(input.id, input.payload),
-    { onSuccess: () => setModal(null) },
+    { onSuccess, onError: showError },
   );
   const markPaid = useAppMutation(
     (input: { id: string; payload: unknown }) => domainApi.markReceivablePaid(input.id, input.payload),
-    { onSuccess: () => setModal(null) },
+    { onSuccess, onError: showError },
   );
-  const deleteReceivable = useAppMutation((id: string) => domainApi.deleteReceivable(id));
+  const deleteReceivable = useAppMutation((id: string) => domainApi.deleteReceivable(id), {
+    onSuccess: () => setFormError(""),
+    onError: showError,
+  });
 
   if (bootstrap.isLoading) {
     return <LoadingBlock />;
@@ -44,7 +62,13 @@ export function FinancePage() {
     return <ErrorBlock error={bootstrap.error} />;
   }
 
-  const receivables = bootstrap.data.receivables;
+  // Ordena recebiveis: pendentes/atrasados primeiro (por data), recebidos por ultimo.
+  const receivables = [...bootstrap.data.receivables].sort((left, right) => {
+    const leftOpen = left.status !== "received";
+    const rightOpen = right.status !== "received";
+    if (leftOpen !== rightOpen) return leftOpen ? -1 : 1;
+    return String(left.expected_date ?? "").localeCompare(String(right.expected_date ?? ""));
+  });
   const received = receivables
     .filter((item) => item.status === "received")
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
@@ -59,6 +83,12 @@ export function FinancePage() {
         <StatCard icon={Check} label="Recebido" tone="green" value={money(received)} />
         <StatCard icon={Banknote} label="Pendente" tone="amber" value={money(pending)} />
       </section>
+
+      {formError && (
+        <p className="form-message" role="alert">
+          {formError}
+        </p>
+      )}
 
       {overdue.length > 0 && (
         <section className="page-section finance-alert" role="alert">

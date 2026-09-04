@@ -15,11 +15,21 @@ type ExpenseModal = "personal" | "shared" | null;
 export function ExpensesPage() {
   const bootstrap = useBootstrap();
   const [modal, setModal] = useState<ExpenseModal>(null);
+  const [formError, setFormError] = useState("");
+
+  const showError = (error: Error) => setFormError(error.message);
+  const onSuccess = () => {
+    setModal(null);
+    setFormError("");
+  };
+
   const createPersonal = useAppMutation(domainApi.createPersonalExpense, {
-    onSuccess: () => setModal(null),
+    onSuccess,
+    onError: showError,
   });
   const createShared = useAppMutation(domainApi.createSharedExpense, {
-    onSuccess: () => setModal(null),
+    onSuccess,
+    onError: showError,
   });
 
   if (bootstrap.isLoading) {
@@ -40,6 +50,12 @@ export function ExpensesPage() {
         <StatCard icon={Receipt} label="Pessoal" tone="coral" value={money(personalTotal)} />
         <StatCard icon={UsersRound} label="Compartilhado" tone="amber" value={money(sharedTotal)} />
       </section>
+
+      {formError && (
+        <p className="form-message" role="alert">
+          {formError}
+        </p>
+      )}
 
       <section className="dashboard-columns two-columns">
         <article className="work-panel">

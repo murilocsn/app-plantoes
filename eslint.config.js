@@ -44,5 +44,17 @@ export default tseslint.config(
         }
       ]
     }
+  },
+  {
+    // Scripts Node (e2e/*.mjs, configs, etc.) usam console/process
+    files: ["**/*.{mjs,cjs,js}"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: {
+        ...globals.node,
+        ...globals.browser
+      }
+    }
   }
 );

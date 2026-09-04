@@ -77,7 +77,7 @@ export function DashboardPage() {
     return <ErrorBlock error={bootstrap.error} />;
   }
 
-  const { shifts, locations, receivables, spaces, personalExpenses } = data;
+  const { shifts, locations, receivables, spaces } = data;
 
   const upcoming = shifts
     .filter((shift) => shift.date >= new Date().toISOString().slice(0, 10))
