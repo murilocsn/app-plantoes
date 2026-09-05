@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Location, Receivable } from "@financplantoes/shared";
-import { receivableInputSchema } from "@financplantoes/shared";
+import { PAYMENT_METHODS, PAYMENT_METHOD_VALUES, receivableInputSchema } from "@financplantoes/shared";
 import { Save } from "lucide-react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
@@ -8,6 +8,16 @@ import { Button } from "../Button";
 import { Field } from "../Field";
 
 type ReceivableFormValues = z.infer<typeof receivableInputSchema>;
+
+// Converte o método salvo no banco (ex.: "PIX" maiusculo de versoes antigas)
+// para a forma aceita pelo schema/constraint (ex.: "pix"), ou null quando
+// o valor nao for reconhecido. Evita o erro de constraint do banco.
+function normalizePaymentMethod(value: string | null | undefined) {
+  const normalized = value?.trim().toLowerCase();
+  return PAYMENT_METHOD_VALUES.includes(normalized as (typeof PAYMENT_METHOD_VALUES)[number])
+    ? (normalized as (typeof PAYMENT_METHOD_VALUES)[number])
+    : null;
+}
 
 type ReceivableFormProps = {
   locations: Location[];
@@ -36,7 +46,7 @@ export function ReceivableForm({
       expected_date: receivable?.expected_date ?? new Date().toISOString().slice(0, 10),
       location_id: receivable?.location_id ?? "",
       status: receivable?.status === "received" ? "received" : "pending",
-      payment_method: receivable?.payment_method ?? "",
+      payment_method: normalizePaymentMethod(receivable?.payment_method),
       notes: receivable?.notes ?? "",
     },
   });
@@ -71,7 +81,14 @@ export function ReceivableForm({
         </select>
       </Field>
       <Field error={errors.payment_method?.message} label="Pagamento">
-        <input placeholder="PIX, transferencia, dinheiro..." {...register("payment_method")} />
+        <select {...register("payment_method")}>
+          <option value="">Sem metodo</option>
+          {PAYMENT_METHODS.map((method) => (
+            <option key={method.value} value={method.value}>
+              {method.label}
+            </option>
+          ))}
+        </select>
       </Field>
       <Field error={errors.notes?.message} label="Observacoes">
         <textarea rows={3} {...register("notes")} />

@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { markReceivablePaidSchema } from "@financplantoes/shared";
+import { markReceivablePaidSchema, PAYMENT_METHODS } from "@financplantoes/shared";
 import { Check } from "lucide-react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
@@ -23,7 +23,8 @@ export function MarkPaidForm({ submitting, onCancel, onSubmit }: MarkPaidFormPro
     resolver: zodResolver(markReceivablePaidSchema),
     defaultValues: {
       received_date: new Date().toISOString().slice(0, 10),
-      payment_method: "PIX",
+      // Valor na forma aceita pela constraint do banco (minúsculo)
+      payment_method: "pix",
       notes: "",
     },
   });
@@ -34,7 +35,13 @@ export function MarkPaidForm({ submitting, onCancel, onSubmit }: MarkPaidFormPro
         <input autoFocus type="date" {...register("received_date")} />
       </Field>
       <Field error={errors.payment_method?.message} label="Metodo">
-        <input {...register("payment_method")} />
+        <select {...register("payment_method")}>
+          {PAYMENT_METHODS.map((method) => (
+            <option key={method.value} value={method.value}>
+              {method.label}
+            </option>
+          ))}
+        </select>
       </Field>
       <Field error={errors.notes?.message} label="Observacoes">
         <textarea rows={3} {...register("notes")} />

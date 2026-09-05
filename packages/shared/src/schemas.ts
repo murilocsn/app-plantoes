@@ -7,6 +7,29 @@ const optionalText = z
   .nullable()
   .optional();
 
+// Métodos de pagamento aceitos pela constraint do banco
+// (receivables_payment_method_check). Valores mantidos em minúsculas
+// por compatibilidade com o comportamento legado do sistema.
+export const PAYMENT_METHOD_VALUES = ["pix", "transfer", "cash", "card", "other"] as const;
+
+export const PAYMENT_METHODS: ReadonlyArray<{
+  value: (typeof PAYMENT_METHOD_VALUES)[number];
+  label: string;
+}> = [
+  { value: "pix", label: "PIX" },
+  { value: "transfer", label: "Transferência" },
+  { value: "cash", label: "Dinheiro" },
+  { value: "card", label: "Cartão" },
+  { value: "other", label: "Outro" },
+];
+
+// Aceita um dos métodos conhecidos ou vazio (convertido para null).
+const paymentMethod = z
+  .enum(PAYMENT_METHOD_VALUES)
+  .or(z.literal("").transform(() => null))
+  .nullable()
+  .optional();
+
 const optionalDate = z
   .string()
   .trim()
@@ -108,13 +131,13 @@ export const receivableInputSchema = z.object({
   location_id: z.string().nullable().optional(),
   shift_id: z.string().nullable().optional(),
   status: receivableStatusSchema.default("pending"),
-  payment_method: optionalText,
+  payment_method: paymentMethod,
   notes: optionalText,
 });
 
 export const markReceivablePaidSchema = z.object({
   received_date: z.string().date().optional(),
-  payment_method: optionalText,
+  payment_method: paymentMethod,
   notes: optionalText,
 });
 
