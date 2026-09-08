@@ -49,6 +49,15 @@ export type AppBootstrap = {
   plans: Plan[];
 };
 
+export type DashboardOverview = {
+  summary: DashboardSummary;
+  calendarShifts: Shift[];
+  upcomingShifts: Shift[];
+  receivables: Receivable[];
+  locations: Location[];
+  spaceCount: number;
+};
+
 import type { planSchema } from "./schemas";
 
 export type Plan = z.infer<typeof planSchema>;

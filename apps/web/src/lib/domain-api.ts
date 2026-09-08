@@ -1,9 +1,23 @@
-import type { AppBootstrap, Location, Receivable, Shift, Space } from "@financplantoes/shared";
+import type {
+  AppBootstrap,
+  DashboardOverview,
+  Location,
+  Receivable,
+  Shift,
+  Space,
+} from "@financplantoes/shared";
 import { api, download } from "./api";
 
 export const domainApi = {
   bootstrap: () => api<AppBootstrap>("/dashboard/bootstrap"),
-  createLocation: (payload: unknown) => api<Location>("/locations", { method: "POST", body: payload }),
+  dashboardOverview: (filters?: { month?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.month) params.set("month", filters.month);
+    const query = params.toString();
+    return api<DashboardOverview>(`/dashboard/overview${query ? `?${query}` : ""}`);
+  },
+  createLocation: (payload: unknown) =>
+    api<Location>("/locations", { method: "POST", body: payload }),
   updateLocation: (id: string, payload: unknown) =>
     api<Location>(`/locations/${id}`, { method: "PATCH", body: payload }),
   deleteLocation: (id: string) => api(`/locations/${id}`, { method: "DELETE" }),

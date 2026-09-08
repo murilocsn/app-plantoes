@@ -46,6 +46,18 @@ export const dateRangeQuerySchema = z.object({
   to: z.string().date().optional(),
 });
 
+export const monthQuerySchema = z.object({
+  month: z
+    .string()
+    .regex(/^\d{2}-\d{4}$/, "Informe o mes no formato MM-AAAA")
+    .refine((value) => {
+      const month = Number(value.slice(0, 2));
+
+      return month >= 1 && month <= 12;
+    }, "Informe um mes valido")
+    .optional(),
+});
+
 export const locationSchema = z.object({
   id: z.string(),
   name: z.string(),
