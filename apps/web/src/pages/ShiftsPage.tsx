@@ -32,7 +32,7 @@ export function ShiftsPage() {
     }
 
     return shifts.filter((shift) =>
-      [shift.location_name, shift.date, shift.professional, shift.notes]
+      [shift.location_name, dateLabel(shift.date), shift.date, shift.professional, shift.notes]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(term)),
     );
@@ -98,6 +98,7 @@ export function ShiftsPage() {
           <label className="search-box">
             <Search size={18} />
             <input
+              aria-label="Buscar plantoes"
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Buscar por local, data ou observacao"
               value={search}

@@ -953,6 +953,51 @@ h3 {
   font-weight: 650;
 }
 
+.date-input {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: minmax(0, 1fr) 42px;
+}
+
+.date-input > input {
+  min-width: 0;
+}
+
+.date-picker {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  height: 42px;
+  place-items: center;
+  position: relative;
+  width: 42px;
+}
+
+.date-picker:focus-within {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.date-picker input {
+  cursor: pointer;
+  height: 100%;
+  inset: 0;
+  opacity: 0;
+  padding: 0;
+  position: absolute;
+}
+
+.date-picker input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  height: 100%;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  width: 100%;
+}
+
 .check-field {
   align-items: center;
   background: var(--surface-2);
