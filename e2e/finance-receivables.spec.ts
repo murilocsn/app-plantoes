@@ -113,6 +113,16 @@ test.beforeEach(async ({ page }) => {
         locations,
         spaceCount: 0,
       } } });
+    } else if (path.endsWith("/mark-paid") && route.request().method() === "POST") {
+      await route.fulfill({
+        json: {
+          data: {
+            ...receivables[0],
+            ...route.request().postDataJSON(),
+            status: "received",
+          },
+        },
+      });
     } else {
       await route.abort();
     }
@@ -153,4 +163,20 @@ test("mantem acoes individuais dentro do periodo expandido", async ({ page }) =>
   await expect(page.getByRole("button", { name: "Marcar recebido" })).toHaveCount(2);
   await expect(page.getByRole("button", { name: "Editar recebivel" })).toHaveCount(2);
   await expect(page.getByRole("button", { name: "Excluir recebivel" })).toHaveCount(2);
+});
+
+test("confirma recebimento enviando data ISO e metodo aceito pelo banco", async ({ page }) => {
+  await page.locator(".receivable-period").filter({ hasText: "UPA Centro" }).locator("summary").click();
+  await page.getByRole("button", { name: "Marcar recebido" }).first().click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("textbox", { name: "Data recebida", exact: true })).toHaveValue("08/09/2026");
+
+  const submitted = page.waitForRequest((request) => request.url().endsWith("/mark-paid") && request.method() === "POST");
+  await dialog.getByRole("button", { name: "Confirmar" }).click();
+
+  expect((await submitted).postDataJSON()).toMatchObject({
+    received_date: "2026-09-08",
+    payment_method: "pix",
+  });
+  await expect(dialog).not.toBeVisible();
 });

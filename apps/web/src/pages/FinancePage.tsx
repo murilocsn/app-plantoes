@@ -267,6 +267,7 @@ export function FinancePage() {
             receivable={modal.type === "edit" ? modal.receivable : null}
             submitting={createReceivable.isPending || updateReceivable.isPending}
           />
+          {formError && <p className="form-message">{formError}</p>}
         </Modal>
       ) : null}
 
@@ -277,6 +278,7 @@ export function FinancePage() {
             onSubmit={(values) => markPaid.mutate({ id: modal.receivable.id, payload: values })}
             submitting={markPaid.isPending}
           />
+          {formError && <p className="form-message">{formError}</p>}
         </Modal>
       )}
     </>
