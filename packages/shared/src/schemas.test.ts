@@ -4,6 +4,7 @@ import {
   dateRangeQuerySchema,
   idParamSchema,
   locationInputSchema,
+  monthQuerySchema,
   planInputSchema,
   recurrenceInputSchema,
   shiftInputSchema,
@@ -36,6 +37,16 @@ describe("dateRangeQuerySchema", () => {
 
   it("rejeita data em formato inválido", () => {
     expect(() => dateRangeQuerySchema.parse({ from: "31/01/2026" })).toThrow();
+  });
+});
+
+describe("monthQuerySchema", () => {
+  it("aceita mes no formato MM-AAAA", () => {
+    expect(monthQuerySchema.parse({ month: "09-2026" })).toEqual({ month: "09-2026" });
+  });
+
+  it("rejeita mes fora do intervalo de 01 a 12", () => {
+    expect(() => monthQuerySchema.parse({ month: "13-2026" })).toThrow();
   });
 });
 
@@ -131,9 +142,7 @@ describe("recurrenceInputSchema", () => {
   });
 
   it("rejeita menos de 2 ocorrências", () => {
-    expect(() =>
-      recurrenceInputSchema.parse({ frequency: "daily", occurrences: "1" }),
-    ).toThrow();
+    expect(() => recurrenceInputSchema.parse({ frequency: "daily", occurrences: "1" })).toThrow();
   });
 });
 
@@ -154,9 +163,7 @@ describe("spaceInputSchema", () => {
   });
 
   it("rejeita tipo de espaço desconhecido", () => {
-    expect(() =>
-      spaceInputSchema.parse({ name: "X", space_type: "unknown" }),
-    ).toThrow();
+    expect(() => spaceInputSchema.parse({ name: "X", space_type: "unknown" })).toThrow();
   });
 });
 

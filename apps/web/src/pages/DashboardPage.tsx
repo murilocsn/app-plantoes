@@ -1,87 +1,35 @@
 import type { Shift } from "@financplantoes/shared";
 import { Banknote, Building2, CalendarDays, Clock, Plus, TrendingUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "../components/Button";
 import { CalendarMonth } from "../components/CalendarMonth";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { ShiftCrudModals, type ShiftModalState } from "../components/ShiftCrudModals";
 import { StatCard } from "../components/StatCard";
-import { useBootstrap } from "../hooks/useBootstrap";
+import { useDashboardOverview } from "../hooks/useBootstrap";
 import { dateLabel, money } from "../lib/formatters";
 
-function sumBy<T>(items: T[], getValue: (item: T) => unknown) {
-  return items.reduce((sum, item) => sum + Number(getValue(item) || 0), 0);
+function monthParam(date: Date) {
+  return `${String(date.getMonth() + 1).padStart(2, "0")}-${date.getFullYear()}`;
 }
 
 export function DashboardPage() {
-  const bootstrap = useBootstrap();
   const [shiftModal, setShiftModal] = useState<ShiftModalState>(null);
   const [viewDate, setViewDate] = useState(() => new Date());
+  const monthKey = monthParam(viewDate);
+  const dashboard = useDashboardOverview(monthKey);
 
-  // ⚠️ Regras dos Hooks: todos os hooks devem rodar em TODAS as renderizações,
-  // antes de qualquer return condicional. Caso contrário o React detecta mudança
-  // na ordem dos hooks e desmonta o componente (tela em branco).
-  const data = bootstrap.data;
-  const monthKey = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}`;
-
-  const summary = useMemo(() => {
-    if (!data) {
-      return null;
-    }
-
-    const { shifts, locations, receivables, personalExpenses } = data;
-    const monthShifts = shifts.filter((shift) => String(shift.date ?? "").startsWith(monthKey));
-    const monthReceivables = receivables.filter((item) => String(item.expected_date ?? "").startsWith(monthKey));
-    const activeReceivables = monthReceivables.filter((item) => item.status !== "cancelled");
-    const received = sumBy(
-      activeReceivables.filter((item) => item.status === "received"),
-      (item) => item.amount,
-    );
-    const pending = sumBy(
-      activeReceivables.filter((item) => item.status === "pending" || item.status === "overdue"),
-      (item) => item.amount,
-    );
-    const expenses = sumBy(
-      personalExpenses.filter((item) => String(item.expense_date ?? "").startsWith(monthKey)),
-      (item) => item.amount,
-    );
-    const incomeProjected = sumBy(monthShifts, (item) => item.value ?? item.value12);
-    const nextReceivable =
-      activeReceivables
-        .filter((item) => item.status === "pending" || item.status === "overdue")
-        .sort((left, right) =>
-          String(left.expected_date ?? "").localeCompare(String(right.expected_date ?? "")),
-        )[0] ?? null;
-
-    return {
-      ...data.summary,
-      monthKey,
-      incomeProjected,
-      received,
-      pending,
-      expenses,
-      net: received - expenses,
-      shiftCount: monthShifts.length,
-      shiftHours: sumBy(monthShifts, (item) => item.duration),
-      activeLocationCount: locations.filter((item) => item.active !== false).length,
-      nextReceivable,
-    };
-  }, [data, monthKey]);
-
-  if (bootstrap.isLoading) {
+  if (dashboard.isLoading) {
     return <LoadingBlock />;
   }
 
-  if (bootstrap.error || !data || !summary) {
-    return <ErrorBlock error={bootstrap.error} />;
+  if (dashboard.error || !dashboard.data) {
+    return <ErrorBlock error={dashboard.error} />;
   }
 
-  const { shifts, locations, receivables, spaces } = data;
-
-  const upcoming = shifts
-    .filter((shift) => shift.date >= new Date().toISOString().slice(0, 10))
-    .slice(0, 6);
+  const { calendarShifts, upcomingShifts, locations, receivables, spaceCount, summary } =
+    dashboard.data;
 
   function editShift(shift: Shift) {
     setShiftModal({ type: "edit", shift });
@@ -125,7 +73,7 @@ export function DashboardPage() {
         onDelete={(shift) => setShiftModal({ type: "delete", shift })}
         onEdit={editShift}
         onViewDateChange={setViewDate}
-        shifts={shifts}
+        shifts={calendarShifts}
         viewDate={viewDate}
       />
 
@@ -141,10 +89,15 @@ export function DashboardPage() {
               <span>Novo</span>
             </Button>
           </header>
-          {upcoming.length ? (
+          {upcomingShifts.length ? (
             <div className="stack" data-testid="upcoming-shifts-list">
-              {upcoming.map((shift) => (
-                <button className="list-button" key={shift.id} onClick={() => editShift(shift)} type="button">
+              {upcomingShifts.map((shift) => (
+                <button
+                  className="list-button"
+                  key={shift.id}
+                  onClick={() => editShift(shift)}
+                  type="button"
+                >
                   <span>
                     <strong>{shift.location_name}</strong>
                     <small>
@@ -156,7 +109,11 @@ export function DashboardPage() {
               ))}
             </div>
           ) : (
-            <EmptyState icon={CalendarDays} text="Sua agenda futura ainda esta livre." title="Sem plantoes" />
+            <EmptyState
+              icon={CalendarDays}
+              text="Sua agenda futura ainda esta livre."
+              title="Sem plantoes"
+            />
           )}
         </article>
 
@@ -180,7 +137,11 @@ export function DashboardPage() {
               ))}
             </div>
           ) : (
-            <EmptyState icon={Banknote} text="Valores futuros aparecem aqui." title="Sem recebiveis" />
+            <EmptyState
+              icon={Banknote}
+              text="Valores futuros aparecem aqui."
+              title="Sem recebiveis"
+            />
           )}
         </article>
 
@@ -197,7 +158,7 @@ export function DashboardPage() {
               Locais
             </span>
             <span>
-              <strong>{spaces.length}</strong>
+              <strong>{spaceCount}</strong>
               Espacos
             </span>
           </div>

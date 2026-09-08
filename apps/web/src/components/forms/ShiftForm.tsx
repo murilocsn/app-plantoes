@@ -3,9 +3,11 @@ import type { Location, Shift } from "@financplantoes/shared";
 import { recurrenceInputSchema, shiftInputSchema } from "@financplantoes/shared";
 import { Save } from "lucide-react";
 import { useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
+import { dateKey } from "../../lib/calendar";
 import { Button } from "../Button";
+import { DateField } from "../DateField";
 import { Field } from "../Field";
 
 const shiftFormSchema = shiftInputSchema.extend({
@@ -14,6 +16,14 @@ const shiftFormSchema = shiftInputSchema.extend({
   interval_value: z.coerce.number().min(1).max(365).default(1),
   end_date: z.string().optional(),
   occurrences: z.coerce.number().min(2).max(500).optional().or(z.literal("")),
+}).superRefine((values, context) => {
+  if (values.repeat && values.end_date && !recurrenceInputSchema.shape.end_date.safeParse(values.end_date).success) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["end_date"],
+      message: "Informe uma data valida",
+    });
+  }
 });
 
 type ShiftFormValues = z.infer<typeof shiftFormSchema>;
@@ -26,8 +36,6 @@ type ShiftFormProps = {
   onCancel: () => void;
   onSubmit: (values: { shift: z.infer<typeof shiftInputSchema>; recurrence?: unknown }) => void;
 };
-
-const today = new Date().toISOString().slice(0, 10);
 
 function toTime(value?: string | null) {
   return value ? value.slice(0, 5) : "07:00";
@@ -46,6 +54,7 @@ export function ShiftForm({
     [locations],
   );
   const {
+    control,
     register,
     handleSubmit,
     watch,
@@ -54,7 +63,7 @@ export function ShiftForm({
   } = useForm<ShiftFormValues>({
     resolver: zodResolver(shiftFormSchema),
     defaultValues: {
-      date: shift?.date ?? initialDate ?? today,
+      date: shift?.date ?? initialDate ?? dateKey(new Date()),
       start_time: toTime(shift?.start_time),
       location_id: shift?.location_id ?? activeLocations[0]?.id ?? "",
       duration: Number(shift?.duration ?? 12),
@@ -103,9 +112,11 @@ export function ShiftForm({
         onSubmit({ shift: shiftPayload, recurrence });
       })}
     >
-      <Field error={errors.date?.message} label="Data">
-        <input autoFocus type="date" {...register("date")} />
-      </Field>
+      <Controller
+        control={control}
+        name="date"
+        render={({ field }) => <DateField {...field} autoFocus error={errors.date?.message} label="Data" />}
+      />
       <Field error={errors.start_time?.message} label="Inicio">
         <input type="time" {...register("start_time")} />
       </Field>
@@ -153,9 +164,13 @@ export function ShiftForm({
               <Field error={errors.interval_value?.message} label="Intervalo">
                 <input min="1" max="365" type="number" {...register("interval_value")} />
               </Field>
-              <Field error={errors.end_date?.message} label="Data final">
-                <input type="date" {...register("end_date")} />
-              </Field>
+              <Controller
+                control={control}
+                name="end_date"
+                render={({ field }) => (
+                  <DateField {...field} error={errors.end_date?.message} label="Data final" value={field.value ?? ""} />
+                )}
+              />
               <Field error={errors.occurrences?.message} label="Quantidade">
                 <input min="2" max="500" type="number" {...register("occurrences")} />
               </Field>

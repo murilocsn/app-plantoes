@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { domainApi } from "../lib/domain-api";
 
 const bootstrapKey = ["bootstrap"];
+const dashboardOverviewKey = ["dashboard-overview"];
 
 export function useBootstrap() {
   return useQuery({
@@ -10,10 +11,22 @@ export function useBootstrap() {
   });
 }
 
+export function useDashboardOverview(month: string) {
+  return useQuery({
+    queryKey: [...dashboardOverviewKey, month],
+    queryFn: () => domainApi.dashboardOverview({ month }),
+  });
+}
+
 export function useRefreshBootstrap() {
   const queryClient = useQueryClient();
 
-  return () => queryClient.invalidateQueries({ queryKey: bootstrapKey });
+  return async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: bootstrapKey }),
+      queryClient.invalidateQueries({ queryKey: dashboardOverviewKey }),
+    ]);
+  };
 }
 
 export function useAppMutation<TInput>(
@@ -32,7 +45,9 @@ export function useAppMutation<TInput>(
       options?.onSuccess?.();
     },
     onError: (error) => {
-      options?.onError?.(error instanceof Error ? error : new Error("Falha ao concluir a operacao."));
+      options?.onError?.(
+        error instanceof Error ? error : new Error("Falha ao concluir a operacao."),
+      );
     },
   });
 }
