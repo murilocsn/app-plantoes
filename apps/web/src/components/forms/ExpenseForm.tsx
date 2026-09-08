@@ -2,9 +2,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { Space } from "@financplantoes/shared";
 import { personalExpenseInputSchema, sharedExpenseInputSchema } from "@financplantoes/shared";
 import { Save } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import type { z } from "zod";
+import { dateKey } from "../../lib/calendar";
 import { Button } from "../Button";
+import { DateField } from "../DateField";
 import { Field } from "../Field";
 
 type PersonalValues = z.infer<typeof personalExpenseInputSchema>;
@@ -21,6 +23,7 @@ type ExpenseFormProps = {
 export function ExpenseForm({ mode, spaces = [], submitting, onCancel, onSubmit }: ExpenseFormProps) {
   const schema = mode === "personal" ? personalExpenseInputSchema : sharedExpenseInputSchema;
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
@@ -29,7 +32,7 @@ export function ExpenseForm({ mode, spaces = [], submitting, onCancel, onSubmit 
     defaultValues: {
       description: "",
       amount: 0,
-      expense_date: new Date().toISOString().slice(0, 10),
+      expense_date: dateKey(new Date()),
       category: "",
       notes: "",
       space_id: spaces[0]?.id ?? "",
@@ -56,9 +59,11 @@ export function ExpenseForm({ mode, spaces = [], submitting, onCancel, onSubmit 
       <Field error={errors.amount?.message} label="Valor">
         <input min="0" step="0.01" type="number" {...register("amount")} />
       </Field>
-      <Field error={errors.expense_date?.message} label="Data">
-        <input type="date" {...register("expense_date")} />
-      </Field>
+      <Controller
+        control={control}
+        name="expense_date"
+        render={({ field }) => <DateField {...field} error={errors.expense_date?.message} label="Data" />}
+      />
       <Field error={errors.category?.message} label="Categoria">
         <input {...register("category")} />
       </Field>

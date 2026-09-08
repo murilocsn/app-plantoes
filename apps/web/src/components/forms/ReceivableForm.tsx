@@ -2,9 +2,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { Location, Receivable } from "@financplantoes/shared";
 import { PAYMENT_METHODS, PAYMENT_METHOD_VALUES, receivableInputSchema } from "@financplantoes/shared";
 import { Save } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import type { z } from "zod";
+import { dateKey } from "../../lib/calendar";
 import { Button } from "../Button";
+import { DateField } from "../DateField";
 import { Field } from "../Field";
 
 type ReceivableFormValues = z.infer<typeof receivableInputSchema>;
@@ -35,6 +37,7 @@ export function ReceivableForm({
   onSubmit,
 }: ReceivableFormProps) {
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
@@ -43,7 +46,7 @@ export function ReceivableForm({
     defaultValues: {
       description: receivable?.description ?? "",
       amount: Number(receivable?.amount ?? 0),
-      expected_date: receivable?.expected_date ?? new Date().toISOString().slice(0, 10),
+      expected_date: receivable?.expected_date ?? dateKey(new Date()),
       location_id: receivable?.location_id ?? "",
       status: receivable?.status === "received" ? "received" : "pending",
       payment_method: normalizePaymentMethod(receivable?.payment_method),
@@ -59,9 +62,11 @@ export function ReceivableForm({
       <Field error={errors.amount?.message} label="Valor">
         <input min="0" step="0.01" type="number" {...register("amount")} />
       </Field>
-      <Field error={errors.expected_date?.message} label="Previsao">
-        <input type="date" {...register("expected_date")} />
-      </Field>
+      <Controller
+        control={control}
+        name="expected_date"
+        render={({ field }) => <DateField {...field} error={errors.expected_date?.message} label="Previsao" />}
+      />
       <Field error={errors.location_id?.message} label="Local">
         <select {...register("location_id")}>
           <option value="">Sem local</option>

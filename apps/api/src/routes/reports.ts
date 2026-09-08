@@ -10,6 +10,15 @@ function csvCell(value: unknown) {
   return `"${String(value ?? "").replace(/"/g, '""')}"`;
 }
 
+function dateCell(value: string | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  const [year, month, day] = value.slice(0, 10).split("-");
+  return year && month && day ? `${day}/${month}/${year}` : value;
+}
+
 reportsRouter.get(
   "/export.csv",
   asyncHandler(async (request, response) => {
@@ -49,21 +58,21 @@ reportsRouter.get(
       ["Tipo", "Data", "Descricao", "Valor", "Status"],
       ...shifts.map((shift) => [
         "Plantao",
-        shift.date,
+        dateCell(shift.date),
         shift.location_name,
         shift.value ?? shift.value12,
         "",
       ]),
       ...receivables.map((item) => [
         "Recebivel",
-        item.expected_date,
+        dateCell(item.expected_date),
         item.description,
         item.amount,
         item.status,
       ]),
       ...expenses.map((item) => [
         "Despesa",
-        item.expense_date,
+        dateCell(item.expense_date),
         item.description,
         -Number(item.amount || 0),
         "",

@@ -1,6 +1,7 @@
 import { Download, FileSpreadsheet, MapPin, WalletCards } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "../components/Button";
+import { DateField } from "../components/DateField";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { StatCard } from "../components/StatCard";
@@ -88,8 +89,8 @@ export function ReportsPage() {
         </header>
 
         <div className="report-filters">
-          <label>Plantões de<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
-          <label>Até<input type="date" value={to} onChange={(event) => setTo(event.target.value)} /></label>
+          <DateField label="Plantoes de" name="from" onBlur={() => undefined} onChange={setFrom} value={from} />
+          <DateField label="Ate" name="to" onBlur={() => undefined} onChange={setTo} value={to} />
           <label>Local<select value={locationId} onChange={(event) => setLocationId(event.target.value)}><option value="">Todos os locais</option>{bootstrap.data.locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select></label>
         </div>
 

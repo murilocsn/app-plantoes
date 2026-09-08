@@ -3,6 +3,7 @@ import { AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { useAppMutation } from "../hooks/useBootstrap";
 import { domainApi } from "../lib/domain-api";
+import { dateLabel } from "../lib/formatters";
 import { Button } from "./Button";
 import { EmptyState } from "./EmptyState";
 import { ShiftForm } from "./forms/ShiftForm";
@@ -93,7 +94,7 @@ export function ShiftCrudModals({ locations, modal, onClose }: ShiftCrudModalsPr
     <Modal eyebrow="Exclusao" onClose={onClose} title="Excluir plantao">
       <div className="delete-dialog">
         <p>
-          {modal.shift.location_name} em {modal.shift.date}
+          {modal.shift.location_name} em {dateLabel(modal.shift.date)}
         </p>
         <div className="delete-actions">
           <Button

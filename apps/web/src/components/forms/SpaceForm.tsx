@@ -2,9 +2,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { Space } from "@financplantoes/shared";
 import { spaceInputSchema } from "@financplantoes/shared";
 import { Save } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import type { z } from "zod";
 import { Button } from "../Button";
+import { DateField } from "../DateField";
 import { Field } from "../Field";
 
 type SpaceValues = z.infer<typeof spaceInputSchema>;
@@ -18,6 +19,7 @@ type SpaceFormProps = {
 
 export function SpaceForm({ space, submitting, onCancel, onSubmit }: SpaceFormProps) {
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
@@ -48,12 +50,20 @@ export function SpaceForm({ space, submitting, onCancel, onSubmit }: SpaceFormPr
           <option value="other">Outro</option>
         </select>
       </Field>
-      <Field error={errors.start_date?.message} label="Inicio">
-        <input type="date" {...register("start_date")} />
-      </Field>
-      <Field error={errors.end_date?.message} label="Fim">
-        <input type="date" {...register("end_date")} />
-      </Field>
+      <Controller
+        control={control}
+        name="start_date"
+        render={({ field }) => (
+          <DateField {...field} error={errors.start_date?.message} label="Inicio" value={field.value ?? ""} />
+        )}
+      />
+      <Controller
+        control={control}
+        name="end_date"
+        render={({ field }) => (
+          <DateField {...field} error={errors.end_date?.message} label="Fim" value={field.value ?? ""} />
+        )}
+      />
       <Field error={errors.description?.message} label="Descricao">
         <textarea rows={3} {...register("description")} />
       </Field>

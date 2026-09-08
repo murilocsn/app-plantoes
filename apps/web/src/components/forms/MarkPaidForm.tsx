@@ -1,9 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { markReceivablePaidSchema, PAYMENT_METHODS } from "@financplantoes/shared";
 import { Check } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import type { z } from "zod";
+import { dateKey } from "../../lib/calendar";
 import { Button } from "../Button";
+import { DateField } from "../DateField";
 import { Field } from "../Field";
 
 type MarkPaidValues = z.infer<typeof markReceivablePaidSchema>;
@@ -16,13 +18,14 @@ type MarkPaidFormProps = {
 
 export function MarkPaidForm({ submitting, onCancel, onSubmit }: MarkPaidFormProps) {
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<MarkPaidValues>({
     resolver: zodResolver(markReceivablePaidSchema),
     defaultValues: {
-      received_date: new Date().toISOString().slice(0, 10),
+      received_date: dateKey(new Date()),
       // Valor na forma aceita pela constraint do banco (minúsculo)
       payment_method: "pix",
       notes: "",
@@ -31,9 +34,19 @@ export function MarkPaidForm({ submitting, onCancel, onSubmit }: MarkPaidFormPro
 
   return (
     <form className="form-grid" onSubmit={handleSubmit(onSubmit)}>
-      <Field error={errors.received_date?.message} label="Data recebida">
-        <input autoFocus type="date" {...register("received_date")} />
-      </Field>
+      <Controller
+        control={control}
+        name="received_date"
+        render={({ field }) => (
+          <DateField
+            {...field}
+            autoFocus
+            error={errors.received_date?.message}
+            label="Data recebida"
+            value={field.value ?? ""}
+          />
+        )}
+      />
       <Field error={errors.payment_method?.message} label="Metodo">
         <select {...register("payment_method")}>
           {PAYMENT_METHODS.map((method) => (
