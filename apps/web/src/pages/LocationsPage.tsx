@@ -21,6 +21,13 @@ export function LocationsPage() {
     { onSuccess: () => setModal(null) },
   );
   const deleteLocation = useAppMutation((id: string) => domainApi.deleteLocation(id));
+  const formError = modal?.type === "create" ? createLocation.error : updateLocation.error;
+
+  const openModal = (nextModal: LocationModal) => {
+    createLocation.reset();
+    updateLocation.reset();
+    setModal(nextModal);
+  };
 
   if (bootstrap.isLoading) {
     return <LoadingBlock />;
@@ -38,7 +45,7 @@ export function LocationsPage() {
             <p className="eyebrow">Cadastros</p>
             <h2>Locais de trabalho</h2>
           </div>
-          <Button onClick={() => setModal({ type: "create" })} variant="primary">
+          <Button onClick={() => openModal({ type: "create" })} variant="primary">
             <Plus size={18} />
             <span>Novo local</span>
           </Button>
@@ -63,7 +70,7 @@ export function LocationsPage() {
                 <div className="entity-actions">
                   <Button
                     aria-label="Editar local"
-                    onClick={() => setModal({ type: "edit", location })}
+                    onClick={() => openModal({ type: "edit", location })}
                     size="icon"
                     title="Editar"
                   >
@@ -100,6 +107,11 @@ export function LocationsPage() {
           onClose={() => setModal(null)}
           title={modal.type === "create" ? "Novo local" : "Editar local"}
         >
+          {formError && (
+            <p className="form-message" role="alert">
+              {formError.message}
+            </p>
+          )}
           <LocationForm
             location={modal.type === "edit" ? modal.location : null}
             onCancel={() => setModal(null)}
