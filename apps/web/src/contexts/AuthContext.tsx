@@ -1,4 +1,5 @@
 import type { Session, User } from "@supabase/supabase-js";
+import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 
@@ -14,6 +15,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
 
@@ -23,12 +25,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth
       .getSession()
       .then(({ data, error }) => {
-        if (error) {
-          throw error;
-        }
-
         if (mounted) {
-          setSession(data.session);
+          const nextSession = error ? null : data.session;
+
+          if (!nextSession) {
+            queryClient.clear();
+          }
+
+          setSession(nextSession);
         }
       })
       .finally(() => {
@@ -40,6 +44,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!nextSession) {
+        queryClient.clear();
+      }
+
       setSession(nextSession);
       setLoading(false);
     });
@@ -48,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [queryClient]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

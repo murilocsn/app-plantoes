@@ -32,9 +32,23 @@ export function AppLayout() {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [now, setNow] = useState(() => new Date());
   const [dark, setDark] = useState<boolean>(
     () => localStorage.getItem("financplantoes-theme") === "dark",
   );
+  const greeting = useMemo(() => {
+    const hour = now.getHours();
+
+    if (hour < 12) {
+      return "Bom dia";
+    }
+
+    if (hour < 18) {
+      return "Boa tarde";
+    }
+
+    return "Boa noite";
+  }, [now]);
   const firstName = useMemo(() => {
     const name =
       user?.user_metadata?.full_name ||
@@ -48,6 +62,12 @@ export function AppLayout() {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
     localStorage.setItem("financplantoes-theme", dark ? "dark" : "light");
   }, [dark]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(new Date()), 60_000);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   async function handleExport() {
     const blob = await download("/reports/export.csv");
@@ -94,7 +114,7 @@ export function AppLayout() {
         <header className="topbar">
           <div>
             <p className="eyebrow">Rotina profissional</p>
-            <h1>Boa noite, {firstName}</h1>
+            <h1>{greeting}, {firstName}</h1>
             <p className="muted">{user?.email}</p>
           </div>
           <div className="topbar-actions">

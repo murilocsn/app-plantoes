@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ApiError } from "./lib/api";
 import "./styles.css";
 
 const queryClient = new QueryClient({
@@ -11,7 +12,8 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 30_000,
       refetchOnWindowFocus: false,
-      retry: 1,
+      retry: (failureCount, error) =>
+        !(error instanceof ApiError && error.status === 401) && failureCount < 1,
     },
   },
 });
