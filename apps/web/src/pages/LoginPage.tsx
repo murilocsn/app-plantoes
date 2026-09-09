@@ -54,6 +54,9 @@ export function LoginPage() {
           <CalendarDays size={42} />
           <h1>Plantoes, recebimentos e rotina financeira no mesmo fluxo.</h1>
           <p>Agenda visual, API dedicada e dados isolados pelo Supabase RLS.</p>
+          <p className="author-signature">
+            Idealizado por <strong>Murilo Neder</strong>
+          </p>
         </div>
       </section>
       <section className="auth-card">
