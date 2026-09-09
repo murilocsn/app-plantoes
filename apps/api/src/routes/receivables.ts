@@ -25,9 +25,9 @@ function normalizeDateInput(value: unknown) {
     return text;
   }
 
-  const day = brDate[1];
-  const month = brDate[2];
-  const year = brDate[3];
+  const day = brDate[1] ?? "";
+  const month = brDate[2] ?? "";
+  const year = brDate[3] ?? "";
   return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }
 
@@ -51,6 +51,16 @@ function normalizeReceivableInput(body: unknown) {
     received_date: normalizeDateInput(input.received_date),
     payment_method: normalizePaymentMethodInput(input.payment_method),
   };
+}
+
+// Data "de calendário" no fuso local, no formato ISO (YYYY-MM-DD).
+// Não usar toISOString() aqui: ele devolve a data em UTC e, para o
+// Brasil (UTC-3), após ~21h local o dia já seria o seguinte.
+function todayKey() {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
+    today.getDate(),
+  ).padStart(2, "0")}`;
 }
 
 receivablesRouter.get(
@@ -118,7 +128,7 @@ receivablesRouter.post(
         .from("receivables")
         .update({
           ...input,
-          received_date: input.received_date ?? new Date().toISOString().slice(0, 10),
+          received_date: input.received_date ?? todayKey(),
           status: "received",
         })
         .eq("id", id)
