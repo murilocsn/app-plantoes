@@ -31,7 +31,7 @@ const navItems = [
 function greetingLabel(date = new Date()) {
   const hour = date.getHours();
 
-  if (hour >= 5 && hour < 12) {
+  if (hour >= 3 && hour < 12) {
     return "Bom dia";
   }
 
