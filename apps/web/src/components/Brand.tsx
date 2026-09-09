@@ -1,17 +1,15 @@
+import { BrandMark } from "./BrandMark";
+
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <div className="brand">
-      <img
-        alt=""
-        className="brand-logo"
-        height="48"
-        src={`${import.meta.env.BASE_URL}icons/icon-192.png`}
-        width="48"
-      />
+      <BrandMark />
       {!compact && (
         <div>
-          <strong>FinancPlantoes</strong>
-          <span>React + API</span>
+          <strong>
+            Financ<span className="brand-accent">Plantões</span>
+          </strong>
+          <span>Plantões em ordem, seu futuro em equilíbrio</span>
         </div>
       )}
     </div>
