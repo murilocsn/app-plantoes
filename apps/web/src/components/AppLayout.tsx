@@ -28,6 +28,20 @@ const navItems = [
   { to: "/reports", label: "Relatorios", icon: Download },
 ];
 
+function greetingLabel(date = new Date()) {
+  const hour = date.getHours();
+
+  if (hour >= 5 && hour < 12) {
+    return "Bom dia";
+  }
+
+  if (hour >= 12 && hour < 18) {
+    return "Boa tarde";
+  }
+
+  return "Boa noite";
+}
+
 export function AppLayout() {
   const { user, signOut } = useAuth();
   const location = useLocation();
@@ -43,6 +57,7 @@ export function AppLayout() {
       "Usuario";
     return String(name).split(/\s+/)[0];
   }, [user]);
+  const greeting = greetingLabel();
 
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
@@ -94,7 +109,7 @@ export function AppLayout() {
         <header className="topbar">
           <div>
             <p className="eyebrow">Rotina profissional</p>
-            <h1>Boa noite, {firstName}</h1>
+            <h1>{greeting}, {firstName}</h1>
             <p className="muted">{user?.email}</p>
           </div>
           <div className="topbar-actions">
