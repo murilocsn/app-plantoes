@@ -19,13 +19,13 @@
     "helmet": "^8.0.0",
     "morgan": "^1.10.0",
     "nanoid": "^5.0.9",
+    "tsup": "^8.3.5",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/morgan": "^1.9.9",
-    "tsup": "^8.3.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
