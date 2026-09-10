@@ -37,37 +37,6 @@ export function DashboardPage() {
 
   return (
     <>
-      <section className="stat-grid" data-testid="dashboard-stats">
-        <StatCard
-          detail={`${summary.shiftCount} plantoes no mes`}
-          icon={TrendingUp}
-          label="Projetado"
-          tone="blue"
-          value={money(summary.incomeProjected)}
-        />
-        <StatCard
-          detail="Recebiveis baixados"
-          icon={Banknote}
-          label="Recebido"
-          tone="green"
-          value={money(summary.received)}
-        />
-        <StatCard
-          detail="A receber ou atrasado"
-          icon={Clock}
-          label="Pendente"
-          tone="amber"
-          value={money(summary.pending)}
-        />
-        <StatCard
-          detail={`${summary.activeLocationCount} locais ativos`}
-          icon={Building2}
-          label="Rede"
-          tone="coral"
-          value={`${summary.shiftHours}h`}
-        />
-      </section>
-
       <CalendarMonth
         onCreate={(date) => setShiftModal({ type: "create", date })}
         onDelete={(shift) => setShiftModal({ type: "delete", shift })}
@@ -163,6 +132,37 @@ export function DashboardPage() {
             </span>
           </div>
         </article>
+      </section>
+
+      <section className="stat-grid" data-testid="dashboard-stats">
+        <StatCard
+          detail={`${summary.shiftCount} plantoes no mes`}
+          icon={TrendingUp}
+          label="Projetado"
+          tone="blue"
+          value={money(summary.incomeProjected)}
+        />
+        <StatCard
+          detail="Recebiveis baixados"
+          icon={Banknote}
+          label="Recebido"
+          tone="green"
+          value={money(summary.received)}
+        />
+        <StatCard
+          detail="A receber ou atrasado"
+          icon={Clock}
+          label="Pendente"
+          tone="amber"
+          value={money(summary.pending)}
+        />
+        <StatCard
+          detail={`${summary.activeLocationCount} locais ativos`}
+          icon={Building2}
+          label="Rede"
+          tone="coral"
+          value={`${summary.shiftHours}h`}
+        />
       </section>
 
       <ShiftCrudModals
