@@ -93,12 +93,12 @@ test.beforeEach(async ({ page }) => {
     }
   });
 
-  await page.goto("/login");
+  await page.goto("/#/login");
   await page.getByLabel("E-mail").fill("teste@example.test");
   await page.getByLabel("Senha", { exact: true }).fill("test-password");
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
-  await expect(page).not.toHaveURL(/\/login/);
-  await page.goto("/shifts");
+  await expect(page).not.toHaveURL(/#\/login/);
+  await page.goto("/#/shifts");
   await expect(page.locator(".table-row")).toHaveCount(3);
 });
 
