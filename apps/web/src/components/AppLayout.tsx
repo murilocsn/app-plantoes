@@ -14,7 +14,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { download } from "../lib/api";
 import { Brand } from "./Brand";
 import { Button } from "./Button";
 
@@ -69,16 +68,6 @@ export function AppLayout() {
     return () => window.clearInterval(interval);
   }, []);
 
-  async function handleExport() {
-    const blob = await download("/reports/export.csv");
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `financplantoes-${new Date().toISOString().slice(0, 10)}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  }
-
   return (
     <div className="app-frame">
       <aside className="sidebar">
@@ -118,10 +107,6 @@ export function AppLayout() {
             <p className="muted">{user?.email}</p>
           </div>
           <div className="topbar-actions">
-            <Button onClick={handleExport} title="Exportar CSV" variant="secondary">
-              <Download size={18} />
-              <span>CSV</span>
-            </Button>
             <Button onClick={() => navigate("/shifts?new=1")} variant="primary">
               <Plus size={18} />
               <span>Novo plantao</span>

@@ -64,7 +64,11 @@ export function ShiftCrudModals({ locations, modal, onClose }: ShiftCrudModalsPr
           }}
           submitting={createShift.isPending}
         />
-        {errorMessage && <p className="form-message">{errorMessage}</p>}
+        {errorMessage && (
+          <p className="form-message" role="alert">
+            {errorMessage}
+          </p>
+        )}
       </Modal>
     );
   }
@@ -82,7 +86,11 @@ export function ShiftCrudModals({ locations, modal, onClose }: ShiftCrudModalsPr
           shift={modal.shift}
           submitting={updateShift.isPending}
         />
-        {errorMessage && <p className="form-message">{errorMessage}</p>}
+        {errorMessage && (
+          <p className="form-message" role="alert">
+            {errorMessage}
+          </p>
+        )}
       </Modal>
     );
   }

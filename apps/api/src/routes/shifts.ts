@@ -15,6 +15,13 @@ import { expectData, normalizeShiftStatus, optionalData } from "../lib/db";
 import { HttpError } from "../lib/http-error";
 import { ok } from "../lib/respond";
 import {
+  findFirstInternalShiftConflict,
+  findFirstShiftConflict,
+  shiftConflictQueryRange,
+  type ShiftConflict,
+  type ShiftConflictCandidate,
+} from "../lib/shift-conflicts";
+import {
   expectedPaymentDate,
   recurrenceDates,
   recurrenceForDatabase,
@@ -26,6 +33,8 @@ export const shiftsRouter = Router();
 const shiftSelect =
   "id,date,start_time,location_id,location_name,duration,value,value12,professional,notes,recurring_group_id,created_at";
 
+const shiftConflictSelect = "id,date,start_time,duration,location_name";
+
 const createShiftRequestSchema = z.object({
   shift: shiftInputSchema,
   recurrence: recurrenceInputSchema.nullable().optional(),
@@ -34,6 +43,52 @@ const createShiftRequestSchema = z.object({
 const deleteShiftRequestSchema = z.object({
   scope: z.enum(["only", "future", "all"]).default("only"),
 });
+
+function shiftConflictError(conflict: ShiftConflict) {
+  return new HttpError(
+    409,
+    "Nesse horario nao pode, pois ja existe um plantao cadastrado.",
+    "SHIFT_TIME_CONFLICT",
+    {
+      date: conflict.candidate.date,
+      start_time: conflict.candidate.start_time,
+      conflicting_shift_id: conflict.existing.id ?? null,
+    },
+  );
+}
+
+async function ensureNoShiftTimeConflict(
+  request: Request,
+  candidates: ShiftConflictCandidate[],
+  options: { ignoreIds?: string[] } = {},
+) {
+  const internalConflict = findFirstInternalShiftConflict(candidates);
+
+  if (internalConflict) {
+    throw shiftConflictError(internalConflict);
+  }
+
+  const range = shiftConflictQueryRange(candidates);
+
+  if (!range) {
+    return;
+  }
+
+  const existingShifts = await optionalData<ShiftConflictCandidate[]>(
+    request.auth.supabase
+      .from("shifts")
+      .select(shiftConflictSelect)
+      .eq("user_id", request.auth.user.id)
+      .gte("date", range.from)
+      .lte("date", range.to),
+    [],
+  );
+  const conflict = findFirstShiftConflict(candidates, existingShifts, options);
+
+  if (conflict) {
+    throw shiftConflictError(conflict);
+  }
+}
 
 async function getLocation(request: Request, id: string) {
   const location = await expectData<PaymentLocation>(
@@ -104,6 +159,8 @@ shiftsRouter.post(
       recurring_group_id: recurrenceId,
     }));
 
+    await ensureNoShiftTimeConflict(request, rows);
+
     const shifts = await expectData<Shift[]>(
       request.auth.supabase.from("shifts").insert(rows).select(shiftSelect),
     );
@@ -154,6 +211,15 @@ shiftsRouter.patch(
   asyncHandler(async (request, response) => {
     const { id } = idParamSchema.parse(request.params);
     const input = shiftInputSchema.partial().parse(request.body);
+    const currentShift = await expectData<Shift>(
+      request.auth.supabase
+        .from("shifts")
+        .select(shiftSelect)
+        .eq("id", id)
+        .eq("user_id", request.auth.user.id)
+        .single(),
+      "Plantao nao encontrado.",
+    );
     const location = input.location_id ? await getLocation(request, input.location_id) : null;
     const update = {
       date: input.date,
@@ -166,6 +232,21 @@ shiftsRouter.patch(
       professional: input.professional,
       notes: input.notes,
     };
+
+    if (input.date || input.start_time || input.duration !== undefined) {
+      await ensureNoShiftTimeConflict(
+        request,
+        [
+          {
+            id,
+            date: input.date ?? currentShift.date,
+            start_time: input.start_time ?? currentShift.start_time,
+            duration: input.duration ?? currentShift.duration,
+          },
+        ],
+        { ignoreIds: [id] },
+      );
+    }
 
     const shift = await expectData<Shift>(
       request.auth.supabase

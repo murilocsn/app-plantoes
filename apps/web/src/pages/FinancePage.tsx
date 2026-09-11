@@ -1,8 +1,9 @@
 import type { Receivable } from "@financplantoes/shared";
-import { Banknote, Check, Pencil, Plus, Trash2 } from "lucide-react";
+import { Banknote, Check, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
+import { Field } from "../components/Field";
 import { MarkPaidForm } from "../components/forms/MarkPaidForm";
 import { ReceivableForm } from "../components/forms/ReceivableForm";
 import { Modal } from "../components/Modal";
@@ -20,16 +21,65 @@ function isOverdue(item: Receivable) {
   return Boolean(item.expected_date && item.expected_date < new Date().toISOString().slice(0, 10));
 }
 
+function isOpenReceivable(item: Receivable) {
+  return item.status !== "received" && item.status !== "cancelled";
+}
+
+function statusLabel(item: Receivable) {
+  if (item.status === "received") {
+    return "Recebido";
+  }
+
+  if (item.status === "cancelled") {
+    return "Cancelado";
+  }
+
+  return isOverdue(item) ? "Atrasado" : "Pendente";
+}
+
+type ReceivableStatusFilter = "all" | "pending" | "received";
+
+type ReceivableFilters = {
+  query: string;
+  from: string;
+  to: string;
+  locationId: string;
+  status: ReceivableStatusFilter;
+};
+
+const emptyReceivableFilters: ReceivableFilters = {
+  query: "",
+  from: "",
+  to: "",
+  locationId: "",
+  status: "all",
+};
+
+const statusFilterOptions: Array<{ value: ReceivableStatusFilter; label: string }> = [
+  { value: "all", label: "Todos" },
+  { value: "pending", label: "Pendentes" },
+  { value: "received", label: "Pagos" },
+];
+
+function normalizeSearchText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 type ReceivableModal =
   | { type: "create" }
   | { type: "edit"; receivable: Receivable }
   | { type: "paid"; receivable: Receivable }
+  | { type: "bulk-paid"; receivables: Receivable[] }
   | null;
 
 export function FinancePage() {
   const bootstrap = useBootstrap();
   const [modal, setModal] = useState<ReceivableModal>(null);
   const [formError, setFormError] = useState("");
+  const [filters, setFilters] = useState<ReceivableFilters>(emptyReceivableFilters);
 
   const showError = (error: Error) => setFormError(error.message);
   const onSuccess = () => {
@@ -49,6 +99,11 @@ export function FinancePage() {
     (input: { id: string; payload: unknown }) => domainApi.markReceivablePaid(input.id, input.payload),
     { onSuccess, onError: showError },
   );
+  const markFilteredPaid = useAppMutation(
+    (input: { ids: string[]; payload: unknown }) =>
+      Promise.all(input.ids.map((id) => domainApi.markReceivablePaid(id, input.payload))),
+    { onSuccess, onError: showError },
+  );
   const deleteReceivable = useAppMutation((id: string) => domainApi.deleteReceivable(id), {
     onSuccess: () => setFormError(""),
     onError: showError,
@@ -64,18 +119,61 @@ export function FinancePage() {
 
   // Ordena recebiveis: pendentes/atrasados primeiro (por data), recebidos por ultimo.
   const receivables = [...bootstrap.data.receivables].sort((left, right) => {
-    const leftOpen = left.status !== "received";
-    const rightOpen = right.status !== "received";
+    const leftOpen = isOpenReceivable(left);
+    const rightOpen = isOpenReceivable(right);
     if (leftOpen !== rightOpen) return leftOpen ? -1 : 1;
     return String(left.expected_date ?? "").localeCompare(String(right.expected_date ?? ""));
   });
-  const received = receivables
+  const locationsById = new Map(bootstrap.data.locations.map((location) => [location.id, location.name]));
+  const filteredReceivables = receivables.filter((item) => {
+    const expectedDate = item.expected_date ?? "";
+    const locationName = item.location_id ? locationsById.get(item.location_id) ?? "" : "";
+    const searchTarget = normalizeSearchText(`${item.description} ${locationName}`);
+    const query = normalizeSearchText(filters.query.trim());
+
+    if (query && !searchTarget.includes(query)) {
+      return false;
+    }
+
+    if (filters.from && (!expectedDate || expectedDate < filters.from)) {
+      return false;
+    }
+
+    if (filters.to && (!expectedDate || expectedDate > filters.to)) {
+      return false;
+    }
+
+    if (filters.locationId && item.location_id !== filters.locationId) {
+      return false;
+    }
+
+    if (filters.status === "received" && item.status !== "received") {
+      return false;
+    }
+
+    if (filters.status === "pending" && !isOpenReceivable(item)) {
+      return false;
+    }
+
+    return true;
+  });
+  const filteredOpenReceivables = filteredReceivables.filter(isOpenReceivable);
+  const received = filteredReceivables
     .filter((item) => item.status === "received")
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const pending = receivables
-    .filter((item) => item.status === "pending" || item.status === "overdue")
-    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const overdue = receivables.filter(isOverdue);
+  const pending = filteredOpenReceivables.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const overdue = filteredReceivables.filter(isOverdue);
+  const hasActiveFilters = Boolean(
+    filters.query || filters.from || filters.to || filters.locationId || filters.status !== "all",
+  );
+  const resultLabel =
+    filteredReceivables.length === receivables.length
+      ? `${receivables.length} recebivel${receivables.length === 1 ? "" : "is"}`
+      : `${filteredReceivables.length} de ${receivables.length} recebiveis`;
+  const bulkActionLabel =
+    filteredOpenReceivables.length > 1
+      ? `Marcar ${filteredOpenReceivables.length} pagos`
+      : "Marcar pago";
 
   return (
     <>
@@ -109,17 +207,113 @@ export function FinancePage() {
           </Button>
         </header>
 
-        {receivables.length ? (
+        <div aria-label="Filtros de recebimentos" className="finance-filter-panel">
+          <div className="finance-search-row">
+            <Field label="Busca">
+              <div className="input-icon">
+                <Search size={18} />
+                <input
+                  onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
+                  placeholder="Descricao ou unidade"
+                  type="search"
+                  value={filters.query}
+                />
+              </div>
+            </Field>
+            <Button
+              className="finance-filter-clear"
+              disabled={!hasActiveFilters}
+              onClick={() => setFilters(emptyReceivableFilters)}
+              variant="ghost"
+            >
+              <X size={16} />
+              <span>Limpar</span>
+            </Button>
+          </div>
+
+          <div className="finance-filter-grid">
+            <Field label="De">
+              <input
+                onChange={(event) => {
+                  const from = event.target.value;
+                  setFilters((current) => ({
+                    ...current,
+                    from,
+                    to: current.to && from && current.to < from ? from : current.to,
+                  }));
+                }}
+                type="date"
+                value={filters.from}
+              />
+            </Field>
+            <Field label="Ate">
+              <input
+                min={filters.from || undefined}
+                onChange={(event) => setFilters((current) => ({ ...current, to: event.target.value }))}
+                type="date"
+                value={filters.to}
+              />
+            </Field>
+            <Field label="Unidade">
+              <select
+                onChange={(event) => setFilters((current) => ({ ...current, locationId: event.target.value }))}
+                value={filters.locationId}
+              >
+                <option value="">Todas</option>
+                {bootstrap.data.locations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <div className="field">
+              <span>Status</span>
+              <div aria-label="Status do recebimento" className="finance-status-filter" role="group">
+                {statusFilterOptions.map((option) => (
+                  <button
+                    aria-pressed={filters.status === option.value}
+                    className={`finance-status-option${filters.status === option.value ? " active" : ""}`}
+                    key={option.value}
+                    onClick={() => setFilters((current) => ({ ...current, status: option.value }))}
+                    type="button"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="finance-result-row">
+            <p className="filter-summary">{resultLabel}</p>
+            {hasActiveFilters && (
+              <Button
+                className="finance-bulk-button"
+                disabled={!filteredOpenReceivables.length || markFilteredPaid.isPending}
+                onClick={() => setModal({ type: "bulk-paid", receivables: filteredOpenReceivables })}
+                variant="primary"
+              >
+                <Check size={17} />
+                <span>{bulkActionLabel}</span>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {filteredReceivables.length ? (
           <div className="table-list">
-            {receivables.map((item) => (
+            {filteredReceivables.map((item) => (
               <article className="table-row" key={item.id}>
                 <div>
                   <strong>{item.description}</strong>
-                  <span>{dateLabel(item.expected_date)} - {isOverdue(item) ? "Atrasado" : item.status === "received" ? "Recebido" : "Pendente"}</span>
+                  <span>
+                    {dateLabel(item.expected_date)} - {statusLabel(item)}
+                  </span>
                 </div>
                 <b>{money(item.amount)}</b>
                 <div className="row-actions">
-                  {item.status !== "received" && (
+                  {isOpenReceivable(item) && (
                     <Button
                       aria-label="Marcar recebido"
                       onClick={() => setModal({ type: "paid", receivable: item })}
@@ -153,7 +347,15 @@ export function FinancePage() {
             ))}
           </div>
         ) : (
-          <EmptyState icon={Banknote} text="Recebiveis de plantoes e avulsos aparecem aqui." title="Sem recebiveis" />
+          <EmptyState
+            icon={Banknote}
+            text={
+              receivables.length
+                ? "Ajuste os filtros para ampliar a busca."
+                : "Recebiveis de plantoes e avulsos aparecem aqui."
+            }
+            title={receivables.length ? "Nenhum resultado" : "Sem recebiveis"}
+          />
         )}
       </section>
 
@@ -185,6 +387,30 @@ export function FinancePage() {
             onCancel={() => setModal(null)}
             onSubmit={(values) => markPaid.mutate({ id: modal.receivable.id, payload: values })}
             submitting={markPaid.isPending}
+          />
+        </Modal>
+      )}
+
+      {modal?.type === "bulk-paid" && (
+        <Modal eyebrow="Pagamento" onClose={() => setModal(null)} title="Confirmar recebimentos">
+          <div className="bulk-payment-summary">
+            <strong>
+              {modal.receivables.length} recebimento{modal.receivables.length === 1 ? "" : "s"} pendente
+              {modal.receivables.length === 1 ? "" : "s"}
+            </strong>
+            <span>
+              Total: {money(modal.receivables.reduce((sum, item) => sum + Number(item.amount || 0), 0))}
+            </span>
+          </div>
+          <MarkPaidForm
+            onCancel={() => setModal(null)}
+            onSubmit={(values) =>
+              markFilteredPaid.mutate({
+                ids: modal.receivables.map((item) => item.id),
+                payload: values,
+              })
+            }
+            submitting={markFilteredPaid.isPending}
           />
         </Modal>
       )}

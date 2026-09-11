@@ -8,7 +8,7 @@ import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { ShiftCrudModals, type ShiftModalState } from "../components/ShiftCrudModals";
 import { useBootstrap } from "../hooks/useBootstrap";
 import { colorFor } from "../lib/calendar";
-import { dateLabel, money } from "../lib/formatters";
+import { dateLabel } from "../lib/formatters";
 
 export function ShiftsPage() {
   const bootstrap = useBootstrap();
@@ -125,12 +125,11 @@ export function ShiftsPage() {
                     <span className="shift-day-label">{dateLabel(day.date)}</span>
                     <div className="table-list">
                       {day.shifts.map((shift) => (
-                        <article className="table-row" key={shift.id}>
+                        <article className="table-row shift-row" key={shift.id}>
                           <div>
                             <strong>{String(shift.start_time ?? "--:--").slice(0, 5)}</strong>
                             <span>{shift.duration}h</span>
                           </div>
-                          <b>{money(shift.value ?? shift.value12)}</b>
                           <div className="row-actions">
                             <Button aria-label="Editar" onClick={() => edit(shift)} size="icon" title="Editar">
                               <Pencil size={16} />

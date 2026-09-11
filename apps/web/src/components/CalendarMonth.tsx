@@ -128,7 +128,7 @@ export function CalendarMonth({
           )}
         </div>
 
-        <section className="day-detail">
+        <section className={selectedShifts.length ? "day-detail" : "day-detail day-detail-free"}>
           <header className="day-detail-head">
             <div>
               <p className="eyebrow">Dia selecionado</p>
