@@ -16,6 +16,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 import { useAuth } from "../contexts/AuthContext";
 import { Brand } from "./Brand";
 import { Button } from "./Button";
+import { PushReminderButton } from "./PushReminderButton";
 
 const navItems = [
   { to: "/", label: "Painel", icon: CalendarDays },
@@ -83,6 +84,7 @@ export function AppLayout() {
           ))}
         </nav>
         <div className="sidebar-footer">
+          <PushReminderButton />
           <Button
             aria-label={dark ? "Tema claro" : "Tema escuro"}
             onClick={() => setDark((value) => !value)}

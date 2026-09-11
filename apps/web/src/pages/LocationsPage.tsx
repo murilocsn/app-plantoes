@@ -66,7 +66,9 @@ export function LocationsPage() {
                   </small>
                   {location.doc && <small>{location.doc}</small>}
                 </div>
-                <div className="entity-status">{location.active === false ? "Inativo" : "Ativo"}</div>
+                <div className={`entity-status ${location.active === false ? "inactive" : "active"}`}>
+                  {location.active === false ? "Inativo" : "Ativo"}
+                </div>
                 <div className="entity-actions">
                   <Button
                     aria-label="Editar local"

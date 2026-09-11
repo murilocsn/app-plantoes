@@ -2,6 +2,7 @@ import type { Receivable } from "@financplantoes/shared";
 import { Banknote, Check, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/Button";
+import { DateField } from "../components/DateField";
 import { EmptyState } from "../components/EmptyState";
 import { Field } from "../components/Field";
 import { MarkPaidForm } from "../components/forms/MarkPaidForm";
@@ -232,28 +233,31 @@ export function FinancePage() {
           </div>
 
           <div className="finance-filter-grid">
-            <Field label="De">
-              <input
-                onChange={(event) => {
-                  const from = event.target.value;
-                  setFilters((current) => ({
-                    ...current,
-                    from,
-                    to: current.to && from && current.to < from ? from : current.to,
-                  }));
-                }}
-                type="date"
-                value={filters.from}
-              />
-            </Field>
-            <Field label="Ate">
-              <input
-                min={filters.from || undefined}
-                onChange={(event) => setFilters((current) => ({ ...current, to: event.target.value }))}
-                type="date"
-                value={filters.to}
-              />
-            </Field>
+            <DateField
+              label="De"
+              name="receivable-filter-from"
+              onBlur={() => undefined}
+              onChange={(from) =>
+                setFilters((current) => ({
+                  ...current,
+                  from,
+                  to: current.to && from && current.to < from ? from : current.to,
+                }))
+              }
+              value={filters.from}
+            />
+            <DateField
+              label="Até"
+              name="receivable-filter-to"
+              onBlur={() => undefined}
+              onChange={(to) =>
+                setFilters((current) => ({
+                  ...current,
+                  to: current.from && to && to < current.from ? current.from : to,
+                }))
+              }
+              value={filters.to}
+            />
             <Field label="Unidade">
               <select
                 onChange={(event) => setFilters((current) => ({ ...current, locationId: event.target.value }))}
