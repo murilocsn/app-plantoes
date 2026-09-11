@@ -27,6 +27,17 @@ export function createApp() {
   app.use(express.json({ limit: "1mb" }));
   app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
+  app.get("/", (_request, response) => {
+    response.json({
+      data: {
+        name: "FinancPlantões API",
+        status: "online",
+        application: "https://murilocsn.github.io/app-plantoes/",
+        health: "/health",
+      },
+    });
+  });
+
   app.get("/health", (_request, response) => {
     response.json({ data: { status: "ok" } });
   });
