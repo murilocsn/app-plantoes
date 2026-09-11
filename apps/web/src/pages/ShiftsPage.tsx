@@ -3,6 +3,7 @@ import { CalendarPlus, Pencil, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "../components/Button";
+import { DateField } from "../components/DateField";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { ShiftCrudModals, type ShiftModalState } from "../components/ShiftCrudModals";
@@ -97,34 +98,31 @@ export function ShiftsPage() {
 
         <div aria-label="Filtros de plantoes" className="shift-filter-panel">
           <div className="shift-filter-grid">
-            <label className="field">
-              <span>De</span>
-              <input
-                aria-label="Data inicial"
-                lang="pt-BR"
-                type="date"
-                value={filters.from}
-                onChange={(event) => {
-                  const from = event.target.value;
-                  setFilters((current) => ({
-                    ...current,
-                    from,
-                    to: current.to && from && current.to < from ? from : current.to,
-                  }));
-                }}
-              />
-            </label>
-            <label className="field">
-              <span>Até</span>
-              <input
-                aria-label="Data até"
-                lang="pt-BR"
-                min={filters.from || undefined}
-                type="date"
-                value={filters.to}
-                onChange={(event) => setFilters((current) => ({ ...current, to: event.target.value }))}
-              />
-            </label>
+            <DateField
+              label="De"
+              name="shift-filter-from"
+              onBlur={() => undefined}
+              onChange={(from) =>
+                setFilters((current) => ({
+                  ...current,
+                  from,
+                  to: current.to && from && current.to < from ? from : current.to,
+                }))
+              }
+              value={filters.from}
+            />
+            <DateField
+              label="Até"
+              name="shift-filter-to"
+              onBlur={() => undefined}
+              onChange={(to) =>
+                setFilters((current) => ({
+                  ...current,
+                  to: current.from && to && to < current.from ? current.from : to,
+                }))
+              }
+              value={filters.to}
+            />
             <label className="field">
               <span>Unidade</span>
               <select
