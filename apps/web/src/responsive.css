@@ -1,0 +1,386 @@
+/* FinancPlantões — responsive overrides
+   Mantém o desktop atual e reforça tablet, celular e telas estreitas. */
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+.workspace,
+.page-section,
+.work-panel,
+.calendar-tool,
+.stat-card,
+.entity-card,
+.modal {
+  min-width: 0;
+}
+
+.table-list,
+.stack,
+.card-grid,
+.dashboard-columns,
+.stat-grid {
+  min-width: 0;
+}
+
+.row-item,
+.table-row,
+.entity-card,
+.list-button {
+  overflow-wrap: anywhere;
+}
+
+/* Tablets e notebooks estreitos */
+@media (max-width: 1120px) {
+  .app-frame {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .workspace {
+    padding-inline: 1.25rem;
+  }
+
+  .dashboard-columns,
+  .dashboard-columns.two-columns,
+  .calendar-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobile/tablet vertical */
+@media (max-width: 820px) {
+  body {
+    padding-bottom: calc(78px + env(safe-area-inset-bottom));
+  }
+
+  .workspace {
+    max-width: 100%;
+    padding: 0.9rem 0.75rem 1.5rem;
+  }
+
+  .topbar,
+  .section-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .topbar > :first-child,
+  .section-head > :first-child {
+    min-width: 0;
+    flex: 1 1 220px;
+  }
+
+  .topbar-actions,
+  .inline-actions,
+  .row-actions,
+  .entity-actions {
+    max-width: 100%;
+  }
+
+  .calendar-tool,
+  .page-section,
+  .work-panel {
+    padding: 0.85rem;
+  }
+
+  .calendar-grid {
+    gap: 0.18rem;
+  }
+
+  .calendar-day {
+    min-width: 0;
+    min-height: 54px;
+  }
+
+  .calendar-day strong {
+    line-height: 1;
+  }
+
+  .calendar-footer {
+    min-width: 0;
+  }
+
+  .card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .search-box {
+    max-width: none;
+    width: 100%;
+  }
+
+  .modal-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .modal {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    max-height: 92dvh;
+    padding: 1rem 0.85rem calc(1rem + env(safe-area-inset-bottom));
+    width: 100%;
+  }
+
+  .form-grid,
+  .form-subgrid,
+  .mini-grid,
+  .report-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .form-subgrid,
+  .field:has(textarea),
+  .form-grid > .field:nth-last-child(2) {
+    grid-column: 1;
+  }
+
+  .field input,
+  .field select,
+  .field textarea,
+  .input-icon input,
+  .search-box input {
+    font-size: 16px; /* evita zoom automático no Safari iOS */
+  }
+
+  .table-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .table-row > * {
+    min-width: 0;
+  }
+
+  .row-actions,
+  .table-row .row-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .entity-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .entity-card .entity-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .entity-actions {
+    grid-column: 1 / -1;
+  }
+
+  .mobile-nav {
+    overflow: visible;
+  }
+
+  .mobile-nav a,
+  .mobile-nav .button {
+    min-width: 0;
+    touch-action: manipulation;
+  }
+}
+
+/* Celulares comuns */
+@media (max-width: 560px) {
+  .workspace {
+    padding-inline: 0.6rem;
+  }
+
+  .topbar {
+    gap: 0.65rem;
+  }
+
+  .topbar h1 {
+    font-size: 1.35rem;
+  }
+
+  .topbar-actions {
+    width: auto;
+  }
+
+  .button-md {
+    min-height: 42px;
+    padding: 0.6rem 0.72rem;
+  }
+
+  .stat-grid,
+  .stat-grid.two {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    min-width: 0;
+  }
+
+  .calendar-tool {
+    overflow: hidden;
+  }
+
+  .calendar-weekday {
+    font-size: 0.56rem;
+  }
+
+  .calendar-day {
+    border-radius: 6px;
+    min-height: 48px;
+    padding: 0.25rem;
+  }
+
+  .calendar-day strong {
+    font-size: 0.72rem;
+  }
+
+  .day-dots {
+    gap: 2px;
+  }
+
+  .day-dots i,
+  .row-dot {
+    height: 0.38rem;
+    width: 0.38rem;
+  }
+
+  .day-detail-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .row-item,
+  .table-row,
+  .list-button {
+    gap: 0.5rem;
+    padding: 0.65rem;
+  }
+
+  .row-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .row-item > :first-child:not(.row-dot) {
+    min-width: 0;
+  }
+
+  .row-item .row-actions {
+    grid-column: 1 / -1;
+  }
+
+  .entity-card {
+    padding: 0.75rem;
+  }
+
+  .modal-head {
+    gap: 0.6rem;
+  }
+
+  .modal-actions,
+  .form-actions,
+  .delete-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions .button,
+  .form-actions .button,
+  .delete-actions .button {
+    width: 100%;
+  }
+
+  .bar-row {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-nav {
+    gap: 0.1rem;
+    padding-inline: 0.25rem;
+  }
+
+  .mobile-nav a,
+  .mobile-nav .button {
+    font-size: 0.64rem;
+  }
+
+  .mobile-new {
+    height: 46px;
+    width: 46px;
+  }
+}
+
+/* Telas muito estreitas (ex.: iPhone SE e similares) */
+@media (max-width: 390px) {
+  .workspace {
+    padding-inline: 0.45rem;
+  }
+
+  .calendar-tool,
+  .page-section,
+  .work-panel {
+    padding: 0.7rem;
+  }
+
+  .calendar-grid {
+    gap: 2px;
+  }
+
+  .calendar-day {
+    min-height: 44px;
+    padding: 0.2rem;
+  }
+
+  .calendar-weekday {
+    font-size: 0.5rem;
+  }
+
+  .stat-card strong {
+    font-size: 0.98rem;
+  }
+
+  .mobile-nav a,
+  .mobile-nav .button {
+    font-size: 0.58rem;
+  }
+}
+
+/* Mobile em paisagem */
+@media (max-width: 920px) and (orientation: landscape) and (max-height: 520px) {
+  body {
+    padding-bottom: 64px;
+  }
+
+  .workspace {
+    padding-top: 0.7rem;
+  }
+
+  .mobile-nav {
+    padding-block: 0.2rem;
+  }
+
+  .mobile-nav a,
+  .mobile-nav .button {
+    min-height: 48px;
+  }
+
+  .modal {
+    max-height: 96dvh;
+  }
+}
