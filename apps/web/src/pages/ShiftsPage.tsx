@@ -1,5 +1,5 @@
 import type { Shift } from "@financplantoes/shared";
-import { CalendarPlus, Pencil, Search, Trash2 } from "lucide-react";
+import { CalendarPlus, Pencil, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "../components/Button";
@@ -13,7 +13,7 @@ import { dateLabel } from "../lib/formatters";
 export function ShiftsPage() {
   const bootstrap = useBootstrap();
   const [params, setParams] = useSearchParams();
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState({ from: "", to: "", locationId: "" });
   const [shiftModal, setShiftModal] = useState<ShiftModalState>(null);
 
   useEffect(() => {
@@ -24,19 +24,20 @@ export function ShiftsPage() {
   }, [params, setParams]);
 
   const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
     const shifts = bootstrap.data?.shifts ?? [];
 
-    if (!term) {
-      return shifts;
-    }
+    return shifts.filter((shift) => {
+      if (filters.from && shift.date < filters.from) {
+        return false;
+      }
 
-    return shifts.filter((shift) =>
-      [shift.location_name, dateLabel(shift.date), shift.date, shift.professional, shift.notes]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(term)),
-    );
-  }, [bootstrap.data?.shifts, search]);
+      if (filters.to && shift.date > filters.to) {
+        return false;
+      }
+
+      return !filters.locationId || shift.location_id === filters.locationId;
+    });
+  }, [bootstrap.data?.shifts, filters]);
 
   // ⚠️ Regras dos Hooks: este useMemo precisa rodar em TODAS as renderizações,
   // antes de qualquer return condicional (mesmo padrão da correção do Dashboard).
@@ -94,16 +95,64 @@ export function ShiftsPage() {
           </Button>
         </header>
 
-        <div className="toolbar-row">
-          <label className="search-box">
-            <Search size={18} />
-            <input
-              aria-label="Buscar plantoes"
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por local, data ou observacao"
-              value={search}
-            />
-          </label>
+        <div aria-label="Filtros de plantoes" className="shift-filter-panel">
+          <div className="shift-filter-grid">
+            <label className="field">
+              <span>De</span>
+              <input
+                aria-label="Data inicial"
+                lang="pt-BR"
+                type="date"
+                value={filters.from}
+                onChange={(event) => {
+                  const from = event.target.value;
+                  setFilters((current) => ({
+                    ...current,
+                    from,
+                    to: current.to && from && current.to < from ? from : current.to,
+                  }));
+                }}
+              />
+            </label>
+            <label className="field">
+              <span>Até</span>
+              <input
+                aria-label="Data até"
+                lang="pt-BR"
+                min={filters.from || undefined}
+                type="date"
+                value={filters.to}
+                onChange={(event) => setFilters((current) => ({ ...current, to: event.target.value }))}
+              />
+            </label>
+            <label className="field">
+              <span>Unidade</span>
+              <select
+                aria-label="Filtrar por unidade"
+                value={filters.locationId}
+                onChange={(event) => setFilters((current) => ({ ...current, locationId: event.target.value }))}
+              >
+                <option value="">Todas</option>
+                {bootstrap.data.locations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button
+              className="shift-filter-clear"
+              disabled={!filters.from && !filters.to && !filters.locationId}
+              onClick={() => setFilters({ from: "", to: "", locationId: "" })}
+              variant="ghost"
+            >
+              <X size={16} />
+              <span>Limpar</span>
+            </Button>
+          </div>
+          <p className="filter-summary">
+            {filtered.length} {filtered.length === 1 ? "plantao encontrado" : "plantoes encontrados"}
+          </p>
         </div>
 
         {grouped.length ? (
