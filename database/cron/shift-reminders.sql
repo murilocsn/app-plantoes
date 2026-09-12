@@ -17,7 +17,7 @@ select cron.schedule(
   '0 22 * * *',
   $$
   select net.http_post(
-    url := 'https://SEU_PROJECT_REF.supabase.co/functions/v1/send-shift-reminders',
+    url := 'https://onqbnogccjfgihmmxrid.supabase.co/functions/v1/send-shift-reminders',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'x-cron-secret', vault.get_secret('shift_reminders_cron_secret')
