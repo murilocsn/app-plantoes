@@ -1147,6 +1147,10 @@ h3 {
   margin: 0;
 }
 
+.modal-content {
+  min-width: 0;
+}
+
 .modal-actions,
 .form-actions {
   border-top: 1px solid var(--border);
@@ -1379,8 +1383,10 @@ h3 {
   }
 
   .calendar-tool {
-    max-width: 520px;
+    align-self: center;
+    max-width: 680px;
     padding: 0.75rem;
+    width: 100%;
   }
 
   .calendar-tool .section-head {
