@@ -1,14 +1,13 @@
 import type { Shift } from "@financplantoes/shared";
-import { Banknote, Building2, CalendarDays, Clock, Plus, TrendingUp } from "lucide-react";
-import { useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Button } from "../components/Button";
 import { CalendarMonth } from "../components/CalendarMonth";
-import { EmptyState } from "../components/EmptyState";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { ShiftCrudModals, type ShiftModalState } from "../components/ShiftCrudModals";
-import { StatCard } from "../components/StatCard";
 import { useDashboardOverview } from "../hooks/useBootstrap";
-import { dateLabel, money } from "../lib/formatters";
+import { colorForLocation } from "../lib/calendar";
+import { dateLabel } from "../lib/formatters";
 
 function monthParam(date: Date) {
   return `${String(date.getMonth() + 1).padStart(2, "0")}-${date.getFullYear()}`;
@@ -19,6 +18,21 @@ export function DashboardPage() {
   const [viewDate, setViewDate] = useState(() => new Date());
   const monthKey = monthParam(viewDate);
   const dashboard = useDashboardOverview(monthKey);
+  const upcomingByLocation = useMemo(() => {
+    const byLocation = new Map<string, Shift[]>();
+
+    for (const shift of dashboard.data?.upcomingShifts ?? []) {
+      const key = shift.location_name || "Local";
+      byLocation.set(key, [...(byLocation.get(key) ?? []), shift]);
+    }
+
+    return [...byLocation.entries()]
+      .sort(([left], [right]) => left.localeCompare(right, "pt-BR"))
+      .map(([location, shifts]) => ({
+        location,
+        shifts: [...shifts].sort((left, right) => left.date.localeCompare(right.date)),
+      }));
+  }, [dashboard.data?.upcomingShifts]);
 
   if (dashboard.isLoading) {
     return <LoadingBlock />;
@@ -28,8 +42,7 @@ export function DashboardPage() {
     return <ErrorBlock error={dashboard.error} />;
   }
 
-  const { calendarShifts, upcomingShifts, locations, receivables, spaceCount, summary } =
-    dashboard.data;
+  const { calendarShifts, locations } = dashboard.data;
 
   function editShift(shift: Shift) {
     setShiftModal({ type: "edit", shift });
@@ -46,124 +59,51 @@ export function DashboardPage() {
         viewDate={viewDate}
       />
 
-      <section className="dashboard-columns" data-testid="dashboard-columns">
-        <article className="work-panel" data-testid="upcoming-shifts-panel">
+      {upcomingByLocation.length > 0 && (
+        <section className="page-section dashboard-upcoming" data-testid="dashboard-upcoming-shifts">
           <header className="section-head">
             <div>
               <p className="eyebrow">Proximos</p>
-              <h2>Plantoes</h2>
-            </div>
-            <Button onClick={() => setShiftModal({ type: "create" })} variant="ghost">
-              <Plus size={18} />
-              <span>Novo</span>
-            </Button>
-          </header>
-          {upcomingShifts.length ? (
-            <div className="stack" data-testid="upcoming-shifts-list">
-              {upcomingShifts.map((shift) => (
-                <button
-                  className="list-button"
-                  key={shift.id}
-                  onClick={() => editShift(shift)}
-                  type="button"
-                >
-                  <span>
-                    <strong>{shift.location_name}</strong>
-                    <small>
-                      {dateLabel(shift.date)} - {String(shift.start_time ?? "--:--").slice(0, 5)}
-                    </small>
-                  </span>
-                  <b>{money(shift.value ?? shift.value12)}</b>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={CalendarDays}
-              text="Sua agenda futura ainda esta livre."
-              title="Sem plantoes"
-            />
-          )}
-        </article>
-
-        <article className="work-panel" data-testid="receivables-panel">
-          <header className="section-head">
-            <div>
-              <p className="eyebrow">Financeiro</p>
-              <h2>Recebiveis</h2>
+              <h2>Plantoes por unidade</h2>
             </div>
           </header>
-          {receivables.length ? (
-            <div className="stack" data-testid="receivables-list">
-              {receivables.slice(0, 6).map((item) => (
-                <div className="row-item" key={item.id}>
-                  <span>
-                    <strong>{item.description}</strong>
-                    <small>{dateLabel(item.expected_date)}</small>
-                  </span>
-                  <b>{money(item.amount)}</b>
+          <div className="shift-groups">
+            {upcomingByLocation.map((group) => (
+              <section className="shift-group" key={group.location}>
+                <header className="shift-group-head">
+                  <i style={{ backgroundColor: colorForLocation(group.location) }} aria-hidden="true" />
+                  <strong>{group.location}</strong>
+                  <small>{group.shifts.length} {group.shifts.length === 1 ? "plantao" : "plantoes"}</small>
+                </header>
+                <div className="table-list">
+                  {group.shifts.map((shift) => (
+                    <article className="table-row shift-row" key={shift.id}>
+                      <div>
+                        <strong>{dateLabel(shift.date)}</strong>
+                        <span>{String(shift.start_time ?? "--:--").slice(0, 5)} · {shift.duration}h</span>
+                      </div>
+                      <div className="row-actions">
+                        <Button aria-label="Editar plantao" onClick={() => editShift(shift)} size="icon" title="Editar">
+                          <Pencil size={16} />
+                        </Button>
+                        <Button
+                          aria-label="Excluir plantao"
+                          onClick={() => setShiftModal({ type: "delete", shift })}
+                          size="icon"
+                          title="Excluir"
+                          variant="danger"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                    </article>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={Banknote}
-              text="Valores futuros aparecem aqui."
-              title="Sem recebiveis"
-            />
-          )}
-        </article>
-
-        <article className="work-panel compact-panel" data-testid="spaces-panel">
-          <header className="section-head">
-            <div>
-              <p className="eyebrow">Contextos</p>
-              <h2>Espacos</h2>
-            </div>
-          </header>
-          <div className="mini-grid">
-            <span>
-              <strong>{locations.length}</strong>
-              Locais
-            </span>
-            <span>
-              <strong>{spaceCount}</strong>
-              Espacos
-            </span>
+              </section>
+            ))}
           </div>
-        </article>
-      </section>
-
-      <section className="stat-grid" data-testid="dashboard-stats">
-        <StatCard
-          detail={`${summary.shiftCount} plantoes no mes`}
-          icon={TrendingUp}
-          label="Projetado"
-          tone="blue"
-          value={money(summary.incomeProjected)}
-        />
-        <StatCard
-          detail="Recebiveis baixados"
-          icon={Banknote}
-          label="Recebido"
-          tone="green"
-          value={money(summary.received)}
-        />
-        <StatCard
-          detail="A receber ou atrasado"
-          icon={Clock}
-          label="Pendente"
-          tone="amber"
-          value={money(summary.pending)}
-        />
-        <StatCard
-          detail={`${summary.activeLocationCount} locais ativos`}
-          icon={Building2}
-          label="Rede"
-          tone="coral"
-          value={`${summary.shiftHours}h`}
-        />
-      </section>
+        </section>
+      )}
 
       <ShiftCrudModals
         locations={locations}

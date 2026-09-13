@@ -102,24 +102,24 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator(".table-row")).toHaveCount(3);
 });
 
-test("busca datas brasileiras completas e parciais sem inverter dia e mes", async ({ page }) => {
-  const search = page.getByRole("textbox", { name: "Buscar plantoes" });
+test("filtra por data brasileira, intervalo e unidade sem inverter dia e mes", async ({ page }) => {
+  const from = page.getByRole("textbox", { name: "De", exact: true });
+  const to = page.getByRole("textbox", { name: "Até", exact: true });
+  const locationFilter = page.getByRole("combobox", { name: "Filtrar por unidade" });
 
-  for (const term of ["08/09/2026", "08/09", "2026-09-08", "emergencia"]) {
-    await search.fill(term);
-    await expect(page.locator(".table-row")).toHaveCount(1);
-    await expect(page.locator(".shift-day-label")).toHaveText("08/09/2026");
-  }
+  await from.fill("08/09/2026");
+  await to.fill("08/09/2026");
+  await expect(page.locator(".table-row")).toHaveCount(1);
+  await expect(page.locator(".shift-day-label")).toHaveText("08/09/2026");
 
-  await search.fill("09/08/2026");
-  await expect(page.locator(".shift-day-label")).toHaveText("09/08/2026");
-  await search.fill("09/2026");
+  await from.fill("08/09/2026");
+  await to.fill("09/09/2026");
   await expect(page.locator(".table-row")).toHaveCount(2);
-  for (const term of ["hospital central", "ANA", ""]) {
-    await search.fill(term);
-    await expect(page.locator(".table-row")).toHaveCount(3);
-  }
-  await search.fill("31/12/2030");
+
+  await locationFilter.selectOption(location.id);
+  await expect(page.locator(".table-row")).toHaveCount(2);
+
+  await from.fill("31/12/2030");
   await expect(page.locator(".table-row")).toHaveCount(0);
 });
 
@@ -130,7 +130,9 @@ test("cadastra data e repeticao em formato brasileiro e envia datas ISO para a A
   await expect(date).toHaveValue("08/09/2026");
   await date.fill("10092026");
   await expect(date).toHaveValue("10/09/2026");
-  await dialog.getByLabel("Repetir plantao").check();
+  const repeat = dialog.getByLabel("Repetir plantao");
+  await repeat.scrollIntoViewIfNeeded();
+  await repeat.check();
   await dialog.getByRole("textbox", { name: "Data final", exact: true }).fill("30/09/2026");
 
   const overflow = await dialog.evaluate((element) => element.scrollWidth > element.clientWidth);
@@ -147,7 +149,8 @@ test("cadastra data e repeticao em formato brasileiro e envia datas ISO para a A
 });
 
 test("edita datas existentes e preserva o seletor de calendario", async ({ page }) => {
-  await page.getByRole("textbox", { name: "Buscar plantoes" }).fill("08/09/2026");
+  await page.getByRole("textbox", { name: "De", exact: true }).fill("08/09/2026");
+  await page.getByRole("textbox", { name: "Até", exact: true }).fill("08/09/2026");
   await page.getByRole("button", { name: "Editar", exact: true }).click();
   const dialog = page.getByRole("dialog");
   const date = dialog.getByRole("textbox", { name: "Data", exact: true });
@@ -156,7 +159,9 @@ test("edita datas existentes e preserva o seletor de calendario", async ({ page 
   await expect(date).toHaveValue("31/12/2026");
 
   const submitted = page.waitForRequest((request) => request.url().includes("/api/shifts/") && request.method() === "PATCH");
-  await dialog.getByRole("button", { name: "Salvar" }).click();
+  const save = dialog.getByRole("button", { name: "Salvar" });
+  await save.scrollIntoViewIfNeeded();
+  await save.click();
   expect((await submitted).postDataJSON()).toMatchObject({ date: "2026-12-31" });
   await expect(dialog).not.toBeVisible();
 });
@@ -169,20 +174,25 @@ test("valida datas impossiveis e permite ano bissexto e repeticao sem data final
 
   for (const invalidDate of ["31/02/2026", "29/02/2026", "08/09/", ""]) {
     await date.fill(invalidDate);
+    await save.scrollIntoViewIfNeeded();
     await save.click();
     await expect(date).toHaveAttribute("aria-invalid", "true");
     await expect(dialog.getByText("Informe uma data valida")).toBeVisible();
   }
 
   await date.fill("29/02/2028");
-  await dialog.getByLabel("Repetir plantao").check();
+  const repeat = dialog.getByLabel("Repetir plantao");
+  await repeat.scrollIntoViewIfNeeded();
+  await repeat.check();
   const endDate = dialog.getByRole("textbox", { name: "Data final", exact: true });
   await endDate.fill("31/04/2028");
+  await save.scrollIntoViewIfNeeded();
   await save.click();
   await expect(endDate).toHaveAttribute("aria-invalid", "true");
   await endDate.fill("");
   await dialog.getByLabel("Quantidade").fill("3");
   const submitted = page.waitForRequest((request) => request.url().endsWith("/api/shifts") && request.method() === "POST");
+  await save.scrollIntoViewIfNeeded();
   await save.click();
   expect((await submitted).postDataJSON()).toMatchObject({
     shift: { date: "2028-02-29" },

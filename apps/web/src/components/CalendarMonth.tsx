@@ -1,7 +1,7 @@
 import type { Shift } from "@financplantoes/shared";
 import { CalendarPlus, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { colorFor, dateKey, isNightShift, monthDays } from "../lib/calendar";
+import { calendarColors, colorForLocation, dateKey, isNightShift, monthDays, readLocationColors } from "../lib/calendar";
 import { dateLabel, money, monthTitle } from "../lib/formatters";
 import { Button } from "./Button";
 import { EmptyState } from "./EmptyState";
@@ -28,6 +28,8 @@ export function CalendarMonth({
   const [internalViewDate, setInternalViewDate] = useState(() => new Date());
   const viewDate = controlledViewDate ?? internalViewDate;
   const [selectedDate, setSelectedDate] = useState(() => dateKey(new Date()));
+  const [locationColors, setLocationColors] = useState<Record<string, string>>(readLocationColors);
+  const [colorPickerLocation, setColorPickerLocation] = useState<string | null>(null);
   const days = useMemo(() => monthDays(viewDate), [viewDate]);
   const shiftsByDay = useMemo(() => {
     return shifts.reduce<Record<string, Shift[]>>((acc, shift) => {
@@ -37,6 +39,15 @@ export function CalendarMonth({
   }, [shifts]);
   const selectedShifts = shiftsByDay[selectedDate] ?? [];
   const legends = [...new Set(shifts.map((shift) => shift.location_name || "Local"))];
+
+  function selectLocationColor(location: string, color: string) {
+    setLocationColors((current) => {
+      const next = { ...current, [location]: color };
+      window.localStorage.setItem("financplantoes-location-colors", JSON.stringify(next));
+      return next;
+    });
+    setColorPickerLocation(null);
+  }
 
   function changeMonth(offset: number) {
     const next = new Date(viewDate);
@@ -103,7 +114,7 @@ export function CalendarMonth({
                   <i
                     className={isNightShift(shift) ? "night-dot" : ""}
                     key={shift.id}
-                    style={{ backgroundColor: colorFor(shift.location_name || "Local") }}
+                    style={{ backgroundColor: colorForLocation(shift.location_name || "Local", locationColors) }}
                     title={shift.location_name}
                   />
                 ))}
@@ -118,9 +129,31 @@ export function CalendarMonth({
         <div className="legend">
           {legends.length ? (
             legends.map((name) => (
-              <span key={name}>
-                <i style={{ backgroundColor: colorFor(name) }} />
-                {name}
+              <span className="legend-item" key={name}>
+                <button
+                  aria-label={`Escolher cor de ${name}`}
+                  className="legend-color-button"
+                  onClick={() => setColorPickerLocation((current) => (current === name ? null : name))}
+                  style={{ backgroundColor: colorForLocation(name, locationColors) }}
+                  title={`Escolher cor de ${name}`}
+                  type="button"
+                />
+                <span>{name}</span>
+                {colorPickerLocation === name && (
+                  <span aria-label={`Cores para ${name}`} className="color-palette" role="group">
+                    {calendarColors.map((color) => (
+                      <button
+                        aria-label={`Usar cor ${color}`}
+                        className="color-option"
+                        key={color}
+                        onClick={() => selectLocationColor(name, color)}
+                        style={{ backgroundColor: color }}
+                        title={color}
+                        type="button"
+                      />
+                    ))}
+                  </span>
+                )}
               </span>
             ))
           ) : (
@@ -145,7 +178,7 @@ export function CalendarMonth({
                 <article className="row-item" key={shift.id}>
                   <i
                     className={isNightShift(shift) ? "row-dot night-dot" : "row-dot"}
-                    style={{ backgroundColor: colorFor(shift.location_name || "Local") }}
+                    style={{ backgroundColor: colorForLocation(shift.location_name || "Local", locationColors) }}
                   />
                   <div>
                     <strong>{shift.location_name}</strong>

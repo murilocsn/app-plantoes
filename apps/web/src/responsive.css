@@ -135,9 +135,16 @@ canvas {
   .modal {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
+    display: flex;
+    flex-direction: column;
     max-height: 92dvh;
     padding: 1rem 0.85rem calc(1rem + env(safe-area-inset-bottom));
     width: 100%;
+  }
+
+  .modal > form {
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .form-grid,
@@ -145,6 +152,18 @@ canvas {
   .mini-grid,
   .report-filters {
     grid-template-columns: 1fr;
+  }
+
+  .modal .form-grid,
+  .modal .form-subgrid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal .form-grid > *,
+  .modal .form-subgrid > * {
+    flex: 0 0 auto;
+    width: 100%;
   }
 
   .form-subgrid,

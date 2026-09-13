@@ -538,6 +538,13 @@ h3 {
   padding: 1rem;
 }
 
+.calendar-tool {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1120px;
+  width: 100%;
+}
+
 .calendar-tool h2,
 .page-section h2,
 .work-panel h2 {
@@ -626,6 +633,56 @@ h3 {
   align-items: center;
   display: inline-flex;
   gap: 0.35rem;
+}
+
+.legend-item {
+  position: relative;
+}
+
+.legend-color-button,
+.color-option {
+  border: 0;
+  cursor: pointer;
+}
+
+.legend-color-button {
+  border-radius: 999px;
+  height: 0.65rem;
+  padding: 0;
+  width: 0.65rem;
+}
+
+.legend-color-button:focus-visible,
+.color-option:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.color-palette {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: flex;
+  gap: 0.35rem;
+  left: 0;
+  padding: 0.45rem;
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  width: max-content;
+  z-index: 2;
+}
+
+.color-option {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  height: 1rem;
+  padding: 0;
+  width: 1rem;
+}
+
+.color-option:hover {
+  border-color: var(--text);
 }
 
 .day-detail {
@@ -1321,6 +1378,16 @@ h3 {
     padding: 1rem 0.8rem 1.4rem;
   }
 
+  .calendar-tool {
+    max-width: 520px;
+    padding: 0.75rem;
+  }
+
+  .calendar-tool .section-head {
+    align-items: center;
+    gap: 0.6rem;
+  }
+
   .topbar {
     align-items: flex-start;
   }
@@ -1347,6 +1414,9 @@ h3 {
 
   .calendar-grid {
     gap: 0.2rem;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 480px;
   }
 
   .day-dots i,

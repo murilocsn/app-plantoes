@@ -1,5 +1,8 @@
 import type { Shift } from "@financplantoes/shared";
 
+export const calendarColors = ["#2458d3", "#167e62", "#c94c3a", "#9b6a14", "#6f56c9", "#08758f", "#d14d8b", "#5b6472"];
+const locationColorsStorageKey = "financplantoes-location-colors";
+
 export function dateKey(value: Date) {
   return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(
     value.getDate(),
@@ -30,6 +33,23 @@ export function colorFor(text: string) {
     hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
   }
 
-  const colors = ["#2458d3", "#167e62", "#c94c3a", "#9b6a14", "#6f56c9", "#08758f"];
-  return colors[hash % colors.length];
+  return calendarColors[hash % calendarColors.length];
+}
+
+export function readLocationColors() {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const value = window.localStorage.getItem(locationColorsStorageKey);
+    const parsed = value ? JSON.parse(value) : {};
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function colorForLocation(name: string, colors = readLocationColors()) {
+  return colors[name] || colorFor(name);
 }

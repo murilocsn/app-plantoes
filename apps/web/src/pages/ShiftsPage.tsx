@@ -8,7 +8,7 @@ import { EmptyState } from "../components/EmptyState";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { ShiftCrudModals, type ShiftModalState } from "../components/ShiftCrudModals";
 import { useBootstrap } from "../hooks/useBootstrap";
-import { colorFor } from "../lib/calendar";
+import { colorForLocation } from "../lib/calendar";
 import { dateLabel } from "../lib/formatters";
 
 export function ShiftsPage() {
@@ -159,7 +159,7 @@ export function ShiftsPage() {
               <section className="shift-group" key={group.location}>
                 <header className="shift-group-head">
                   <i
-                    style={{ backgroundColor: colorFor(group.location) }}
+                    style={{ backgroundColor: colorForLocation(group.location) }}
                     aria-hidden="true"
                   />
                   <strong>{group.location}</strong>
