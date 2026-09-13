@@ -262,8 +262,15 @@ canvas {
   .calendar-tool {
     margin-left: auto;
     margin-right: auto;
-    max-width: none;
+    max-width: none !important;
     overflow: hidden;
+    width: calc(100vw - 1.2rem);
+  }
+
+  .calendar-tool .calendar-grid,
+  .calendar-tool .calendar-footer {
+    margin-left: auto;
+    margin-right: auto;
     width: 100%;
   }
 
