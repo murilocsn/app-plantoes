@@ -17,6 +17,8 @@ self.addEventListener("push", (event) => {
     body: data.body || "Você tem plantões amanhã.",
     icon: `${self.registration.scope}icons/icon-192.png`,
     badge: `${self.registration.scope}icons/icon-192.png`,
+    tag: data.tag,
+    renotify: Boolean(data.tag),
     data: { url: data.url || self.registration.scope },
   };
 

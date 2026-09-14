@@ -1,0 +1,2 @@
+[functions.send-shift-reminders]
+verify_jwt = false

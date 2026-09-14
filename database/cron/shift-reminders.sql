@@ -11,10 +11,10 @@ where exists (
   select 1 from cron.job where jobname = 'financplantoes-lembrete-diario'
 );
 
--- 19:00 in Sao Paulo is 22:00 UTC.
+-- Runs frequently enough to catch the 24h and 90min reminder windows.
 select cron.schedule(
   'financplantoes-lembrete-diario',
-  '0 22 * * *',
+  '*/5 * * * *',
   $$
   select net.http_post(
     url := 'https://onqbnogccjfgihmmxrid.supabase.co/functions/v1/send-shift-reminders',
