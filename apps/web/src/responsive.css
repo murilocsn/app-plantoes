@@ -4,10 +4,12 @@
 html,
 body,
 #root {
+  box-sizing: border-box;
   width: 100%;
   max-width: 100%;
 }
 
+html,
 body {
   overflow-x: hidden;
 }
@@ -71,6 +73,17 @@ canvas {
     padding-bottom: calc(78px + env(safe-area-inset-bottom));
   }
 
+  #root,
+  .app-frame,
+  .workspace {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .app-frame {
+    display: block;
+  }
+
   .workspace {
     max-width: 100%;
     padding: 0.9rem 0.75rem 1.5rem;
@@ -98,7 +111,27 @@ canvas {
   .calendar-tool,
   .page-section,
   .work-panel {
+    align-self: stretch;
+    max-width: none;
     padding: 0.85rem;
+    width: 100%;
+  }
+
+  .calendar-tool .day-detail,
+  .calendar-tool .stack {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .calendar-tool .row-item {
+    grid-template-columns: auto minmax(0, 1fr) max-content auto;
+  }
+
+  .calendar-tool .row-item .row-actions {
+    grid-column: auto;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    width: auto;
   }
 
   .calendar-grid {
@@ -122,14 +155,59 @@ canvas {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .dashboard-upcoming,
+  .dashboard-upcoming .shift-groups,
+  .dashboard-upcoming .shift-group {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .dashboard-upcoming .shift-groups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-upcoming .shift-group {
+    padding: 0.45rem;
+  }
+
+  .dashboard-upcoming .shift-row {
+    gap: 0.35rem;
+    min-height: 0;
+    padding: 0.35rem 0.45rem;
+  }
+
+  .dashboard-upcoming .shift-row > div:first-child {
+    min-width: 0;
+  }
+
+  .dashboard-upcoming .shift-row .row-actions {
+    grid-column: auto;
+    width: auto;
+  }
+
+  .dashboard-upcoming .shift-row .button-icon {
+    height: 30px;
+    min-height: 30px;
+    width: 30px;
+  }
+
   .search-box {
     max-width: none;
+    width: 100%;
+  }
+
+  .shift-filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .shift-filter-clear {
     width: 100%;
   }
 
   .modal-backdrop {
     align-items: end;
     padding: 0;
+    width: 100vw;
   }
 
   .modal {
@@ -146,13 +224,20 @@ canvas {
 
   .modal-content {
     flex: 1 1 auto;
-    height: 0;
     min-height: 0;
-    overflow-y: auto !important;
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    width: 100%;
   }
 
   .modal > form {
     min-height: 0;
+  }
+
+  .modal-content > form {
+    min-width: 0;
+    width: 100%;
   }
 
   .form-grid,
@@ -166,6 +251,8 @@ canvas {
   .modal .form-subgrid {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    width: 100%;
   }
 
   .modal .form-grid > *,
@@ -259,7 +346,8 @@ canvas {
     min-width: 0;
   }
 
-  .calendar-tool {
+  .calendar-tool,
+  .dashboard-upcoming {
     margin-left: auto;
     margin-right: auto;
     max-width: none !important;
@@ -312,7 +400,16 @@ canvas {
   }
 
   .row-item {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) max-content;
+  }
+
+  .row-item > div {
+    display: block;
+  }
+
+  .row-item strong,
+  .row-item span {
+    white-space: nowrap;
   }
 
   .row-item > :first-child:not(.row-dot) {

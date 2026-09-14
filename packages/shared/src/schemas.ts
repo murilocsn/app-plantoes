@@ -7,6 +7,16 @@ const optionalText = z
   .nullable()
   .optional();
 
+const optionalMarkerColor = z.preprocess(
+  (value) => (typeof value === "string" && !value.trim().length ? null : value),
+  z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Informe uma cor valida").nullable().optional(),
+);
+
+const optionalMarkerLabel = z.preprocess(
+  (value) => (typeof value === "string" ? value.trim() || null : value),
+  z.string().max(80, "Use ate 80 caracteres").nullable().optional(),
+);
+
 // Métodos de pagamento aceitos pela constraint do banco
 // (receivables_payment_method_check). Valores mantidos em minúsculas
 // por compatibilidade com o comportamento legado do sistema.
@@ -96,6 +106,8 @@ export const shiftSchema = z.object({
   professional: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   status: z.string().nullable().optional(),
+  marker_color: z.string().nullable().optional(),
+  marker_label: z.string().nullable().optional(),
   recurrence_id: z.string().nullable().optional(),
   recurring_group_id: z.string().nullable().optional(),
   created_at: z.string().optional(),
@@ -109,6 +121,8 @@ export const shiftInputSchema = z.object({
   value: z.coerce.number().min(0),
   professional: optionalText,
   notes: optionalText,
+  marker_color: optionalMarkerColor,
+  marker_label: optionalMarkerLabel,
   status: shiftStatusSchema.default("scheduled"),
   createReceivable: z.boolean().default(true),
 });

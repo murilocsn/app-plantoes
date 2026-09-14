@@ -1,6 +1,6 @@
 import type { Shift } from "@financplantoes/shared";
 import { describe, expect, it } from "vitest";
-import { colorFor, dateKey, isNightShift, monthDays } from "./calendar";
+import { calendarColors, colorFor, dateKey, isNightShift, monthDays } from "./calendar";
 
 describe("calendar helpers", () => {
   it("gera chave de data no formato yyyy-MM-dd", () => {
@@ -23,5 +23,9 @@ describe("calendar helpers", () => {
 
   it("gera cor estavel para o mesmo texto", () => {
     expect(colorFor("Hospital Central")).toBe(colorFor("hospital central"));
+  });
+
+  it("oferece uma paleta ampla de cores vivas", () => {
+    expect(calendarColors).toHaveLength(36);
   });
 });

@@ -5,7 +5,7 @@ import { Save } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
-import { dateKey } from "../../lib/calendar";
+import { calendarColors, colorFor, dateKey } from "../../lib/calendar";
 import { Button } from "../Button";
 import { DateField } from "../DateField";
 import { Field } from "../Field";
@@ -70,6 +70,8 @@ export function ShiftForm({
       value: Number(shift?.value ?? shift?.value12 ?? activeLocations[0]?.value12 ?? 0),
       professional: shift?.professional ?? "",
       notes: shift?.notes ?? "",
+      marker_color: shift?.marker_color ?? colorFor(shift?.marker_label || shift?.location_name || "Plantao"),
+      marker_label: shift?.marker_label ?? "",
       status: "scheduled",
       createReceivable: true,
       repeat: false,
@@ -82,6 +84,8 @@ export function ShiftForm({
 
   const selectedLocationId = watch("location_id");
   const repeat = watch("repeat");
+  const markerColor = watch("marker_color") || colorFor("Plantao");
+  const markerLabel = watch("marker_label")?.trim() || "Sem legenda";
 
   useEffect(() => {
     if (shift) {
@@ -135,6 +139,42 @@ export function ShiftForm({
       <Field error={errors.value?.message} label="Valor">
         <input min="0" step="0.01" type="number" {...register("value")} />
       </Field>
+      <div className="field color-field">
+        <span>Marcador do plantao</span>
+        <div className="marker-color-preview">
+          <i aria-hidden="true" style={{ backgroundColor: markerColor }} />
+          <strong>{markerLabel}</strong>
+        </div>
+        <Field error={errors.marker_label?.message} label="Legenda da cor">
+          <input maxLength={80} placeholder="Ex.: UTI, extra, pediatria" {...register("marker_label")} />
+        </Field>
+        <div aria-label="Cor do marcador do plantao" className="color-swatch-grid" role="radiogroup">
+          {calendarColors.map((color) => (
+            <button
+              aria-checked={markerColor === color}
+              aria-label={`Usar cor ${color}`}
+              className="color-swatch"
+              key={color}
+              onClick={() => setValue("marker_color", color, { shouldDirty: true, shouldValidate: true })}
+              role="radio"
+              style={{ backgroundColor: color }}
+              title={color}
+              type="button"
+            />
+          ))}
+        </div>
+        <label className="custom-color-row">
+          <span>Cor personalizada</span>
+          <input
+            aria-label="Cor personalizada do marcador"
+            onChange={(event) =>
+              setValue("marker_color", event.target.value, { shouldDirty: true, shouldValidate: true })
+            }
+            type="color"
+            value={markerColor}
+          />
+        </label>
+      </div>
       <Field error={errors.professional?.message} label="Profissional">
         <input {...register("professional")} />
       </Field>

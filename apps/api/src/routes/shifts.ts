@@ -31,7 +31,7 @@ import {
 export const shiftsRouter = Router();
 
 const shiftSelect =
-  "id,date,start_time,location_id,location_name,duration,value,value12,professional,notes,recurring_group_id,created_at";
+  "id,date,start_time,location_id,location_name,duration,value,value12,professional,notes,marker_color,marker_label,recurring_group_id,created_at";
 
 const shiftConflictSelect = "id,date,start_time,duration,location_name";
 
@@ -156,6 +156,8 @@ shiftsRouter.post(
       value12: input.shift.value,
       professional: input.shift.professional,
       notes: input.shift.notes,
+      marker_color: input.shift.marker_color,
+      marker_label: input.shift.marker_label,
       recurring_group_id: recurrenceId,
     }));
 
@@ -231,6 +233,8 @@ shiftsRouter.patch(
       value12: input.value,
       professional: input.professional,
       notes: input.notes,
+      marker_color: input.marker_color,
+      marker_label: input.marker_label,
     };
 
     if (input.date || input.start_time || input.duration !== undefined) {

@@ -17,7 +17,7 @@ import { ok } from "../lib/respond";
 export const dashboardRouter = Router();
 
 const shiftSelect =
-  "id,date,start_time,location_id,location_name,duration,value,value12,professional,notes,recurring_group_id,created_at";
+  "id,date,start_time,location_id,location_name,duration,value,value12,professional,notes,marker_color,marker_label,recurring_group_id,created_at";
 
 const locationSelect =
   "id,name,value12,doc,active,reference_start_day,reference_end_day,payment_due_day,payment_due_months_after,created_at";

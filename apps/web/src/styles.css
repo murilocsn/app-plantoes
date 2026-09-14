@@ -759,6 +759,37 @@ h3 {
   grid-template-columns: auto minmax(0, 1fr) auto auto;
 }
 
+.row-item > div {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.row-item strong,
+.row-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-item > b {
+  align-self: center;
+  min-width: max-content;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.row-item .row-actions {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.35rem;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
 .list-button {
   cursor: pointer;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1049,6 +1080,27 @@ h3 {
   font-size: 0.86rem;
 }
 
+.location-title {
+  align-items: center;
+  display: flex;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.location-title i {
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--border);
+  flex: 0 0 auto;
+  height: 0.72rem;
+  width: 0.72rem;
+}
+
+.location-title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .entity-status {
   align-self: start;
   background: var(--surface-2);
@@ -1127,9 +1179,11 @@ h3 {
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: 0 26px 70px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
   justify-self: center;
   max-height: min(860px, 92vh);
-  overflow: auto;
+  overflow: hidden;
   padding: 1rem;
   width: min(720px, 100%);
 }
@@ -1148,7 +1202,11 @@ h3 {
 }
 
 .modal-content {
+  flex: 1 1 auto;
+  min-height: 0;
   min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .modal-actions,
@@ -1167,6 +1225,8 @@ h3 {
   display: grid;
   gap: 0.85rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 0;
+  width: 100%;
 }
 
 .form-subgrid {
@@ -1182,6 +1242,7 @@ h3 {
   font-size: 0.84rem;
   font-weight: 700;
   gap: 0.4rem;
+  min-width: 0;
 }
 
 .field:has(textarea),
@@ -1196,7 +1257,9 @@ h3 {
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
+  max-width: 100%;
   min-height: 42px;
+  min-width: 0;
   padding: 0.65rem 0.75rem;
   width: 100%;
 }
@@ -1214,6 +1277,8 @@ h3 {
   display: grid;
   gap: 0.4rem;
   grid-template-columns: minmax(0, 1fr) 42px;
+  min-width: 0;
+  width: 100%;
 }
 
 .date-input > input {
@@ -1226,6 +1291,7 @@ h3 {
   border-radius: 8px;
   display: grid;
   height: 42px;
+  min-width: 42px;
   place-items: center;
   position: relative;
   width: 42px;
@@ -1264,12 +1330,106 @@ h3 {
   display: flex;
   gap: 0.6rem;
   min-height: 42px;
+  min-width: 0;
   padding: 0.65rem 0.75rem;
 }
 
 .check-field input {
+  flex: 0 0 auto;
   height: 18px;
   width: 18px;
+}
+
+.check-field span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.color-field {
+  grid-column: 1 / -1;
+}
+
+.marker-color-preview {
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  display: flex;
+  gap: 0.6rem;
+  min-height: 46px;
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+}
+
+.marker-color-preview i {
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--border);
+  flex: 0 0 auto;
+  height: 1rem;
+  width: 1rem;
+}
+
+.marker-color-preview strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.color-swatch-grid {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+  min-width: 0;
+}
+
+.color-swatch {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+  height: 34px;
+  min-width: 0;
+  padding: 0;
+}
+
+.color-swatch:hover,
+.color-swatch:focus-visible,
+.color-swatch[aria-checked="true"] {
+  border-color: var(--text);
+  outline: 0;
+}
+
+.color-swatch[aria-checked="true"] {
+  box-shadow:
+    inset 0 0 0 2px var(--surface),
+    0 0 0 2px color-mix(in srgb, var(--blue) 50%, transparent);
+}
+
+.custom-color-row {
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+  min-height: 42px;
+  min-width: 0;
+  padding: 0.45rem 0.55rem 0.45rem 0.75rem;
+}
+
+.custom-color-row span {
+  min-width: 0;
+}
+
+.custom-color-row input {
+  cursor: pointer;
+  flex: 0 0 auto;
+  height: 32px;
+  min-height: 32px;
+  padding: 0.15rem;
+  width: 52px;
 }
 
 .delete-dialog {

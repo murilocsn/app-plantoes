@@ -23,7 +23,7 @@ export function Modal({ title, eyebrow, children, footer, onClose }: ModalProps)
             <X size={18} />
           </Button>
         </header>
-        <div>{children}</div>
+        <div className="modal-content">{children}</div>
         {footer && <footer className="modal-actions">{footer}</footer>}
       </section>
     </div>
