@@ -33,26 +33,6 @@ export function DashboardPage() {
         shifts: [...shifts].sort((left, right) => left.date.localeCompare(right.date)),
       }));
   }, [dashboard.data?.upcomingShifts]);
-  const upcomingLegendGroups = useMemo(() => {
-    const byLabel = new Map<string, { color: string; count: number }>();
-
-    for (const shift of dashboard.data?.upcomingShifts ?? []) {
-      const label = shift.marker_label?.trim();
-
-      if (!label) {
-        continue;
-      }
-
-      const current = byLabel.get(label);
-      byLabel.set(label, {
-        color: current?.color ?? markerColorForShift(shift),
-        count: (current?.count ?? 0) + 1,
-      });
-    }
-
-    return [...byLabel.entries()].sort(([left], [right]) => left.localeCompare(right, "pt-BR"));
-  }, [dashboard.data?.upcomingShifts]);
-
   if (dashboard.isLoading) {
     return <LoadingBlock />;
   }
@@ -99,7 +79,18 @@ export function DashboardPage() {
                     <article className="table-row shift-row" key={shift.id}>
                       <div>
                         <strong>{dateLabel(shift.date)}</strong>
-                        <span>{String(shift.start_time ?? "--:--").slice(0, 5)} · {shift.duration}h</span>
+                        <span className="shift-row-meta">
+                          {String(shift.start_time ?? "--:--").slice(0, 5)} · {shift.duration}h
+                          {shift.marker_label && (
+                            <em
+                              className="shift-marker-inline"
+                              style={{ backgroundColor: markerColorForShift(shift) }}
+                              title={shift.marker_label}
+                            >
+                              {shift.marker_label}
+                            </em>
+                          )}
+                        </span>
                       </div>
                       <div className="row-actions">
                         <Button aria-label="Editar plantao" onClick={() => editShift(shift)} size="icon" title="Editar">
@@ -121,26 +112,6 @@ export function DashboardPage() {
               </section>
             ))}
           </div>
-          {upcomingLegendGroups.length > 0 && (
-            <section className="shift-legend-panel" aria-labelledby="shift-legend-title">
-              <header className="shift-legend-head">
-                <div>
-                  <p className="eyebrow">Identificacao</p>
-                  <h3 id="shift-legend-title">Legendas dos plantoes</h3>
-                </div>
-                <small>{upcomingLegendGroups.length} {upcomingLegendGroups.length === 1 ? "legenda" : "legendas"}</small>
-              </header>
-              <div className="shift-legend-list">
-                {upcomingLegendGroups.map(([label, legend]) => (
-                  <div className="shift-legend-item" key={label}>
-                    <i aria-hidden="true" style={{ backgroundColor: legend.color }} />
-                    <strong>{label}</strong>
-                    <small>{legend.count} {legend.count === 1 ? "plantao" : "plantoes"}</small>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
         </section>
       )}
 

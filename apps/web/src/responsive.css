@@ -201,8 +201,8 @@ canvas {
     width: 30px;
   }
 
-  .shift-legend-list {
-    grid-template-columns: minmax(0, 1fr);
+  .shift-marker-inline {
+    max-width: 92px;
   }
 
   .search-box {
