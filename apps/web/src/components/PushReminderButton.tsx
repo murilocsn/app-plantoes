@@ -106,7 +106,7 @@ export function PushReminderButton() {
         {enabled ? <Bell size={18} /> : <BellOff size={18} />}
         <span>{enabled ? "Lembretes ativos" : "Ativar lembretes"}</span>
       </Button>
-      {message && <small role="status">{message}</small>}
+      <small role="status">{message || "Avisos: 24h e 90min antes do plantao."}</small>
     </div>
   );
 }

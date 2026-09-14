@@ -109,6 +109,9 @@ export function AppLayout() {
             <p className="muted">{user?.email}</p>
           </div>
           <div className="topbar-actions">
+            <div className="mobile-reminder-control">
+              <PushReminderButton />
+            </div>
             <Button onClick={() => navigate("/shifts?new=1")} variant="primary">
               <Plus size={18} />
               <span>Novo plantao</span>
