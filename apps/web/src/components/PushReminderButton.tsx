@@ -10,7 +10,11 @@ function base64ToBytes(value: string) {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
   const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
   const raw = window.atob(base64);
-  return Uint8Array.from(raw, (character) => character.charCodeAt(0));
+  const bytes = new Uint8Array(raw.length);
+  for (let index = 0; index < raw.length; index += 1) {
+    bytes[index] = raw.charCodeAt(index);
+  }
+  return bytes;
 }
 
 export function PushReminderButton() {
@@ -18,6 +22,13 @@ export function PushReminderButton() {
   const [enabled, setEnabled] = useState(false);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
+  const label = pending
+    ? enabled
+      ? "Desativando..."
+      : "Ativando..."
+    : enabled
+      ? "Lembretes ativos"
+      : "Ativar lembretes";
 
   useEffect(() => {
     let mounted = true;
@@ -42,40 +53,57 @@ export function PushReminderButton() {
 
   async function activate() {
     setMessage("");
+    const publicKey = vapidPublicKey?.trim();
 
-    if (!vapidPublicKey) {
+    if (!publicKey) {
       setMessage("Configure VITE_VAPID_PUBLIC_KEY para ativar os lembretes.");
       return;
     }
 
     if (!user || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
-      setMessage("Este navegador não suporta notificações Push.");
+      setMessage("Este navegador nao suporta notificacoes Push.");
       return;
     }
 
     setPending(true);
+    setMessage("Solicitando permissao do navegador...");
 
     try {
+      if (Notification.permission === "denied") {
+        throw new Error("Notificacoes bloqueadas. Libere as notificacoes do site nas configuracoes do navegador.");
+      }
+
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        throw new Error("Permissão de notificação não concedida.");
+        throw new Error("Permissao de notificacao nao concedida.");
       }
+
+      setMessage("Ativando lembretes no aparelho...");
 
       const registration = await navigator.serviceWorker.register(
         `${import.meta.env.BASE_URL}sw.js`,
       );
+      let applicationServerKey: Uint8Array<ArrayBuffer>;
+      try {
+        applicationServerKey = base64ToBytes(publicKey);
+      } catch {
+        throw new Error("Chave VAPID publica invalida. Gere uma nova chave e atualize o ambiente.");
+      }
+
       const subscription =
         (await registration.pushManager.getSubscription()) ??
         (await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: base64ToBytes(vapidPublicKey),
+          applicationServerKey,
         }));
       const json = subscription.toJSON();
       const keys = json.keys;
 
       if (!json.endpoint || !keys?.p256dh || !keys.auth) {
-        throw new Error("Não foi possível obter os dados da inscrição Push.");
+        throw new Error("Nao foi possivel obter os dados da inscricao Push.");
       }
+
+      setMessage("Salvando este aparelho...");
 
       const { error } = await supabase.from("push_subscriptions").upsert(
         {
@@ -94,25 +122,71 @@ export function PushReminderButton() {
       setEnabled(true);
       setMessage("Lembretes ativados.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Não foi possível ativar os lembretes.");
+      setMessage(error instanceof Error ? error.message : "Nao foi possivel ativar os lembretes.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function deactivate() {
+    setMessage("");
+    setPending(true);
+
+    try {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        throw new Error("Este navegador nao suporta notificacoes Push.");
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+
+      if (!subscription) {
+        setEnabled(false);
+        setMessage("Nenhuma inscricao ativa neste aparelho.");
+        return;
+      }
+
+      const endpoint = subscription.endpoint;
+      const unsubscribed = await subscription.unsubscribe();
+
+      if (!unsubscribed) {
+        throw new Error("Nao foi possivel desativar as notificacoes no navegador.");
+      }
+
+      setEnabled(false);
+      setMessage("Lembretes desativados.");
+
+      const { error } = await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
+
+      if (error) {
+        setMessage(
+          "Lembretes desativados neste aparelho, mas nao foi possivel remover o registro do servidor.",
+        );
+      }
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Nao foi possivel desativar os lembretes.",
+      );
     } finally {
       setPending(false);
     }
   }
 
   return (
-    <div className="push-reminder-control">
+    <div className={`push-reminder-control${message ? " has-message" : ""}`}>
       <Button
-        aria-label={enabled ? "Lembretes ativos" : "Ativar lembretes"}
-        disabled={pending || enabled}
-        onClick={() => void activate()}
-        title={enabled ? "Lembretes ativos" : "Ativar lembretes"}
+        aria-label={enabled ? "Desativar lembretes" : "Ativar lembretes"}
+        disabled={pending}
+        onClick={() => void (enabled ? deactivate() : activate())}
+        title={message || (enabled ? "Clique para desativar os lembretes" : label)}
         variant="ghost"
       >
         {enabled ? <Bell size={18} /> : <BellOff size={18} />}
-        <span>{enabled ? "Lembretes ativos" : "Ativar lembretes"}</span>
+        <span>{label}</span>
       </Button>
-      <small role="status">{message || "Avisos: 24h e 90min antes, mesmo com o app fechado."}</small>
+      <small aria-live="polite" role="status">
+        {message || "Avisos: 24h e 90min antes, mesmo com o app fechado."}
+      </small>
     </div>
   );
 }

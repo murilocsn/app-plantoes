@@ -1346,6 +1346,10 @@ h3 {
   padding: 0 0.75rem;
 }
 
+.push-reminder-control.has-message small {
+  color: var(--text);
+}
+
 .mobile-reminder-control {
   display: none;
 }
@@ -1428,6 +1432,16 @@ h3 {
 
   .mobile-reminder-control .push-reminder-control small {
     display: none;
+  }
+
+  .mobile-reminder-control .push-reminder-control.has-message {
+    max-width: min(68vw, 240px);
+  }
+
+  .mobile-reminder-control .push-reminder-control.has-message small {
+    display: block;
+    font-size: 0.68rem;
+    padding: 0;
   }
 
   .mobile-reminder-control .button {
