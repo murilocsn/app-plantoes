@@ -809,6 +809,70 @@ h3 {
   color: var(--muted);
 }
 
+.shift-legend-panel {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  padding: 0.8rem;
+}
+
+.shift-legend-head {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.shift-legend-head h3 {
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.shift-legend-head small {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.shift-legend-list {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.shift-legend-item {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  display: flex;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.55rem 0.65rem;
+}
+
+.shift-legend-item i {
+  border-radius: 999px;
+  flex: 0 0 auto;
+  height: 0.65rem;
+  width: 0.65rem;
+}
+
+.shift-legend-item strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shift-legend-item small {
+  color: var(--muted);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 .shift-day-label {
   color: var(--muted);
   display: block;

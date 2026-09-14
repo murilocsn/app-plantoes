@@ -201,6 +201,10 @@ canvas {
     width: 30px;
   }
 
+  .shift-legend-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .search-box {
     max-width: none;
     width: 100%;
