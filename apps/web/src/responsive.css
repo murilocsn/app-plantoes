@@ -330,6 +330,17 @@ canvas {
 
 /* Celulares comuns */
 @media (max-width: 560px) {
+  .toast-host {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+
+  .toast-item {
+    font-size: 0.85rem;
+  }
+
   .workspace {
     padding-inline: 0.6rem;
   }

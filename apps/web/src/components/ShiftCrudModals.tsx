@@ -2,11 +2,13 @@ import type { Location, Shift } from "@financplantoes/shared";
 import { AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { useAppMutation } from "../hooks/useBootstrap";
+import { ApiError } from "../lib/api";
 import { domainApi } from "../lib/domain-api";
 import { Button } from "./Button";
 import { EmptyState } from "./EmptyState";
 import { ShiftForm } from "./forms/ShiftForm";
 import { Modal } from "./Modal";
+import { showToast } from "./ToastHost";
 
 export type ShiftModalState =
   | { type: "create"; date?: string }
@@ -37,7 +39,12 @@ export function ShiftCrudModals({ locations, modal, onClose }: ShiftCrudModalsPr
     return null;
   }
 
-  const showError = (error: Error) => setErrorMessage(error.message);
+  const showError = (error: Error) => {
+    setErrorMessage(error.message);
+    if (error instanceof ApiError && (error.status === 409 || error.code === "SHIFT_TIME_CONFLICT")) {
+      showToast(error.message);
+    }
+  };
 
   if (!locations.filter((location) => location.active !== false).length && modal.type !== "delete") {
     return (

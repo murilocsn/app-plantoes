@@ -3,6 +3,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { HashRouter } from "react-router-dom";
 import { App } from "./App";
+import { ToastHost } from "./components/ToastHost";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ApiError } from "./lib/api";
 import "./styles.css";
@@ -30,6 +31,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       >
         <AuthProvider>
           <App />
+          <ToastHost />
         </AuthProvider>
       </HashRouter>
     </QueryClientProvider>

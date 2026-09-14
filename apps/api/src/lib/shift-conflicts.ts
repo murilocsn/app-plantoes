@@ -6,6 +6,7 @@ export type ShiftConflictCandidate = {
   date: string;
   start_time?: string | null;
   duration?: number | string | null;
+  location_name?: string | null;
 };
 
 type ShiftInterval = {

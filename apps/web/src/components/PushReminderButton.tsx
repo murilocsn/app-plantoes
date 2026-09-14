@@ -6,7 +6,7 @@ import { Button } from "./Button";
 
 const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
 
-function base64ToBytes(value: string) {
+function base64ToBytes(value: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
   const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
   const raw = window.atob(base64);

@@ -44,15 +44,41 @@ const deleteShiftRequestSchema = z.object({
   scope: z.enum(["only", "future", "all"]).default("only"),
 });
 
+function formatConflictDate(date: string) {
+  const [year, month, day] = date.split("-");
+  return day && month ? `${day}/${month}/${year}` : date;
+}
+
+function shiftConflictMessage(conflict: ShiftConflict) {
+  const existing = conflict.existing;
+  const when = [
+    formatConflictDate(existing.date),
+    existing.start_time ? `as ${existing.start_time}` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const label = existing.location_name ? ` - ${existing.location_name}` : "";
+
+  if (!when) {
+    return "Nesse horario nao pode, pois ja existe um plantao cadastrado.";
+  }
+
+  return `Nesse horario nao pode, pois ja existe um plantao cadastrado (${when}${label}).`;
+}
+
+
 function shiftConflictError(conflict: ShiftConflict) {
   return new HttpError(
     409,
-    "Nesse horario nao pode, pois ja existe um plantao cadastrado.",
+    shiftConflictMessage(conflict),
     "SHIFT_TIME_CONFLICT",
     {
       date: conflict.candidate.date,
       start_time: conflict.candidate.start_time,
       conflicting_shift_id: conflict.existing.id ?? null,
+      conflicting_date: conflict.existing.date,
+      conflicting_start_time: conflict.existing.start_time ?? null,
+      conflicting_location_name: conflict.existing.location_name ?? null,
     },
   );
 }
