@@ -102,7 +102,13 @@ export function PushReminderButton() {
 
   return (
     <div className="push-reminder-control">
-      <Button disabled={pending || enabled} onClick={() => void activate()} variant="ghost">
+      <Button
+        aria-label={enabled ? "Lembretes ativos" : "Ativar lembretes"}
+        disabled={pending || enabled}
+        onClick={() => void activate()}
+        title={enabled ? "Lembretes ativos" : "Ativar lembretes"}
+        variant="ghost"
+      >
         {enabled ? <Bell size={18} /> : <BellOff size={18} />}
         <span>{enabled ? "Lembretes ativos" : "Ativar lembretes"}</span>
       </Button>
