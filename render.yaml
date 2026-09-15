@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: financplantoes-api
+    runtime: node
+    plan: free
+    region: ohio
+    buildCommand: npm ci && npm run build -w @financplantoes/api
+    startCommand: npm run start -w @financplantoes/api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false

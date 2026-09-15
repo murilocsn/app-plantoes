@@ -6,7 +6,7 @@ import { CalendarMonth } from "../components/CalendarMonth";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { ShiftCrudModals, type ShiftModalState } from "../components/ShiftCrudModals";
 import { useDashboardOverview } from "../hooks/useBootstrap";
-import { colorForLocation, markerColorForShift } from "../lib/calendar";
+import { markerColorForShift } from "../lib/calendar";
 import { dateLabel } from "../lib/formatters";
 
 function monthParam(date: Date) {
@@ -70,7 +70,6 @@ export function DashboardPage() {
             {upcomingByLocation.map((group) => (
               <section className="shift-group" key={group.location}>
                 <header className="shift-group-head">
-                  <i style={{ backgroundColor: colorForLocation(group.location) }} aria-hidden="true" />
                   <strong>{group.location}</strong>
                   <small>{group.shifts.length} {group.shifts.length === 1 ? "plantao" : "plantoes"}</small>
                 </header>

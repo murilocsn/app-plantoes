@@ -15,7 +15,8 @@
     "test": "npm run test -ws --if-present",
     "test:e2e": "playwright test",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "deploy:render": "node scripts/deploy-render.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",

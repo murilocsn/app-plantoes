@@ -349,6 +349,16 @@ canvas {
     gap: 0.65rem;
   }
 
+  .section-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .section-head > .button {
+    align-self: stretch;
+    width: 100%;
+  }
+
   .topbar h1 {
     font-size: 1.35rem;
   }
@@ -369,6 +379,15 @@ canvas {
 
   .stat-card {
     min-width: 0;
+  }
+
+  .finance-filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .finance-filter-grid > .field:nth-child(3),
+  .finance-filter-grid > .field:nth-child(4) {
+    grid-column: auto;
   }
 
   .calendar-tool,
