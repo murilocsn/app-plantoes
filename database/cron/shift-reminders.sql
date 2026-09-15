@@ -20,7 +20,12 @@ select cron.schedule(
     url := 'https://onqbnogccjfgihmmxrid.supabase.co/functions/v1/send-shift-reminders',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'x-cron-secret', vault.get_secret('shift_reminders_cron_secret')
+      'x-cron-secret', (
+        select decrypted_secret
+        from vault.decrypted_secrets
+        where name = 'shift_reminders_cron_secret'
+        limit 1
+      )
     ),
     body := '{}'::jsonb
   );
