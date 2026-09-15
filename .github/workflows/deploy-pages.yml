@@ -36,6 +36,7 @@ jobs:
           VITE_SUPABASE_URL: https://onqbnogccjfgihmmxrid.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_gvs6MsolBL25CTzxkjssew_xhNYup8S
           VITE_API_BASE_URL: https://app-plantoes.onrender.com/api
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
         run: npm run build -w @financplantoes/web
 
       - name: Configure GitHub Pages
