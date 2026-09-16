@@ -89,8 +89,26 @@ stable personal or business identifier and keep it forever.
 - Confirmed local env files are ignored.
 - Added `.gitignore` protection for mobile signing files and release artifacts.
 - Documented mobile env policy and the decisions still needed before Capacitor.
+- Installed Capacitor dependencies in the web workspace.
+- Created `apps/web/capacitor.config.ts` with
+  `br.com.muriloneder.financplantoes`.
+- Added Android and iOS native projects under `apps/web/android` and
+  `apps/web/ios`.
+- Added mobile build/sync scripts to `apps/web/package.json`.
+- Mobile builds now inject `https://app-plantoes.onrender.com/api` and use a
+  relative Vite base (`./`) so native assets load inside Capacitor.
+- Synchronized the current web build into Android and iOS.
+- Confirmed Android target SDK is 36.
 
 ## Next step
 
-Initialize Capacitor with `br.com.muriloneder.financplantoes` and add
-Android/iOS platforms.
+Install/configure Java JDK and Android Studio, then run an Android debug build:
+
+```powershell
+cd apps/web/android
+.\gradlew.bat assembleDebug
+```
+
+The first attempt stopped because `JAVA_HOME` is not set and `java` is not in
+the PATH. After Android Studio/JDK is configured, generate a debug APK first,
+then move to signed release `.aab` for Google Play.
