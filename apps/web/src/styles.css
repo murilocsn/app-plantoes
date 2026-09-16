@@ -1296,6 +1296,167 @@ h3 {
   font-weight: 650;
 }
 
+.color-field {
+  grid-column: 1 / -1;
+  position: relative;
+}
+
+.marker-color-picker {
+  position: relative;
+}
+
+.marker-color-control {
+  align-items: stretch;
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.marker-color-preview {
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  display: flex;
+  gap: 0.65rem;
+  min-height: 46px;
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+}
+
+.marker-color-preview span,
+.marker-color-option-text {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.marker-color-preview strong,
+.marker-color-example strong,
+.marker-color-option-text strong {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marker-color-preview small,
+.marker-color-example small,
+.marker-color-option-text small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.marker-color-preview i,
+.marker-color-example i,
+.marker-color-option-dot {
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 3px color-mix(in srgb, var(--text) 14%, transparent);
+  display: inline-block;
+  flex: 0 0 auto;
+  height: 0.65rem;
+  width: 0.65rem;
+}
+
+.marker-color-picker-button {
+  align-items: center;
+  min-width: 142px;
+}
+
+.marker-color-popover {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 18px 52px rgba(15, 23, 42, 0.22);
+  display: grid;
+  gap: 0.75rem;
+  left: 0;
+  max-width: min(640px, calc(100vw - 3rem));
+  padding: 0.85rem;
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  width: min(640px, 100%);
+  z-index: 20;
+}
+
+.marker-color-popover-head {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.marker-color-example {
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.45rem 0.55rem;
+}
+
+.marker-color-list {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-height: 300px;
+  overflow: auto;
+  padding-right: 0.2rem;
+}
+
+.marker-color-option {
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 50px;
+  padding: 0.55rem;
+  text-align: left;
+}
+
+.marker-color-option:hover,
+.marker-color-option[aria-checked="true"] {
+  border-color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 8%, var(--surface));
+}
+
+.marker-color-option:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.marker-color-option svg {
+  color: var(--blue);
+}
+
+.marker-custom-color-row {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 0;
+  padding: 0.55rem 0.65rem;
+}
+
+.marker-custom-color-row input[type="color"] {
+  border: 0;
+  cursor: pointer;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  width: 44px;
+}
+
 .date-input {
   display: grid;
   gap: 0.4rem;

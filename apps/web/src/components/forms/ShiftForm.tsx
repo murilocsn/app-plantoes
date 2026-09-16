@@ -1,11 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Location, Shift } from "@financplantoes/shared";
 import { recurrenceInputSchema, shiftInputSchema } from "@financplantoes/shared";
-import { Save } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { Check, Palette, Save } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
-import { calendarColors, colorFor, dateKey } from "../../lib/calendar";
+import { calendarColorOptions, colorFor, dateKey } from "../../lib/calendar";
 import { Button } from "../Button";
 import { DateField } from "../DateField";
 import { Field } from "../Field";
@@ -49,6 +49,9 @@ export function ShiftForm({
   onCancel,
   onSubmit,
 }: ShiftFormProps) {
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const colorPickerId = useId();
+  const colorPickerRef = useRef<HTMLDivElement>(null);
   const activeLocations = useMemo(
     () => locations.filter((location) => location.active !== false),
     [locations],
@@ -86,6 +89,8 @@ export function ShiftForm({
   const repeat = watch("repeat");
   const markerColor = watch("marker_color") || colorFor("Plantao");
   const markerLabel = watch("marker_label")?.trim() || "Sem legenda";
+  const markerColorName =
+    calendarColorOptions.find((option) => option.color === markerColor)?.name ?? "Personalizada";
 
   useEffect(() => {
     if (shift) {
@@ -98,6 +103,34 @@ export function ShiftForm({
       setValue("value", Number(selected.value12 ?? 0), { shouldValidate: true });
     }
   }, [activeLocations, selectedLocationId, setValue, shift]);
+
+  useEffect(() => {
+    if (!colorPickerOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (colorPickerRef.current?.contains(event.target as Node)) {
+        return;
+      }
+
+      setColorPickerOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setColorPickerOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [colorPickerOpen]);
 
   return (
     <form
@@ -141,39 +174,81 @@ export function ShiftForm({
       </Field>
       <div className="field color-field">
         <span>Marcador do plantao</span>
-        <div className="marker-color-preview">
-          <i aria-hidden="true" style={{ backgroundColor: markerColor }} />
-          <strong>{markerLabel}</strong>
+        <div className="marker-color-picker" ref={colorPickerRef}>
+          <div className="marker-color-control">
+            <div className="marker-color-preview">
+              <i aria-hidden="true" style={{ backgroundColor: markerColor }} />
+              <span>
+                <strong>{markerLabel}</strong>
+                <small>
+                  {markerColorName} - {markerColor}
+                </small>
+              </span>
+            </div>
+            <Button
+              aria-controls={colorPickerId}
+              aria-expanded={colorPickerOpen}
+              className="marker-color-picker-button"
+              onClick={() => setColorPickerOpen((isOpen) => !isOpen)}
+            >
+              <Palette size={16} />
+              <span>Escolher cor</span>
+            </Button>
+          </div>
+          {colorPickerOpen && (
+            <div className="marker-color-popover" id={colorPickerId}>
+              <div className="marker-color-popover-head">
+                <span>Previa no calendario</span>
+                <div className="marker-color-example">
+                  <i aria-hidden="true" style={{ backgroundColor: markerColor }} />
+                  <strong>{markerLabel}</strong>
+                  <small>{markerColorName}</small>
+                </div>
+              </div>
+              <div aria-label="Cor do marcador do plantao" className="marker-color-list" role="radiogroup">
+                {calendarColorOptions.map(({ color, name }) => (
+                  <button
+                    aria-checked={markerColor === color}
+                    aria-label={`Usar ${name} (${color})`}
+                    className="marker-color-option"
+                    key={color}
+                    onClick={() => {
+                      setValue("marker_color", color, { shouldDirty: true, shouldValidate: true });
+                      setColorPickerOpen(false);
+                    }}
+                    role="radio"
+                    type="button"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="marker-color-option-dot"
+                      style={{ backgroundColor: color }}
+                    />
+                    <span className="marker-color-option-text">
+                      <strong>{name}</strong>
+                      <small>{color}</small>
+                    </span>
+                    {markerColor === color && <Check aria-hidden="true" size={16} />}
+                  </button>
+                ))}
+              </div>
+              <label className="custom-color-row marker-custom-color-row">
+                <span>Cor personalizada</span>
+                <input
+                  aria-label="Cor personalizada do marcador"
+                  onChange={(event) =>
+                    setValue("marker_color", event.target.value, { shouldDirty: true, shouldValidate: true })
+                  }
+                  type="color"
+                  value={markerColor}
+                />
+              </label>
+            </div>
+          )}
         </div>
         <Field error={errors.marker_label?.message} label="Legenda da cor">
           <input maxLength={80} placeholder="Ex.: UTI, extra, pediatria" {...register("marker_label")} />
         </Field>
-        <div aria-label="Cor do marcador do plantao" className="color-swatch-grid" role="radiogroup">
-          {calendarColors.map((color) => (
-            <button
-              aria-checked={markerColor === color}
-              aria-label={`Usar cor ${color}`}
-              className="color-swatch"
-              key={color}
-              onClick={() => setValue("marker_color", color, { shouldDirty: true, shouldValidate: true })}
-              role="radio"
-              style={{ backgroundColor: color }}
-              title={color}
-              type="button"
-            />
-          ))}
-        </div>
-        <label className="custom-color-row">
-          <span>Cor personalizada</span>
-          <input
-            aria-label="Cor personalizada do marcador"
-            onChange={(event) =>
-              setValue("marker_color", event.target.value, { shouldDirty: true, shouldValidate: true })
-            }
-            type="color"
-            value={markerColor}
-          />
-        </label>
       </div>
       <Field error={errors.professional?.message} label="Profissional">
         <input {...register("professional")} />

@@ -289,6 +289,36 @@ canvas {
     font-size: 16px; /* evita zoom automático no Safari iOS */
   }
 
+  .marker-color-control {
+    grid-template-columns: 1fr;
+  }
+
+  .marker-color-picker-button {
+    width: 100%;
+  }
+
+  .marker-color-popover {
+    box-shadow: var(--shadow);
+    max-width: 100%;
+    position: static;
+    width: 100%;
+  }
+
+  .marker-color-popover-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .marker-color-example {
+    width: 100%;
+  }
+
+  .marker-color-list {
+    grid-template-columns: 1fr;
+    max-height: min(340px, 46vh);
+    padding-right: 0;
+  }
+
   .table-row {
     grid-template-columns: minmax(0, 1fr) auto;
   }
