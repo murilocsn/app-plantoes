@@ -305,8 +305,11 @@ canvas {
   }
 
   .marker-color-popover-head {
-    align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: 1fr;
+  }
+
+  .marker-calendar-sample {
+    width: 100%;
   }
 
   .marker-color-example {

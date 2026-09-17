@@ -181,7 +181,7 @@ export function ShiftForm({
               <span>
                 <strong>{markerLabel}</strong>
                 <small>
-                  {markerColorName} - {markerColor}
+                  {markerColorName}
                 </small>
               </span>
             </div>
@@ -198,11 +198,17 @@ export function ShiftForm({
           {colorPickerOpen && (
             <div className="marker-color-popover" id={colorPickerId}>
               <div className="marker-color-popover-head">
-                <span>Previa no calendario</span>
-                <div className="marker-color-example">
-                  <i aria-hidden="true" style={{ backgroundColor: markerColor }} />
-                  <strong>{markerLabel}</strong>
-                  <small>{markerColorName}</small>
+                <div>
+                  <strong>Escolha a cor</strong>
+                  <span>Assim a bolinha vai aparecer no calendario.</span>
+                </div>
+                <div className="marker-calendar-sample">
+                  <span>Previa</span>
+                  <div className="marker-color-example">
+                    <i aria-hidden="true" style={{ backgroundColor: markerColor }} />
+                    <strong>{markerLabel}</strong>
+                    <small>{markerColorName}</small>
+                  </div>
                 </div>
               </div>
               <div aria-label="Cor do marcador do plantao" className="marker-color-list" role="radiogroup">
@@ -225,8 +231,8 @@ export function ShiftForm({
                       style={{ backgroundColor: color }}
                     />
                     <span className="marker-color-option-text">
-                      <strong>{name}</strong>
-                      <small>{color}</small>
+                      <strong>{markerLabel}</strong>
+                      <small>{name}</small>
                     </span>
                     {markerColor === color && <Check aria-hidden="true" size={16} />}
                   </button>
