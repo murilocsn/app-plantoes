@@ -1,0 +1,204 @@
+openapi: 3.0.3
+info:
+  title: FinancPlantoes API
+  version: 0.1.0
+  description: Contrato inicial documentado a partir das rotas Express existentes.
+servers:
+  - url: https://app-plantoes.onrender.com
+    description: Producao Render identificada
+  - url: http://localhost:3333
+    description: Desenvolvimento local
+security:
+  - bearerAuth: []
+paths:
+  /:
+    get:
+      security: []
+      summary: Informacao basica da API
+      responses:
+        "200":
+          description: OK
+  /health:
+    get:
+      security: []
+      summary: Health check
+      responses:
+        "200":
+          description: Servico ativo
+  /api/dashboard/overview:
+    get:
+      summary: Resumo do painel
+      responses:
+        "200":
+          description: Resumo retornado
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/dashboard/bootstrap:
+    get:
+      summary: Dados iniciais do app
+      responses:
+        "200":
+          description: Dados retornados
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/locations:
+    get:
+      summary: Lista locais
+      responses:
+        "200":
+          description: Lista retornada
+    post:
+      summary: Cria local
+      responses:
+        "201":
+          description: Local criado
+  /api/locations/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    patch:
+      summary: Atualiza local
+      responses:
+        "200":
+          description: Local atualizado
+    delete:
+      summary: Remove ou inativa local
+      responses:
+        "200":
+          description: Operacao concluida
+  /api/shifts:
+    get:
+      summary: Lista plantoes
+      responses:
+        "200":
+          description: Lista retornada
+    post:
+      summary: Cria plantao
+      responses:
+        "201":
+          description: Plantao criado
+        "409":
+          description: Conflito de horario
+  /api/shifts/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    patch:
+      summary: Atualiza plantao
+      responses:
+        "200":
+          description: Plantao atualizado
+    delete:
+      summary: Remove plantao
+      responses:
+        "200":
+          description: Plantao removido
+  /api/receivables:
+    get:
+      summary: Lista recebiveis
+      responses:
+        "200":
+          description: Lista retornada
+    post:
+      summary: Cria recebivel
+      responses:
+        "201":
+          description: Recebivel criado
+  /api/receivables/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    patch:
+      summary: Atualiza recebivel
+      responses:
+        "200":
+          description: Recebivel atualizado
+    delete:
+      summary: Remove recebivel
+      responses:
+        "200":
+          description: Recebivel removido
+  /api/receivables/{id}/mark-paid:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: Marca recebivel como pago
+      responses:
+        "200":
+          description: Recebivel pago
+  /api/expenses:
+    get:
+      summary: Lista despesas
+      responses:
+        "200":
+          description: Lista retornada
+  /api/expenses/personal:
+    post:
+      summary: Cria despesa pessoal
+      responses:
+        "201":
+          description: Despesa criada
+  /api/expenses/shared:
+    post:
+      summary: Cria despesa compartilhada
+      responses:
+        "201":
+          description: Despesa criada
+  /api/spaces:
+    get:
+      summary: Lista espacos
+      responses:
+        "200":
+          description: Lista retornada
+    post:
+      summary: Cria espaco
+      responses:
+        "201":
+          description: Espaco criado
+  /api/spaces/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    patch:
+      summary: Atualiza espaco
+      responses:
+        "200":
+          description: Espaco atualizado
+    delete:
+      summary: Remove ou arquiva espaco
+      responses:
+        "200":
+          description: Operacao concluida
+  /api/settings:
+    get:
+      summary: Le configuracoes
+      responses:
+        "200":
+          description: Configuracoes retornadas
+    put:
+      summary: Atualiza configuracoes
+      responses:
+        "200":
+          description: Configuracoes atualizadas
+  /api/reports/export.csv:
+    get:
+      summary: Exporta relatorio CSV
+      responses:
+        "200":
+          description: Arquivo CSV
+          content:
+            text/csv:
+              schema:
+                type: string
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Supabase JWT
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: Token ausente ou invalido
