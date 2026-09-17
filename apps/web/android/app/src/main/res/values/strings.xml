@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FinancPlantoes</string>
+    <string name="title_activity_main">FinancPlantoes</string>
+    <string name="package_name">br.com.muriloneder.financplantoes</string>
+    <string name="custom_url_scheme">br.com.muriloneder.financplantoes</string>
+</resources>

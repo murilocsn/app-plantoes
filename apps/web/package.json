@@ -6,11 +6,18 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
+    "build:mobile": "node scripts/build-mobile.mjs",
+    "mobile:android": "npm run build:mobile && cap sync android && cap open android",
+    "mobile:ios": "npm run build:mobile && cap sync ios && cap open ios",
+    "mobile:sync": "npm run build:mobile && cap sync",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --config vitest.config.ts --configLoader runner"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
     "@financplantoes/shared": "file:../../packages/shared",
     "@hookform/resolvers": "^3.10.0",
     "@supabase/supabase-js": "^2.48.1",
@@ -25,6 +32,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
     "@types/react": "^18.3.17",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",

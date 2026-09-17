@@ -10,3 +10,19 @@ dist/
 coverage/
 apps/web/dist/
 apps/api/dist/
+
+# Mobile release artifacts and signing material
+*.apk
+*.aab
+*.ipa
+*.jks
+*.keystore
+*.p12
+*.cer
+*.mobileprovision
+AuthKey_*.p8
+**/android/key.properties
+**/android/app/build/
+**/android/app/release/
+**/ios/App/build/
+**/ios/App/Pods/
