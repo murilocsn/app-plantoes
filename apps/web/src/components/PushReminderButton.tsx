@@ -6,6 +6,40 @@ import { Button } from "./Button";
 
 const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
 
+function isIosDevice() {
+  const userAgent = navigator.userAgent || "";
+  const maxTouchPoints = typeof navigator.maxTouchPoints === "number" ? navigator.maxTouchPoints : 0;
+  if (/iPad|iPhone|iPod/.test(userAgent)) {
+    return true;
+  }
+  return /Macintosh/.test(userAgent) && maxTouchPoints > 1;
+}
+
+function isStandalonePwa() {
+  if (window.matchMedia("(display-mode: standalone)").matches) {
+    return true;
+  }
+  return (navigator as Navigator & { standalone?: boolean }).standalone === true;
+}
+
+function isSafariBrowser() {
+  const userAgent = navigator.userAgent || "";
+  const vendor = navigator.vendor || "";
+  return /Safari/.test(userAgent) && /Apple Computer/.test(vendor) && !/CriOS|FxiOS|EdgiOS/.test(userAgent);
+}
+
+function unsupportedPushMessage() {
+  if (isIosDevice() && !isStandalonePwa()) {
+    return "No iPhone/iPad: toque em Compartilhar > Adicionar a Tela de Inicio, abra o app instalado e ative os lembretes.";
+  }
+
+  if (isSafariBrowser()) {
+    return "No Safari: libere Notificacoes do site, use HTTPS e, no iPhone/iPad, ative pelo app instalado na Tela de Inicio.";
+  }
+
+  return "Este navegador nao suporta notificacoes Push.";
+}
+
 function base64ToBytes(value: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
   const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -61,7 +95,7 @@ export function PushReminderButton() {
     }
 
     if (!user || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
-      setMessage("Este navegador nao suporta notificacoes Push.");
+      setMessage(unsupportedPushMessage());
       return;
     }
 
@@ -134,7 +168,7 @@ export function PushReminderButton() {
 
     try {
       if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-        throw new Error("Este navegador nao suporta notificacoes Push.");
+        throw new Error(unsupportedPushMessage());
       }
 
       const registration = await navigator.serviceWorker.ready;
