@@ -2,43 +2,10 @@ import { Bell, BellOff, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
+import { normalizeVapidPublicKey, unsupportedPushMessage, vapidPublicKeyError } from "../lib/push-support";
 import { Button } from "./Button";
 
 const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
-
-function isIosDevice() {
-  const userAgent = navigator.userAgent || "";
-  const maxTouchPoints = typeof navigator.maxTouchPoints === "number" ? navigator.maxTouchPoints : 0;
-  if (/iPad|iPhone|iPod/.test(userAgent)) {
-    return true;
-  }
-  return /Macintosh/.test(userAgent) && maxTouchPoints > 1;
-}
-
-function isStandalonePwa() {
-  if (window.matchMedia("(display-mode: standalone)").matches) {
-    return true;
-  }
-  return (navigator as Navigator & { standalone?: boolean }).standalone === true;
-}
-
-function isSafariBrowser() {
-  const userAgent = navigator.userAgent || "";
-  const vendor = navigator.vendor || "";
-  return /Safari/.test(userAgent) && /Apple Computer/.test(vendor) && !/CriOS|FxiOS|EdgiOS/.test(userAgent);
-}
-
-function unsupportedPushMessage() {
-  if (isIosDevice() && !isStandalonePwa()) {
-    return "No iPhone/iPad: toque em Compartilhar > Adicionar a Tela de Inicio, abra o app instalado e ative os lembretes.";
-  }
-
-  if (isSafariBrowser()) {
-    return "No Safari: libere Notificacoes do site, use HTTPS e, no iPhone/iPad, ative pelo app instalado na Tela de Inicio.";
-  }
-
-  return "Este navegador nao suporta notificacoes Push.";
-}
 
 function base64ToBytes(value: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
@@ -87,12 +54,14 @@ export function PushReminderButton() {
 
   async function activate() {
     setMessage("");
-    const publicKey = vapidPublicKey?.trim();
+    const keyError = vapidPublicKeyError(vapidPublicKey);
 
-    if (!publicKey) {
-      setMessage("Configure VITE_VAPID_PUBLIC_KEY para ativar os lembretes.");
+    if (keyError) {
+      setMessage(keyError);
       return;
     }
+
+    const publicKey = normalizeVapidPublicKey(vapidPublicKey);
 
     if (!user || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
       setMessage(unsupportedPushMessage());
