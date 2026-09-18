@@ -16,3 +16,9 @@ Status: PARCIALMENTE IMPLEMENTADA
 - Monitoramento de entregas push.
 - Painel de uptime.
 - Rotina de auditoria de dependencias.
+
+## Lembretes push
+
+O runbook operacional dos alertas de plantao fica em:
+
+- [lembretes-push.md](lembretes-push.md)

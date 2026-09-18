@@ -2,6 +2,19 @@
 
 Todas as mudancas relevantes de documentacao, arquitetura e produto devem ser registradas aqui.
 
+## 2026-09-18
+
+### Adicionado
+
+- Botao `Enviar teste` no controle de lembretes push para validar notificacao diretamente no aparelho.
+- Runbook operacional de lembretes push em `docs/11-operacao/lembretes-push.md`.
+
+### Alterado
+
+- Cron de lembretes documentado de forma tecnica para execucao a cada 5 minutos com header `x-cron-secret`.
+- Troubleshooting e deploy atualizados com as validacoes de VAPID, Vault, Edge Function e cron.
+- `.env.example` ajustado para usar placeholders em vez de valores reais/publicaveis.
+
 ## 2026-09-17
 
 ### Adicionado

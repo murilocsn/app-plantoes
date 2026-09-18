@@ -1,4 +1,4 @@
-import { Bell, BellOff } from "lucide-react";
+import { Bell, BellOff, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
@@ -172,18 +172,62 @@ export function PushReminderButton() {
     }
   }
 
+  async function sendTestNotification() {
+    setMessage("");
+    setPending(true);
+
+    try {
+      if (!("serviceWorker" in navigator) || !("Notification" in window)) {
+        throw new Error("Este navegador nao suporta notificacoes.");
+      }
+
+      if (Notification.permission !== "granted") {
+        throw new Error("Ative os lembretes antes de enviar um teste.");
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification("Teste de lembrete", {
+        body: "Se voce recebeu este aviso, o aparelho esta pronto para os alertas de plantao.",
+        icon: `${import.meta.env.BASE_URL}icons/icon-192.png`,
+        badge: `${import.meta.env.BASE_URL}icons/icon-192.png`,
+        tag: "shift-reminder-test",
+        data: { url: window.location.href },
+      });
+
+      setMessage("Notificacao de teste enviada.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Nao foi possivel enviar a notificacao de teste.");
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
     <div className={`push-reminder-control${message ? " has-message" : ""}`}>
-      <Button
-        aria-label={enabled ? "Desativar lembretes" : "Ativar lembretes"}
-        disabled={pending}
-        onClick={() => void (enabled ? deactivate() : activate())}
-        title={message || (enabled ? "Clique para desativar os lembretes" : label)}
-        variant="ghost"
-      >
-        {enabled ? <Bell size={18} /> : <BellOff size={18} />}
-        <span>{label}</span>
-      </Button>
+      <div className="push-reminder-actions">
+        <Button
+          aria-label={enabled ? "Desativar lembretes" : "Ativar lembretes"}
+          disabled={pending}
+          onClick={() => void (enabled ? deactivate() : activate())}
+          title={message || (enabled ? "Clique para desativar os lembretes" : label)}
+          variant="ghost"
+        >
+          {enabled ? <Bell size={18} /> : <BellOff size={18} />}
+          <span>{label}</span>
+        </Button>
+        {enabled && (
+          <Button
+            aria-label="Enviar notificacao de teste"
+            disabled={pending}
+            onClick={() => void sendTestNotification()}
+            title="Enviar notificacao de teste"
+            variant="ghost"
+          >
+            <Send size={18} />
+            <span>Enviar teste</span>
+          </Button>
+        )}
+      </div>
       <small aria-live="polite" role="status">
         {message || "Avisos: 24h e 90min antes, mesmo com o app fechado."}
       </small>

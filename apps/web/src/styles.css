@@ -1590,6 +1590,12 @@ h3 {
   gap: 0.25rem;
 }
 
+.push-reminder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
 .push-reminder-control small {
   color: var(--muted);
   font-size: 0.72rem;
