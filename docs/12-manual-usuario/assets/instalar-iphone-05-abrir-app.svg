@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1080" viewBox="0 0 720 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Abrir o app instalado</title>
+  <desc id="desc">Ilustracao da Tela de Inicio com o icone do FinancPlantoes instalado.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#2458d3"/>
+      <stop offset="1" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="1080" fill="url(#bg)"/>
+  <text x="84" y="88" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="#ffffff">09:41</text>
+  <g transform="translate(82 170)">
+    <rect width="108" height="108" rx="24" fill="#ffffff" opacity="0.92"/>
+    <text x="54" y="68" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#2458d3">FP</text>
+    <text x="54" y="146" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">Financ</text>
+  </g>
+  <g transform="translate(230 170)" opacity="0.75">
+    <rect width="108" height="108" rx="24" fill="#ffffff"/>
+    <circle cx="54" cy="54" r="24" fill="#94a3b8"/>
+    <text x="54" y="146" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">Outro</text>
+  </g>
+  <circle cx="136" cy="224" r="78" fill="none" stroke="#f97316" stroke-width="10"/>
+  <path d="M215 300 C288 372 300 460 280 560" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round"/>
+  <path d="M262 542 l18 36 l30 -28" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="80" y="704" width="560" height="170" rx="30" fill="#ffffff" opacity="0.94"/>
+  <text x="360" y="764" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="#111827">Abra pelo icone instalado</text>
+  <text x="360" y="812" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#475467">Depois ative os lembretes dentro do app.</text>
+  <text x="360" y="846" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#475467">Esse modo permite notificacoes no iPhone.</text>
+  <rect x="100" y="930" width="520" height="86" rx="22" fill="#ffffff" opacity="0.95"/>
+  <text x="360" y="970" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#2458d3">Passo 5</text>
+  <text x="360" y="1000" text-anchor="middle" font-family="Arial, sans-serif" font-size="19" fill="#344054">Entre pelo app na Tela de Inicio.</text>
+</svg>

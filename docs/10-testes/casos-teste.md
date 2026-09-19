@@ -11,6 +11,7 @@ Status: PARCIALMENTE IMPLEMENTADA
 | Plantao | Recorrencia | IMPLEMENTADA |
 | API | Smoke de locais | IMPLEMENTADA |
 | Autenticacao | E2E com modo mock/real | PARCIALMENTE IMPLEMENTADA |
+| Seguranca/RLS | Isolamento entre usuarios em `locations`, `shifts`, `receivables` e `personal_expenses` | PARCIALMENTE VALIDADO |
 | Financeiro | Recebiveis e despesas | PARCIALMENTE IMPLEMENTADA |
-| Espacos | Permissoes entre membros | NAO CONFIRMADA |
+| Espacos | Usuario nao membro bloqueado em `spaces` e `expenses` | PARCIALMENTE VALIDADO |
 | Push | Entrega de lembretes | NAO CONFIRMADA |

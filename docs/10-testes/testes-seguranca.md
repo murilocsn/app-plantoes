@@ -1,6 +1,6 @@
 # Testes de seguranca
 
-Status: NAO CONFIRMADA
+Status: PARCIALMENTE VALIDADO
 
 ## Testes recomendados
 
@@ -14,4 +14,15 @@ Status: NAO CONFIRMADA
 
 ## Situacao atual
 
-Foram identificados controles de seguranca, mas nao uma suite dedicada completa de testes de seguranca.
+Foram identificados controles de seguranca e foram executados testes praticos de RLS em `locations`, `shifts`, `receivables`, `personal_expenses`, `spaces` e `expenses`.
+
+Resultado:
+
+- Usuario dono conseguiu ler o proprio registro.
+- Outro usuario nao conseguiu ler o registro do dono.
+- Outro usuario nao conseguiu atualizar o registro do dono.
+- Usuario nao membro de espaco nao conseguiu ler ou atualizar registros protegidos de espaco.
+
+Registro detalhado: [validacao-rls.md](validacao-rls.md)
+
+Ainda falta uma suite dedicada automatizada cobrindo convites, membros, rateios, acertos e demais fluxos compartilhados.

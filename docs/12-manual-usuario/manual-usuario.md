@@ -8,6 +8,12 @@ Status: PARCIALMENTE IMPLEMENTADA
 2. Fazer login com e-mail/senha conforme Supabase Auth configurado.
 3. Acessar o painel principal.
 
+## Instalacao no iPhone/iPad
+
+Para manter uma experiencia parecida com app e permitir lembretes push no iPhone/iPad, instale o sistema na Tela de Inicio:
+
+- [Instalar na Tela de Inicio do iPhone](instalar-na-tela-de-inicio-iphone.md)
+
 ## Painel
 
 O painel apresenta uma visao geral da rotina profissional, com dados vindos da API.

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1080" viewBox="0 0 720 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Tocar no botao Compartilhar</title>
+  <desc id="desc">Ilustracao destacando o botao Compartilhar do Safari no iPhone.</desc>
+  <rect width="720" height="1080" fill="#f4f6fb"/>
+  <rect x="110" y="40" width="500" height="1000" rx="58" fill="#111827"/>
+  <rect x="130" y="78" width="460" height="924" rx="38" fill="#ffffff"/>
+  <rect x="154" y="820" width="412" height="78" rx="28" fill="#3f3f46"/>
+  <text x="360" y="869" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" fill="#ffffff">murilocsn.github.io</text>
+  <rect x="130" y="902" width="460" height="100" fill="#ffffff"/>
+  <path d="M360 948 v-58" stroke="#2458d3" stroke-width="8" stroke-linecap="round"/>
+  <path d="M338 910 l22 -22 l22 22" fill="none" stroke="#2458d3" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M328 940 h-28 v54 h120 v-54 h-28" fill="none" stroke="#2458d3" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="360" cy="942" r="78" fill="none" stroke="#f97316" stroke-width="10"/>
+  <path d="M444 870 C510 820 536 760 540 690" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round"/>
+  <path d="M520 704 l22 -24 l14 30" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="360" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#111827">Toque em Compartilhar</text>
+  <text x="360" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#475467">O icone fica na barra inferior do Safari.</text>
+  <rect x="100" y="930" width="520" height="86" rx="22" fill="#eef2ff"/>
+  <text x="360" y="970" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#2458d3">Passo 2</text>
+  <text x="360" y="1000" text-anchor="middle" font-family="Arial, sans-serif" font-size="19" fill="#344054">Use o botao de compartilhar do iPhone.</text>
+</svg>

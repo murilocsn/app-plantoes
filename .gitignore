@@ -8,6 +8,10 @@ dist/
 .env.*
 !.env.example
 coverage/
+backups/
+*.dump
+*.backup
+*.sql.gz
 apps/web/dist/
 apps/api/dist/
 

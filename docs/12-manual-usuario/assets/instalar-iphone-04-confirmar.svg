@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1080" viewBox="0 0 720 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Confirmar a instalacao</title>
+  <desc id="desc">Ilustracao da tela de confirmacao para adicionar o app a Tela de Inicio.</desc>
+  <rect width="720" height="1080" fill="#f4f6fb"/>
+  <rect x="96" y="90" width="528" height="900" rx="38" fill="#ffffff" stroke="#d9e0ec" stroke-width="3"/>
+  <text x="150" y="154" font-family="Arial, sans-serif" font-size="24" fill="#2458d3">Cancelar</text>
+  <text x="360" y="154" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#111827">Adicionar</text>
+  <text x="570" y="154" text-anchor="end" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#2458d3">Adicionar</text>
+  <rect x="150" y="230" width="112" height="112" rx="28" fill="#2458d3"/>
+  <text x="206" y="300" text-anchor="middle" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="#ffffff">FP</text>
+  <text x="292" y="276" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#111827">FinancPlantoes</text>
+  <text x="292" y="312" font-family="Arial, sans-serif" font-size="20" fill="#667085">murilocsn.github.io</text>
+  <rect x="150" y="410" width="420" height="62" rx="16" fill="#f8fafc" stroke="#d9e0ec"/>
+  <text x="176" y="450" font-family="Arial, sans-serif" font-size="22" fill="#111827">Nome: FinancPlantoes</text>
+  <circle cx="570" cy="154" r="54" fill="none" stroke="#f97316" stroke-width="9"/>
+  <path d="M520 224 C480 270 440 300 394 316" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round"/>
+  <path d="M412 288 l-28 31 l42 8" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="100" y="930" width="520" height="86" rx="22" fill="#eef2ff"/>
+  <text x="360" y="970" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#2458d3">Passo 4</text>
+  <text x="360" y="1000" text-anchor="middle" font-family="Arial, sans-serif" font-size="19" fill="#344054">Confirme tocando em Adicionar.</text>
+</svg>

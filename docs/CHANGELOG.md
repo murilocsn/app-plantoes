@@ -4,9 +4,17 @@ Todas as mudancas relevantes de documentacao, arquitetura e produto devem ser re
 
 ## 2026-09-19
 
+### Adicionado
+
+- Manual visual com imagens para instalar o FinancPlantoes na Tela de Inicio do iPhone/iPad.
+- Registro de validacao parcial de RLS com teste pratico de isolamento em `locations`.
+- Testes praticos adicionais de RLS para `shifts`, `receivables`, `personal_expenses`, `spaces` e `expenses`.
+- Runbook e script de backup de baixo custo para uso sem Supabase Pro.
+
 ### Alterado
 
 - Documentacao de lembretes push atualizada com o fluxo correto para iPhone/iPad via PWA instalado na Tela de Inicio.
+- Script de backup ajustado para falhar quando Docker/Podman estiver ausente ou quando o dump gerado estiver vazio.
 
 ## 2026-09-18
 
