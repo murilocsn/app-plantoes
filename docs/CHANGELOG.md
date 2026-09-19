@@ -2,6 +2,12 @@
 
 Todas as mudancas relevantes de documentacao, arquitetura e produto devem ser registradas aqui.
 
+## 2026-09-19
+
+### Alterado
+
+- Documentacao de lembretes push atualizada com o fluxo correto para iPhone/iPad via PWA instalado na Tela de Inicio.
+
 ## 2026-09-18
 
 ### Adicionado

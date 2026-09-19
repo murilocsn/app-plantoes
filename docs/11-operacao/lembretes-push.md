@@ -105,18 +105,30 @@ where status = 'scheduled'
 
 1. Publicar o frontend com `VITE_VAPID_PUBLIC_KEY`.
 2. Abrir o app pela URL HTTPS no celular.
-3. Desativar lembretes, caso ja estejam ativos.
-4. Ativar lembretes novamente.
-5. Aceitar a permissao do navegador.
-6. Clicar em `Enviar teste`.
-7. Criar um plantao para daqui a aproximadamente 95 minutos.
-8. Aguardar o cron entrar na janela de 90 minutos.
+3. No iPhone/iPad, se estiver no Safari, tocar em `Compartilhar` e depois `Adicionar a Tela de Inicio`.
+4. Abrir o app pelo icone instalado na Tela de Inicio.
+5. Desativar lembretes, caso ja estejam ativos.
+6. Ativar lembretes novamente.
+7. Aceitar a permissao do navegador.
+8. Clicar em `Enviar teste`.
+9. Criar um plantao para daqui a aproximadamente 95 minutos.
+10. Aguardar o cron entrar na janela de 90 minutos.
+
+## Suporte por navegador
+
+| Ambiente | Status | Observacao |
+| --- | --- | --- |
+| Chrome/Edge Android | SUPORTADO | Exige HTTPS, permissao de notificacao e VAPID configurado. |
+| Safari iPhone/iPad aberto direto | LIMITADO | O Safari pode nao expor Push API fora do app instalado. |
+| PWA iPhone/iPad na Tela de Inicio | SUPORTADO COM RESTRICOES | Instalar via `Compartilhar > Adicionar a Tela de Inicio` e ativar pelo app instalado. |
+| Safari desktop | SUPORTADO COM RESTRICOES | Exige permissao do site e HTTPS. |
 
 ## Causas comuns de falha
 
 | Sintoma | Causa provavel | Correcao |
 | --- | --- | --- |
 | Botao informa VAPID ausente | `VITE_VAPID_PUBLIC_KEY` nao foi publicado | Configurar variavel e rebuildar frontend. |
+| iPhone mostra navegador sem suporte | Site aberto direto no Safari | Instalar na Tela de Inicio e abrir pelo icone do app. |
 | Cron executa mas nao envia | `x-cron-secret` ausente ou errado | Rodar `database/cron/shift-reminders.sql` e conferir Vault. |
 | Funcao retorna 401 | `shift_reminders_cron_secret` diferente de `CRON_SECRET` | Igualar os valores. |
 | Nao encontra candidatos | Plantao fora da janela, sem horario ou status diferente | Usar `scheduled` e `start_time` preenchido. |
