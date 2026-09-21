@@ -42,31 +42,21 @@ export function ShiftsPage() {
   // ⚠️ Regras dos Hooks: este useMemo precisa rodar em TODAS as renderizações,
   // antes de qualquer return condicional (mesmo padrão da correção do Dashboard).
   const grouped = useMemo(() => {
-    const byLocation = new Map<string, Shift[]>();
+    const byDate = new Map<string, Shift[]>();
 
     for (const shift of filtered) {
-      const key = shift.location_name || "Local";
-      byLocation.set(key, [...(byLocation.get(key) ?? []), shift]);
+      byDate.set(shift.date, [...(byDate.get(shift.date) ?? []), shift]);
     }
 
-    return [...byLocation.entries()]
-      .sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
-      .map(([location, locationShifts]) => {
-        const sorted = [...locationShifts].sort((a, b) => a.date.localeCompare(b.date));
-        const days: Array<{ date: string; shifts: Shift[] }> = [];
-
-        for (const shift of sorted) {
-          const last = days[days.length - 1];
-
-          if (last && last.date === shift.date) {
-            last.shifts.push(shift);
-          } else {
-            days.push({ date: shift.date, shifts: [shift] });
-          }
-        }
-
-        return { location, days, total: sorted.length };
-      });
+    return [...byDate.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, shifts]) => ({
+        date,
+        shifts: [...shifts].sort((a, b) => {
+          const timeCompare = String(a.start_time ?? "").localeCompare(String(b.start_time ?? ""));
+          return timeCompare || String(a.location_name ?? "").localeCompare(String(b.location_name ?? ""), "pt-BR");
+        }),
+      }));
   }, [filtered]);
 
   if (bootstrap.isLoading) {
@@ -153,44 +143,41 @@ export function ShiftsPage() {
         </div>
 
         {grouped.length ? (
-          <div className="shift-groups">
+          <div className="shift-date-list">
             {grouped.map((group) => (
-              <section className="shift-group" key={group.location}>
-                <header className="shift-group-head">
-                  <strong>{group.location}</strong>
+              <section className="shift-date-group" key={group.date}>
+                <header className="shift-date-head">
+                  <strong>{dateLabel(group.date)}</strong>
                   <small>
-                    {group.total} {group.total === 1 ? "plantao" : "plantoes"}
+                    {group.shifts.length} {group.shifts.length === 1 ? "plantao" : "plantoes"}
                   </small>
                 </header>
-                {group.days.map((day) => (
-                  <div key={day.date}>
-                    <span className="shift-day-label">{dateLabel(day.date)}</span>
-                    <div className="table-list">
-                      {day.shifts.map((shift) => (
-                        <article className="table-row shift-row" key={shift.id}>
-                          <div>
-                            <strong>{String(shift.start_time ?? "--:--").slice(0, 5)}</strong>
-                            <span>{shift.duration}h</span>
-                          </div>
-                          <div className="row-actions">
-                            <Button aria-label="Editar" onClick={() => edit(shift)} size="icon" title="Editar">
-                              <Pencil size={16} />
-                            </Button>
-                            <Button
-                              aria-label="Excluir"
-                              onClick={() => setShiftModal({ type: "delete", shift })}
-                              size="icon"
-                              title="Excluir"
-                              variant="danger"
-                            >
-                              <Trash2 size={16} />
-                            </Button>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                <div className="shift-card-grid">
+                  {group.shifts.map((shift) => (
+                    <article className="shift-card" key={shift.id}>
+                      <div className="shift-card-main">
+                        <strong>{shift.location_name || "Local"}</strong>
+                        <span>
+                          {String(shift.start_time ?? "--:--").slice(0, 5)} · {shift.duration}h
+                        </span>
+                      </div>
+                      <div className="row-actions">
+                        <Button aria-label="Editar" onClick={() => edit(shift)} size="icon" title="Editar">
+                          <Pencil size={16} />
+                        </Button>
+                        <Button
+                          aria-label="Excluir"
+                          onClick={() => setShiftModal({ type: "delete", shift })}
+                          size="icon"
+                          title="Excluir"
+                          variant="danger"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
               </section>
             ))}
           </div>

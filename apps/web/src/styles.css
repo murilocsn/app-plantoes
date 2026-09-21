@@ -844,6 +844,91 @@ h3 {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
 }
 
+.shift-date-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.shift-date-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.65rem;
+}
+
+.shift-date-head {
+  align-items: baseline;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+}
+
+.shift-date-head strong {
+  font-size: 0.95rem;
+}
+
+.shift-date-head small {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.shift-card-grid {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+}
+
+.shift-card {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 64px;
+  padding: 0.55rem;
+}
+
+.shift-card-main {
+  min-width: 0;
+}
+
+.shift-card-main strong,
+.shift-card-main span {
+  display: block;
+  min-width: 0;
+}
+
+.shift-card-main strong {
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shift-card-main span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  margin-top: 0.2rem;
+}
+
+.shift-card .row-actions {
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+}
+
+.shift-card .button-icon {
+  border-radius: 7px;
+  height: 32px;
+  min-height: 32px;
+  width: 32px;
+}
+
 .shift-group {
   background: var(--surface);
   border: 1px solid var(--border);
