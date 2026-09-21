@@ -34,6 +34,15 @@ describe("shift conflicts", () => {
     ).toBe(true);
   });
 
+  it("detecta conflito quando um plantao de 12h termina depois do inicio do outro no dia seguinte", () => {
+    expect(
+      shiftsOverlap(
+        { date: "2026-08-28", start_time: "23:13", duration: 12 },
+        { date: "2026-08-29", start_time: "07:00", duration: 12 },
+      ),
+    ).toBe(true);
+  });
+
   it("ignora o proprio plantao durante edicao", () => {
     const conflict = findFirstShiftConflict(
       [{ id: "shift-1", date: "2026-09-11", start_time: "07:00", duration: 6 }],

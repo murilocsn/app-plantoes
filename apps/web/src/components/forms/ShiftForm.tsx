@@ -6,6 +6,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { calendarColorOptions, colorFor, dateKey } from "../../lib/calendar";
+import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../Button";
 import { DateField } from "../DateField";
 import { Field } from "../Field";
@@ -28,6 +29,8 @@ const shiftFormSchema = shiftInputSchema.extend({
 
 type ShiftFormValues = z.infer<typeof shiftFormSchema>;
 
+const durationHistoryLimit = 8;
+
 type ShiftFormProps = {
   locations: Location[];
   initialDate?: string;
@@ -41,6 +44,46 @@ function toTime(value?: string | null) {
   return value ? value.slice(0, 5) : "07:00";
 }
 
+function durationHistoryKey(userId?: string) {
+  return `financplantoes:shift-durations:${userId || "local"}`;
+}
+
+function readDurationHistory(userId?: string) {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(durationHistoryKey(userId)) ?? "[]");
+    return Array.isArray(parsed)
+      ? parsed
+          .map((value) => Number(value))
+          .filter((value) => Number.isFinite(value) && value >= 1 && value <= 48)
+          .slice(0, durationHistoryLimit)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveDurationHistory(userId: string | undefined, duration: number) {
+  if (typeof window === "undefined" || !Number.isFinite(duration) || duration < 1 || duration > 48) {
+    return;
+  }
+
+  const rounded = Math.round(duration * 100) / 100;
+  const next = [
+    rounded,
+    ...readDurationHistory(userId).filter((item) => item !== rounded),
+  ].slice(0, durationHistoryLimit);
+
+  window.localStorage.setItem(durationHistoryKey(userId), JSON.stringify(next));
+}
+
+function formatDurationOption(value: number) {
+  return Number.isInteger(value) ? String(value) : String(value).replace(".", ",");
+}
+
 export function ShiftForm({
   locations,
   initialDate,
@@ -49,8 +92,12 @@ export function ShiftForm({
   onCancel,
   onSubmit,
 }: ShiftFormProps) {
+  const { user } = useAuth();
+  const userStorageId = user?.id || user?.email || undefined;
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [durationHistory, setDurationHistory] = useState<number[]>(() => readDurationHistory(userStorageId));
   const colorPickerId = useId();
+  const durationListId = useId();
   const colorPickerRef = useRef<HTMLDivElement>(null);
   const activeLocations = useMemo(
     () => locations.filter((location) => location.active !== false),
@@ -86,11 +133,16 @@ export function ShiftForm({
   });
 
   const selectedLocationId = watch("location_id");
+  const durationValue = watch("duration");
   const repeat = watch("repeat");
   const markerColor = watch("marker_color") || colorFor("Plantao");
   const markerLabel = watch("marker_label")?.trim() || "Sem legenda";
   const markerColorName =
     calendarColorOptions.find((option) => option.color === markerColor)?.name ?? "Personalizada";
+
+  useEffect(() => {
+    setDurationHistory(readDurationHistory(userStorageId));
+  }, [userStorageId]);
 
   useEffect(() => {
     if (shift) {
@@ -137,6 +189,8 @@ export function ShiftForm({
       className="form-grid"
       onSubmit={handleSubmit((values) => {
         const shiftPayload = shiftInputSchema.parse(values);
+        saveDurationHistory(userStorageId, shiftPayload.duration);
+        setDurationHistory(readDurationHistory(userStorageId));
         const recurrence = values.repeat
           ? recurrenceInputSchema.parse({
               frequency: values.frequency,
@@ -167,7 +221,26 @@ export function ShiftForm({
         </select>
       </Field>
       <Field error={errors.duration?.message} label="Duracao em horas">
-        <input min="1" max="48" step="0.5" type="number" {...register("duration")} />
+        <input list={durationListId} min="1" max="48" step="0.5" type="number" {...register("duration")} />
+        <datalist id={durationListId}>
+          {durationHistory.map((duration) => (
+            <option key={duration} value={duration} />
+          ))}
+        </datalist>
+        {durationHistory.length > 0 && (
+          <div aria-label="Duracoes usadas recentemente" className="duration-suggestions">
+            {durationHistory.map((duration) => (
+              <button
+                aria-pressed={Number(durationValue) === duration}
+                key={duration}
+                onClick={() => setValue("duration", duration, { shouldDirty: true, shouldValidate: true })}
+                type="button"
+              >
+                {formatDurationOption(duration)}h
+              </button>
+            ))}
+          </div>
+        )}
       </Field>
       <Field error={errors.value?.message} label="Valor">
         <input min="0" step="0.01" type="number" {...register("value")} />

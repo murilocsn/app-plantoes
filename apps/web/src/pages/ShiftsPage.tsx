@@ -10,6 +10,55 @@ import { ShiftCrudModals, type ShiftModalState } from "../components/ShiftCrudMo
 import { useBootstrap } from "../hooks/useBootstrap";
 import { dateLabel } from "../lib/formatters";
 
+const MINUTES_PER_DAY = 24 * 60;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function dateToDayIndex(date: string) {
+  const [yearText, monthText, dayText] = date.split("-");
+  return Math.floor(Date.UTC(Number(yearText), Number(monthText) - 1, Number(dayText)) / DAY_MS);
+}
+
+function timeToMinutes(time?: string | null) {
+  const match = time?.match(/^(\d{2}):(\d{2})/);
+  return match ? Number(match[1]) * 60 + Number(match[2]) : null;
+}
+
+function shiftInterval(shift: Pick<Shift, "date" | "start_time" | "duration">) {
+  const startMinutes = timeToMinutes(shift.start_time);
+  const duration = Number(shift.duration);
+
+  if (startMinutes === null || !Number.isFinite(duration) || duration <= 0) {
+    return null;
+  }
+
+  const start = dateToDayIndex(shift.date) * MINUTES_PER_DAY + startMinutes;
+  return { start, end: start + duration * 60 };
+}
+
+function shiftsOverlap(first: Shift, second: Shift) {
+  const firstInterval = shiftInterval(first);
+  const secondInterval = shiftInterval(second);
+
+  if (!firstInterval || !secondInterval) {
+    return false;
+  }
+
+  return firstInterval.start < secondInterval.end && firstInterval.end > secondInterval.start;
+}
+
+function endTimeLabel(shift: Shift) {
+  const interval = shiftInterval(shift);
+
+  if (!interval) {
+    return "--:--";
+  }
+
+  const endMinutes = interval.end % MINUTES_PER_DAY;
+  const hour = Math.floor(endMinutes / 60);
+  const minute = endMinutes % 60;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
 export function ShiftsPage() {
   const bootstrap = useBootstrap();
   const [params, setParams] = useSearchParams();
@@ -57,6 +106,24 @@ export function ShiftsPage() {
           return timeCompare || String(a.location_name ?? "").localeCompare(String(b.location_name ?? ""), "pt-BR");
         }),
       }));
+  }, [filtered]);
+
+  const conflictIds = useMemo(() => {
+    const ids = new Set<string>();
+
+    for (let index = 0; index < filtered.length; index += 1) {
+      for (let nextIndex = index + 1; nextIndex < filtered.length; nextIndex += 1) {
+        const current = filtered[index];
+        const next = filtered[nextIndex];
+
+        if (current && next && shiftsOverlap(current, next)) {
+          ids.add(current.id);
+          ids.add(next.id);
+        }
+      }
+    }
+
+    return ids;
   }, [filtered]);
 
   if (bootstrap.isLoading) {
@@ -154,12 +221,13 @@ export function ShiftsPage() {
                 </header>
                 <div className="shift-card-grid">
                   {group.shifts.map((shift) => (
-                    <article className="shift-card" key={shift.id}>
+                    <article className={conflictIds.has(shift.id) ? "shift-card shift-card-conflict" : "shift-card"} key={shift.id}>
                       <div className="shift-card-main">
                         <strong>{shift.location_name || "Local"}</strong>
                         <span>
-                          {String(shift.start_time ?? "--:--").slice(0, 5)} · {shift.duration}h
+                          {String(shift.start_time ?? "--:--").slice(0, 5)} - {endTimeLabel(shift)} · {shift.duration}h
                         </span>
+                        {conflictIds.has(shift.id) && <em>Conflito de horario</em>}
                       </div>
                       <div className="row-actions">
                         <Button aria-label="Editar" onClick={() => edit(shift)} size="icon" title="Editar">

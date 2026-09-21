@@ -929,6 +929,20 @@ h3 {
   width: 32px;
 }
 
+.shift-card-conflict {
+  background: var(--coral-soft);
+  border-color: color-mix(in srgb, var(--coral) 45%, var(--border));
+}
+
+.shift-card-main em {
+  color: var(--coral);
+  display: block;
+  font-size: 0.74rem;
+  font-style: normal;
+  font-weight: 800;
+  margin-top: 0.25rem;
+}
+
 .shift-group {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1374,6 +1388,32 @@ h3 {
 
 .field textarea {
   resize: vertical;
+}
+
+.duration-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.1rem;
+}
+
+.duration-suggestions button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+  min-height: 30px;
+  padding: 0.2rem 0.6rem;
+}
+
+.duration-suggestions button:hover,
+.duration-suggestions button[aria-pressed="true"] {
+  background: var(--blue-soft);
+  border-color: var(--blue);
+  color: var(--blue);
 }
 
 .field-error {
