@@ -70,7 +70,7 @@ canvas {
 /* Mobile/tablet vertical */
 @media (max-width: 820px) {
   body {
-    padding-bottom: calc(78px + env(safe-area-inset-bottom));
+    padding-bottom: 0;
   }
 
   #root,
@@ -95,10 +95,14 @@ canvas {
     flex-wrap: wrap;
   }
 
-  .topbar > :first-child,
-  .section-head > :first-child {
+  .topbar-copy {
+    flex: 1 1 160px;
     min-width: 0;
-    flex: 1 1 220px;
+  }
+
+  .section-head > :first-child {
+    flex: 0 1 auto;
+    min-width: 0;
   }
 
   .topbar-actions,
@@ -385,6 +389,23 @@ canvas {
   .section-head {
     align-items: stretch;
     flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .section-head > :first-child {
+    flex-basis: auto;
+  }
+
+  .calendar-tool,
+  .page-section,
+  .work-panel {
+    margin-bottom: 0.65rem;
+  }
+
+  .work-panel .empty-state,
+  .page-section > .empty-state {
+    min-height: 112px;
+    padding: 0.85rem;
   }
 
   .section-head > .button {
@@ -577,7 +598,7 @@ canvas {
 /* Mobile em paisagem */
 @media (max-width: 920px) and (orientation: landscape) and (max-height: 520px) {
   body {
-    padding-bottom: 64px;
+    padding-bottom: 0;
   }
 
   .workspace {
