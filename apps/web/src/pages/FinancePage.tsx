@@ -87,6 +87,10 @@ export function FinancePage() {
     setModal(null);
     setFormError("");
   };
+  const openModal = (nextModal: Exclude<ReceivableModal, null>) => {
+    setFormError("");
+    setModal(nextModal);
+  };
 
   const createReceivable = useAppMutation(domainApi.createReceivable, {
     onSuccess,
@@ -183,7 +187,7 @@ export function FinancePage() {
         <StatCard icon={Banknote} label="Pendente" tone="amber" value={money(pending)} />
       </section>
 
-      {formError && (
+      {formError && !modal && (
         <p className="form-message" role="alert">
           {formError}
         </p>
@@ -202,7 +206,7 @@ export function FinancePage() {
             <p className="eyebrow">Recebimentos</p>
             <h2>Recebiveis</h2>
           </div>
-          <Button onClick={() => setModal({ type: "create" })} variant="primary">
+          <Button onClick={() => openModal({ type: "create" })} variant="primary">
             <Plus size={18} />
             <span>Novo recebivel</span>
           </Button>
@@ -295,7 +299,7 @@ export function FinancePage() {
               <Button
                 className="finance-bulk-button"
                 disabled={!filteredOpenReceivables.length || markFilteredPaid.isPending}
-                onClick={() => setModal({ type: "bulk-paid", receivables: filteredOpenReceivables })}
+                onClick={() => openModal({ type: "bulk-paid", receivables: filteredOpenReceivables })}
                 variant="primary"
               >
                 <Check size={17} />
@@ -320,7 +324,7 @@ export function FinancePage() {
                   {isOpenReceivable(item) && (
                     <Button
                       aria-label="Marcar recebido"
-                      onClick={() => setModal({ type: "paid", receivable: item })}
+                      onClick={() => openModal({ type: "paid", receivable: item })}
                       size="icon"
                       title="Marcar recebido"
                       variant="primary"
@@ -330,7 +334,7 @@ export function FinancePage() {
                   )}
                   <Button
                     aria-label="Editar recebivel"
-                    onClick={() => setModal({ type: "edit", receivable: item })}
+                    onClick={() => openModal({ type: "edit", receivable: item })}
                     size="icon"
                     title="Editar"
                   >
@@ -373,6 +377,7 @@ export function FinancePage() {
             locations={bootstrap.data.locations}
             onCancel={() => setModal(null)}
             onSubmit={(values) => {
+              setFormError("");
               if (modal.type === "create") {
                 createReceivable.mutate(values);
               } else {
@@ -382,6 +387,11 @@ export function FinancePage() {
             receivable={modal.type === "edit" ? modal.receivable : null}
             submitting={createReceivable.isPending || updateReceivable.isPending}
           />
+          {formError && (
+            <p className="form-message" role="alert">
+              {formError}
+            </p>
+          )}
         </Modal>
       ) : null}
 
@@ -389,9 +399,17 @@ export function FinancePage() {
         <Modal eyebrow="Pagamento" onClose={() => setModal(null)} title="Confirmar recebimento">
           <MarkPaidForm
             onCancel={() => setModal(null)}
-            onSubmit={(values) => markPaid.mutate({ id: modal.receivable.id, payload: values })}
+            onSubmit={(values) => {
+              setFormError("");
+              markPaid.mutate({ id: modal.receivable.id, payload: values });
+            }}
             submitting={markPaid.isPending}
           />
+          {formError && (
+            <p className="form-message" role="alert">
+              {formError}
+            </p>
+          )}
         </Modal>
       )}
 
@@ -408,14 +426,20 @@ export function FinancePage() {
           </div>
           <MarkPaidForm
             onCancel={() => setModal(null)}
-            onSubmit={(values) =>
+            onSubmit={(values) => {
+              setFormError("");
               markFilteredPaid.mutate({
                 ids: modal.receivables.map((item) => item.id),
                 payload: values,
-              })
-            }
+              });
+            }}
             submitting={markFilteredPaid.isPending}
           />
+          {formError && (
+            <p className="form-message" role="alert">
+              {formError}
+            </p>
+          )}
         </Modal>
       )}
     </>

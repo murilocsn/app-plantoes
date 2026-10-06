@@ -148,10 +148,10 @@ test.describe("Login E2E mockado", () => {
 
     await page.goto("/#/shifts");
 
-    const firstGroup = page.locator(".shift-group-head").first();
+    const firstGroup = page.locator(".shift-date-head").first();
 
     await expect(firstGroup).toBeVisible({ timeout: 30000 });
-    await expect(page.locator(".shift-day-label").first()).toBeVisible({ timeout: 30000 });
+    await expect(firstGroup.locator("strong")).toBeVisible({ timeout: 30000 });
   });
 });
 
@@ -175,7 +175,7 @@ for (const user of realAuthUsers) {
       // Espera até a página carregar E mostrar um dos dois estados possíveis
       // (lista com plantoes OU estado vazio), evitando corrida na checagem.
       const emptyState = page.getByText("Sem plantoes");
-      const firstGroup = page.locator(".shift-group-head").first();
+      const firstGroup = page.locator(".shift-date-head").first();
 
       await expect(emptyState.or(firstGroup)).toBeVisible({ timeout: 30000 });
 
@@ -184,7 +184,7 @@ for (const user of realAuthUsers) {
       }
 
       await expect(firstGroup).toBeVisible({ timeout: 30000 });
-      await expect(page.locator(".shift-day-label").first()).toBeVisible({ timeout: 30000 });
+      await expect(firstGroup.locator("strong")).toBeVisible({ timeout: 30000 });
     });
   });
 }

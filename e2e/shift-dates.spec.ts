@@ -99,7 +99,7 @@ test.beforeEach(async ({ page }) => {
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page).not.toHaveURL(/#\/login/);
   await page.goto("/#/shifts");
-  await expect(page.locator(".table-row")).toHaveCount(3);
+  await expect(page.locator(".shift-card")).toHaveCount(3);
 });
 
 test("filtra por data brasileira, intervalo e unidade sem inverter dia e mes", async ({ page }) => {
@@ -109,18 +109,18 @@ test("filtra por data brasileira, intervalo e unidade sem inverter dia e mes", a
 
   await from.fill("08/09/2026");
   await to.fill("08/09/2026");
-  await expect(page.locator(".table-row")).toHaveCount(1);
-  await expect(page.locator(".shift-day-label")).toHaveText("08/09/2026");
+  await expect(page.locator(".shift-card")).toHaveCount(1);
+  await expect(page.locator(".shift-date-head strong")).toHaveText("08/09/2026");
 
   await from.fill("08/09/2026");
   await to.fill("09/09/2026");
-  await expect(page.locator(".table-row")).toHaveCount(2);
+  await expect(page.locator(".shift-card")).toHaveCount(2);
 
   await locationFilter.selectOption(location.id);
-  await expect(page.locator(".table-row")).toHaveCount(2);
+  await expect(page.locator(".shift-card")).toHaveCount(2);
 
   await from.fill("31/12/2030");
-  await expect(page.locator(".table-row")).toHaveCount(0);
+  await expect(page.locator(".shift-card")).toHaveCount(0);
 });
 
 test("cadastra data e repeticao em formato brasileiro e envia datas ISO para a API", async ({ page }, testInfo) => {

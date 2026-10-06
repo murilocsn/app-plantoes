@@ -9,6 +9,8 @@ export default tseslint.config(
       "node_modules",
       "apps/web/dist",
       "apps/api/dist",
+      "apps/web/android/app/build/**",
+      "apps/web/android/app/src/main/assets/**",
       "service-worker.js",
       "*.html",
       "app*.js",
