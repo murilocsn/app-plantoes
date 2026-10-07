@@ -225,6 +225,46 @@ export const diseaseGuidelines: DiseaseGuideline[] = [
     ],
   },
   {
+    id: "cirrose",
+    title: "Cirrose, hepatopatia cronica e hipertensao portal",
+    category: "Cronicas",
+    summary:
+      "Fontes para avaliacao de cirrose, etiologias, compensacao/descompensacao, rastreio de complicacoes e encaminhamento especializado.",
+    checkpoints: [
+      "Diferenciar cirrose compensada de descompensada: ascite, sangramento varicoso, encefalopatia, ictericia ou infeccao.",
+      "Revisar etiologia provavel: hepatites virais, alcool, esteatose/metabolica, autoimune, medicamentosa e outras causas.",
+      "Checar rastreio de carcinoma hepatocelular, varizes esofagicas, vacinas, funcao renal, coagulopatia e criterios de encaminhamento.",
+    ],
+    searchTerms: [
+      "cirrose",
+      "cirrhosis",
+      "hepatopatia cronica",
+      "fibrose hepatica",
+      "hipertensao portal",
+      "ascite",
+      "encefalopatia hepatica",
+      "varizes esofagicas",
+      "carcinoma hepatocelular",
+      "hepatite b",
+      "hepatite c",
+    ],
+    sources: [
+      {
+        label: "NICE cirrhosis NG50",
+        organization: "NICE",
+        url: "https://www.nice.org.uk/guidance/ng50/chapter/Recommendations",
+      },
+      { label: "PCDT e protocolos SUS", organization: "Ministerio da Saude", url: pcdtUrl },
+      { label: "WHO hepatitis topic", organization: "World Health Organization", url: "https://www.who.int/health-topics/hepatitis" },
+      { label: "CDC viral hepatitis overview", organization: "CDC", url: "https://www.cdc.gov/hepatitis/hcp/clinical-overview/index.html" },
+      {
+        label: "PubMed cirrhosis guidelines",
+        organization: "National Library of Medicine",
+        url: pubmedQuery("cirrhosis clinical practice guideline portal hypertension ascites encephalopathy"),
+      },
+    ],
+  },
+  {
     id: "saude-mental",
     title: "Saude mental e risco suicida",
     category: "Saude publica",
