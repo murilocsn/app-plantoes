@@ -10,6 +10,7 @@ import { useAuth } from "./contexts/AuthContext";
 // Isso reduz o tamanho do bundle inicial e acelera o carregamento.
 // ============================================================
 const DashboardPage = lazy(() => import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
+const AiAssistantPage = lazy(() => import("./pages/AiAssistantPage").then((m) => ({ default: m.AiAssistantPage })));
 const ExpensesPage = lazy(() => import("./pages/ExpensesPage").then((m) => ({ default: m.ExpensesPage })));
 const FinancePage = lazy(() => import("./pages/FinancePage").then((m) => ({ default: m.FinancePage })));
 const LocationsPage = lazy(() => import("./pages/LocationsPage").then((m) => ({ default: m.LocationsPage })));
@@ -68,6 +69,7 @@ export function App() {
           <Route element={<LocationsPage />} path="locations" />
           <Route element={<FinancePage />} path="finance" />
           <Route element={<ExpensesPage />} path="expenses" />
+          <Route element={<AiAssistantPage />} path="ai" />
           <Route element={<SpacesPage />} path="spaces" />
           <Route element={<ReportsPage />} path="reports" />
         </Route>

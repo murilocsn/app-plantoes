@@ -540,6 +540,58 @@ canvas {
     width: 100%;
   }
 
+  .ai-page {
+    gap: 0.65rem;
+  }
+
+  .ai-hero,
+  .ai-chat-shell {
+    padding: 0.85rem;
+  }
+
+  .ai-mode-badge {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .ai-chat-log,
+  .ai-empty-state {
+    min-height: 260px;
+  }
+
+  .ai-empty-state {
+    padding: 0.85rem;
+  }
+
+  .ai-examples {
+    display: grid;
+    width: 100%;
+  }
+
+  .ai-examples button {
+    border-radius: 8px;
+    text-align: left;
+  }
+
+  .ai-message {
+    gap: 0.45rem;
+    grid-template-columns: 1fr;
+  }
+
+  .ai-avatar {
+    display: none;
+  }
+
+  .ai-message.user,
+  .ai-message.assistant {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .ai-message-body {
+    padding: 0.75rem;
+  }
+
   .bar-row {
     grid-template-columns: 1fr;
   }

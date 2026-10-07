@@ -229,6 +229,16 @@ export const settingsInputSchema = z.object({
   monthly_goal: z.coerce.number().min(0),
 });
 
+export const aiChatMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().trim().min(1).max(2400),
+});
+
+export const aiChatInputSchema = z.object({
+  question: z.string().trim().min(8, "Descreva melhor sua duvida").max(1600, "Use ate 1600 caracteres"),
+  history: z.array(aiChatMessageSchema).max(6).optional().default([]),
+});
+
 export const billingIntervalSchema = z.enum(["monthly", "annual"]);
 
 export const planSchema = z.object({

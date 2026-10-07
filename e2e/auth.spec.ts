@@ -118,6 +118,31 @@ async function mockAuthAndApi(page: Page) {
       return;
     }
 
+    if (path === "/api/ai/chat" && route.request().method() === "POST") {
+      await route.fulfill({
+        json: {
+          data: {
+            answer: "Resposta simulada com base em fontes oficiais.",
+            safetyNotice: "Uso de apoio educacional.",
+            sources: [
+              {
+                id: "who-guidelines",
+                title: "WHO guidelines approved by the Guidelines Review Committee",
+                organization: "World Health Organization",
+                url: "https://www.who.int/publications/who-guidelines",
+                summary: "Portal oficial de diretrizes da OMS.",
+              },
+            ],
+            mode: "ai",
+            model: "test-model",
+            generatedAt: "2026-09-10T01:30:00.000Z",
+            emergency: false,
+          },
+        },
+      });
+      return;
+    }
+
     await route.abort();
   });
 }
@@ -152,6 +177,18 @@ test.describe("Login E2E mockado", () => {
 
     await expect(firstGroup).toBeVisible({ timeout: 30000 });
     await expect(firstGroup.locator("strong")).toBeVisible({ timeout: 30000 });
+  });
+
+  test("assistente IA responde com fontes validadas", async ({ page }) => {
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible({ timeout: 30000 });
+
+    await page.goto("/#/ai");
+    await page.getByLabel("Pergunta").fill("Quais fontes revisar para conduta inicial em suspeita de sepse?");
+    await page.getByRole("button", { name: "Enviar" }).click();
+
+    await expect(page.getByText("Resposta simulada com base em fontes oficiais.")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByText("World Health Organization")).toBeVisible();
   });
 });
 

@@ -5,6 +5,7 @@ import morgan from "morgan";
 import { env } from "./config/env";
 import { errorHandler } from "./middleware/error-handler";
 import { requireAuth } from "./middleware/auth";
+import { aiRouter } from "./routes/ai";
 import { dashboardRouter } from "./routes/dashboard";
 import { expensesRouter } from "./routes/expenses";
 import { locationsRouter } from "./routes/locations";
@@ -43,6 +44,7 @@ export function createApp() {
   });
 
   app.use("/api", requireAuth);
+  app.use("/api/ai", aiRouter);
   app.use("/api/dashboard", dashboardRouter);
   app.use("/api/locations", locationsRouter);
   app.use("/api/shifts", shiftsRouter);

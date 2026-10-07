@@ -1,5 +1,6 @@
 import type {
   AppBootstrap,
+  AiChatResponse,
   DashboardOverview,
   Location,
   Receivable,
@@ -42,6 +43,7 @@ export const domainApi = {
     api<Space>(`/spaces/${id}`, { method: "PATCH", body: payload }),
   deleteSpace: (id: string) => api(`/spaces/${id}`, { method: "DELETE" }),
   updateSettings: (payload: unknown) => api("/settings", { method: "PUT", body: payload }),
+  aiChat: (payload: unknown) => api<AiChatResponse>("/ai/chat", { method: "POST", body: payload }),
   exportCsv: (filters?: { from?: string; to?: string; location_id?: string }) => {
     const params = new URLSearchParams();
     if (filters?.from) params.set("from", filters.from);
