@@ -1,5 +1,6 @@
 import {
   Banknote,
+  BookOpenCheck,
   Bot,
   CalendarDays,
   ClipboardList,
@@ -28,6 +29,7 @@ const navItems = [
   { to: "/finance", label: "Financeiro", icon: Banknote },
   { to: "/expenses", label: "Despesas", icon: Receipt },
   { to: "/ai", label: "Assistente IA", icon: Bot },
+  { to: "/guidelines", label: "Guidelines", icon: BookOpenCheck },
   { to: "/spaces", label: "Espacos", icon: UsersRound },
   { to: "/reports", label: "Relatorios", icon: Download },
 ];

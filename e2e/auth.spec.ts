@@ -190,6 +190,18 @@ test.describe("Login E2E mockado", () => {
     await expect(page.getByText("Resposta simulada com base em fontes oficiais.")).toBeVisible({ timeout: 30000 });
     await expect(page.getByText("World Health Organization")).toBeVisible();
   });
+
+  test("guidelines de doencas filtra temas por busca", async ({ page }) => {
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible({ timeout: 30000 });
+
+    await page.goto("/#/guidelines");
+    await expect(page.getByRole("heading", { name: "Guidelines de doencas" })).toBeVisible({ timeout: 30000 });
+    await page.getByLabel("Buscar guideline").fill("dengue");
+
+    await expect(page.getByRole("heading", { name: "Dengue, chikungunya, zika e febre amarela" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Diabetes mellitus" })).toHaveCount(0);
+  });
 });
 
 const realAuthUsers = process.env.E2E_REAL_AUTH === "true" ? usersFromEnv() : [];

@@ -1563,6 +1563,191 @@ h3 {
   margin-top: 0;
 }
 
+.guidelines-page {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 1220px;
+}
+
+.guidelines-hero,
+.guidelines-toolbar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+
+.guidelines-hero .muted {
+  margin-bottom: 0;
+}
+
+.guidelines-count {
+  background: var(--blue-soft);
+  border-radius: 999px;
+  color: var(--blue);
+  font-size: 0.78rem;
+  font-weight: 850;
+  padding: 0.45rem 0.65rem;
+  white-space: nowrap;
+}
+
+.guidelines-toolbar {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.guidelines-search {
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 44px;
+  padding: 0 0.75rem;
+}
+
+.guidelines-search input {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  min-height: 42px;
+  min-width: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.guidelines-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.guidelines-categories button {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 800;
+  min-height: 34px;
+  padding: 0.35rem 0.65rem;
+}
+
+.guidelines-categories button.active,
+.guidelines-categories button:hover {
+  background: var(--blue-soft);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.guidelines-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+}
+
+.guideline-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+}
+
+.guideline-card-head {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.guideline-card-head > span {
+  align-items: center;
+  color: var(--blue);
+  display: inline-flex;
+  font-size: 0.76rem;
+  font-weight: 850;
+  gap: 0.35rem;
+  text-transform: uppercase;
+}
+
+.guideline-card h3 {
+  font-size: 1.08rem;
+  margin: 0;
+}
+
+.guideline-card p {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.guideline-checkpoints,
+.guideline-sources {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 0.55rem;
+  padding-top: 0.75rem;
+}
+
+.guideline-checkpoints > strong,
+.guideline-sources > strong {
+  color: var(--text);
+  font-size: 0.84rem;
+}
+
+.guideline-checkpoints ul {
+  color: var(--muted);
+  display: grid;
+  gap: 0.35rem;
+  line-height: 1.45;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.guideline-sources a {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 48px;
+  padding: 0.55rem 0.65rem;
+}
+
+.guideline-sources a:hover {
+  border-color: var(--blue);
+}
+
+.guideline-sources span,
+.guideline-sources b,
+.guideline-sources small {
+  display: block;
+  min-width: 0;
+}
+
+.guideline-sources b,
+.guideline-sources small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guideline-sources small {
+  color: var(--muted);
+}
+
+.guideline-sources svg {
+  color: var(--blue);
+}
+
 .modal-backdrop {
   align-items: center;
   background: rgba(11, 15, 24, 0.58);
