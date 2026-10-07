@@ -32,7 +32,8 @@ export function DiseaseGuidelinesPage() {
           <p className="eyebrow">Consulta clinica</p>
           <h2>Guidelines de doencas</h2>
           <p className="muted">
-            Atalhos para fontes oficiais por doenca, sinais de gravidade e temas frequentes de plantao.
+            Atalhos para fontes oficiais por doenca, sinais de gravidade e temas frequentes de
+            plantao.
           </p>
         </div>
         <span className="guidelines-count">{filtered.length} temas</span>
@@ -72,40 +73,56 @@ export function DiseaseGuidelinesPage() {
         </div>
       </div>
 
-      <div className="guidelines-grid">
-        {filtered.map((item) => (
-          <article className="guideline-card" key={item.id}>
-            <header className="guideline-card-head">
-              <span>
-                <BookOpenCheck size={18} />
-                {item.category}
-              </span>
-              <h3>{item.title}</h3>
-              <p>{item.summary}</p>
-            </header>
-            <div className="guideline-checkpoints">
-              <strong>O que revisar</strong>
-              <ul>
-                {item.checkpoints.map((checkpoint) => (
-                  <li key={checkpoint}>{checkpoint}</li>
+      {filtered.length ? (
+        <div className="guidelines-grid">
+          {filtered.map((item) => (
+            <article className="guideline-card" key={item.id}>
+              <header className="guideline-card-head">
+                <span>
+                  <BookOpenCheck size={18} />
+                  {item.category}
+                </span>
+                <h3>{item.title}</h3>
+                <p>{item.summary}</p>
+              </header>
+              <div className="guideline-checkpoints">
+                <strong>O que revisar</strong>
+                <ul>
+                  {item.checkpoints.map((checkpoint) => (
+                    <li key={checkpoint}>{checkpoint}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="guideline-sources">
+                <strong>Fontes oficiais</strong>
+                {item.sources.map((source) => (
+                  <a
+                    href={source.url}
+                    key={`${item.id}-${source.label}`}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <span>
+                      <b>{source.label}</b>
+                      <small>{source.organization}</small>
+                    </span>
+                    <ExternalLink size={14} />
+                  </a>
                 ))}
-              </ul>
-            </div>
-            <div className="guideline-sources">
-              <strong>Fontes oficiais</strong>
-              {item.sources.map((source) => (
-                <a href={source.url} key={`${item.id}-${source.label}`} rel="noreferrer" target="_blank">
-                  <span>
-                    <b>{source.label}</b>
-                    <small>{source.organization}</small>
-                  </span>
-                  <ExternalLink size={14} />
-                </a>
-              ))}
-            </div>
-          </article>
-        ))}
-      </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="guidelines-empty">
+          <BookOpenCheck size={24} />
+          <strong>Nenhum guideline cadastrado para essa busca.</strong>
+          <span>
+            Tente outro termo ou solicite a inclusao dessa doenca no catalogo. A busca mostra apenas
+            temas ja cadastrados.
+          </span>
+        </div>
+      )}
     </section>
   );
 }

@@ -184,10 +184,14 @@ test.describe("Login E2E mockado", () => {
     await expect(page.locator(".calendar-grid")).toBeVisible({ timeout: 30000 });
 
     await page.goto("/#/ai");
-    await page.getByLabel("Pergunta").fill("Quais fontes revisar para conduta inicial em suspeita de sepse?");
+    await page
+      .getByLabel("Pergunta")
+      .fill("Quais fontes revisar para conduta inicial em suspeita de sepse?");
     await page.getByRole("button", { name: "Enviar" }).click();
 
-    await expect(page.getByText("Resposta simulada com base em fontes oficiais.")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByText("Resposta simulada com base em fontes oficiais.")).toBeVisible({
+      timeout: 30000,
+    });
     await expect(page.getByText("World Health Organization")).toBeVisible();
   });
 
@@ -196,15 +200,27 @@ test.describe("Login E2E mockado", () => {
     await expect(page.locator(".calendar-grid")).toBeVisible({ timeout: 30000 });
 
     await page.goto("/#/guidelines");
-    await expect(page.getByRole("heading", { name: "Guidelines de doencas" })).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole("heading", { name: "Guidelines de doencas" })).toBeVisible({
+      timeout: 30000,
+    });
     await page.getByLabel("Buscar guideline").fill("dengue");
 
-    await expect(page.getByRole("heading", { name: "Dengue, chikungunya, zika e febre amarela" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Dengue, chikungunya, zika e febre amarela" }),
+    ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Diabetes mellitus" })).toHaveCount(0);
 
     await page.getByLabel("Buscar guideline").fill("cirrose");
-    await expect(page.getByRole("heading", { name: "Cirrose, hepatopatia cronica e hipertensao portal" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Cirrose, hepatopatia cronica e hipertensao portal" }),
+    ).toBeVisible();
     await expect(page.getByText("NICE cirrhosis NG50")).toBeVisible();
+
+    await page.getByLabel("Buscar guideline").fill("meningite");
+    await expect(page.getByRole("heading", { name: "Meningite e encefalite" })).toBeVisible();
+
+    await page.getByLabel("Buscar guideline").fill("doenca sem cadastro");
+    await expect(page.getByText("Nenhum guideline cadastrado para essa busca.")).toBeVisible();
   });
 });
 

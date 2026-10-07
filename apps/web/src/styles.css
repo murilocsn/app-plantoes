@@ -1,7 +1,13 @@
 :root {
   color-scheme: light;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --bg: #f6f7fb;
@@ -1078,7 +1084,10 @@ h3 {
 }
 
 .finance-filter-grid {
-  grid-template-columns: minmax(135px, 0.65fr) minmax(135px, 0.65fr) minmax(190px, 1fr) minmax(210px, 1fr);
+  grid-template-columns: minmax(135px, 0.65fr) minmax(135px, 0.65fr) minmax(190px, 1fr) minmax(
+      210px,
+      1fr
+    );
 }
 
 .finance-filter-panel .field {
@@ -1746,6 +1755,29 @@ h3 {
 
 .guideline-sources svg {
   color: var(--blue);
+}
+
+.guidelines-empty {
+  align-items: center;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  color: var(--muted);
+  display: grid;
+  gap: 0.45rem;
+  justify-items: center;
+  min-height: 180px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.guidelines-empty svg {
+  color: var(--blue);
+}
+
+.guidelines-empty strong {
+  color: var(--text);
 }
 
 .modal-backdrop {
