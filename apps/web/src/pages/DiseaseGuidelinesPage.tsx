@@ -18,7 +18,15 @@ export function DiseaseGuidelinesPage() {
     return diseaseGuidelines.filter((item) => {
       const matchesCategory = category === "Todos" || item.category === category;
       const searchTarget = normalize(
-        `${item.title} ${item.summary} ${item.category} ${item.searchTerms.join(" ")}`,
+        [
+          item.title,
+          item.summary,
+          item.category,
+          item.searchTerms.join(" "),
+          item.cid10.map((cid) => `${cid.code} ${cid.label}`).join(" "),
+          item.conduct.join(" "),
+          item.medications.join(" "),
+        ].join(" "),
       );
 
       return matchesCategory && (!normalizedQuery || searchTarget.includes(normalizedQuery));
@@ -32,8 +40,8 @@ export function DiseaseGuidelinesPage() {
           <p className="eyebrow">Consulta clinica</p>
           <h2>Guidelines de doencas</h2>
           <p className="muted">
-            Atalhos para fontes oficiais por doenca, sinais de gravidade e temas frequentes de
-            plantao.
+            Doencas com CID-10, conduta inicial, medicacoes de referencia e fontes validadas para
+            apoio ao plantao.
           </p>
         </div>
         <span className="guidelines-count">{filtered.length} temas</span>
@@ -42,8 +50,9 @@ export function DiseaseGuidelinesPage() {
       <div className="ai-safety-box guidelines-safety" role="note">
         <ShieldAlert size={18} />
         <span>
-          Use como ponto de partida para pesquisa. Conduta final depende de exame, protocolo local,
-          disponibilidade de recursos, regulacao e responsabilidade profissional.
+          Apoio clinico para profissionais. Nao substitui avaliacao, prescricao, dose individual,
+          protocolo local, checagem de alergias, gestacao, idade, peso, funcao renal/hepatica e
+          responsabilidade profissional.
         </span>
       </div>
 
@@ -85,6 +94,35 @@ export function DiseaseGuidelinesPage() {
                 <h3>{item.title}</h3>
                 <p>{item.summary}</p>
               </header>
+              <div className="guideline-cid-list">
+                <strong>CID-10</strong>
+                <div>
+                  {item.cid10.map((cid) => (
+                    <span key={`${item.id}-${cid.code}`}>
+                      <b>{cid.code}</b>
+                      {cid.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="guideline-clinical-grid">
+                <div className="guideline-treatment">
+                  <strong>Conduta</strong>
+                  <ul>
+                    {item.conduct.map((step) => (
+                      <li key={step}>{step}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="guideline-treatment">
+                  <strong>Medicacoes e medidas</strong>
+                  <ul>
+                    {item.medications.map((medication) => (
+                      <li key={medication}>{medication}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
               <div className="guideline-checkpoints">
                 <strong>O que revisar</strong>
                 <ul>

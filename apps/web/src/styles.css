@@ -1697,7 +1697,9 @@ h3 {
   margin: 0;
 }
 
+.guideline-cid-list,
 .guideline-checkpoints,
+.guideline-treatment,
 .guideline-sources {
   border-top: 1px solid var(--border);
   display: grid;
@@ -1705,13 +1707,46 @@ h3 {
   padding-top: 0.75rem;
 }
 
+.guideline-cid-list > strong,
 .guideline-checkpoints > strong,
+.guideline-treatment > strong,
 .guideline-sources > strong {
   color: var(--text);
   font-size: 0.84rem;
 }
 
-.guideline-checkpoints ul {
+.guideline-cid-list > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.guideline-cid-list span {
+  align-items: center;
+  background: var(--blue-soft);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: 999px;
+  color: var(--text);
+  display: inline-flex;
+  font-size: 0.78rem;
+  gap: 0.32rem;
+  line-height: 1.25;
+  max-width: 100%;
+  padding: 0.28rem 0.5rem;
+}
+
+.guideline-cid-list b {
+  color: var(--blue);
+}
+
+.guideline-clinical-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+}
+
+.guideline-checkpoints ul,
+.guideline-treatment ul {
   color: var(--muted);
   display: grid;
   gap: 0.35rem;

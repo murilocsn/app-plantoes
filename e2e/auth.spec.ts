@@ -208,7 +208,14 @@ test.describe("Login E2E mockado", () => {
     await expect(
       page.getByRole("heading", { name: "Dengue, chikungunya, zika e febre amarela" }),
     ).toBeVisible();
+    await expect(page.getByText("A90")).toBeVisible();
+    await expect(page.getByText("Conduta", { exact: true })).toBeVisible();
+    await expect(page.getByText("Medicacoes e medidas", { exact: true })).toBeVisible();
+    await expect(page.getByText(/Hidratacao oral ou venosa/)).toBeVisible();
     await expect(page.getByRole("heading", { name: "Diabetes mellitus" })).toHaveCount(0);
+
+    await page.getByLabel("Buscar guideline").fill("I50.9");
+    await expect(page.getByRole("heading", { name: "Insuficiencia cardiaca" })).toBeVisible();
 
     await page.getByLabel("Buscar guideline").fill("cirrose");
     await expect(
