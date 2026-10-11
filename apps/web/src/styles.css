@@ -1937,6 +1937,102 @@ h3 {
   width: 18px;
 }
 
+.weekday-picker {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.65rem;
+  grid-column: 1 / -1;
+  padding: 0.7rem;
+}
+
+.weekday-picker-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.weekday-picker-head > span {
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.weekday-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.weekday-actions button {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 800;
+  min-height: 32px;
+  padding: 0.2rem 0.65rem;
+}
+
+.weekday-actions button:hover,
+.weekday-actions button:focus-visible {
+  background: var(--blue-soft);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.weekday-options {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(7, minmax(38px, 1fr));
+}
+
+.weekday-option {
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  font-size: 0.78rem;
+  font-weight: 850;
+  min-height: 42px;
+  place-items: center;
+  position: relative;
+  text-align: center;
+}
+
+.weekday-option input {
+  cursor: pointer;
+  inset: 0;
+  opacity: 0;
+  position: absolute;
+}
+
+.weekday-option.is-selected {
+  background: var(--blue-soft);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.weekday-option:has(input:focus-visible) {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.weekday-picker small {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
 .delete-dialog {
   display: grid;
   gap: 1rem;

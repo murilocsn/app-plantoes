@@ -48,16 +48,51 @@ describe("shift recurrence rules", () => {
     ).toThrow(HttpError);
   });
 
+  it("gera recorrencia semanal em dias da semana selecionados", () => {
+    expect(
+      recurrenceDates("2026-03-09", {
+        frequency: "weekly",
+        interval_value: 1,
+        occurrences: 5,
+        weekdays: [1, 2, 3, 4, 5],
+      }),
+    ).toEqual(["2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13"]);
+  });
+
+  it("ignora dias anteriores a data inicial na primeira semana", () => {
+    expect(
+      recurrenceDates("2026-03-11", {
+        frequency: "weekly",
+        interval_value: 1,
+        occurrences: 4,
+        weekdays: [1, 3, 5],
+      }),
+    ).toEqual(["2026-03-11", "2026-03-13", "2026-03-16", "2026-03-18"]);
+  });
+
+  it("gera recorrencia quinzenal em dias da semana selecionados", () => {
+    expect(
+      recurrenceDates("2026-03-10", {
+        frequency: "biweekly",
+        interval_value: 1,
+        occurrences: 4,
+        weekdays: [2, 4],
+      }),
+    ).toEqual(["2026-03-10", "2026-03-12", "2026-03-24", "2026-03-26"]);
+  });
+
   it("salva quinzenal como semanal com intervalo dobrado", () => {
     expect(
       recurrenceForDatabase({
         frequency: "biweekly",
         interval_value: 1,
         occurrences: 4,
+        weekdays: [4, 2],
       }),
     ).toEqual({
       frequency: "weekly",
       interval_value: 2,
+      weekdays: [2, 4],
     });
   });
 });

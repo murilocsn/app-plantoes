@@ -11,21 +11,40 @@ import { Button } from "../Button";
 import { DateField } from "../DateField";
 import { Field } from "../Field";
 
-const shiftFormSchema = shiftInputSchema.extend({
-  repeat: z.boolean().default(false),
-  frequency: z.enum(["daily", "weekly", "biweekly", "monthly"]).default("weekly"),
-  interval_value: z.coerce.number().min(1).max(365).default(1),
-  end_date: z.string().optional(),
-  occurrences: z.coerce.number().min(2).max(500).optional().or(z.literal("")),
-}).superRefine((values, context) => {
-  if (values.repeat && values.end_date && !recurrenceInputSchema.shape.end_date.safeParse(values.end_date).success) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["end_date"],
-      message: "Informe uma data valida",
-    });
-  }
-});
+const recurrenceEndDateSchema = z.string().date().nullable().optional();
+
+const weekdayOptions = [
+  { value: 0, label: "Dom" },
+  { value: 1, label: "Seg" },
+  { value: 2, label: "Ter" },
+  { value: 3, label: "Qua" },
+  { value: 4, label: "Qui" },
+  { value: 5, label: "Sex" },
+  { value: 6, label: "Sab" },
+];
+
+const shiftFormSchema = shiftInputSchema
+  .extend({
+    repeat: z.boolean().default(false),
+    frequency: z.enum(["daily", "weekly", "biweekly", "monthly"]).default("weekly"),
+    interval_value: z.coerce.number().min(1).max(365).default(1),
+    end_date: z.string().optional(),
+    occurrences: z.coerce.number().min(2).max(500).optional().or(z.literal("")),
+    weekdays: z.array(z.coerce.number().int().min(0).max(6)).default([]),
+  })
+  .superRefine((values, context) => {
+    if (
+      values.repeat &&
+      values.end_date &&
+      !recurrenceEndDateSchema.safeParse(values.end_date).success
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["end_date"],
+        message: "Informe uma data valida",
+      });
+    }
+  });
 
 type ShiftFormValues = z.infer<typeof shiftFormSchema>;
 
@@ -67,21 +86,42 @@ function readDurationHistory(userId?: string) {
 }
 
 function saveDurationHistory(userId: string | undefined, duration: number) {
-  if (typeof window === "undefined" || !Number.isFinite(duration) || duration < 1 || duration > 48) {
+  if (
+    typeof window === "undefined" ||
+    !Number.isFinite(duration) ||
+    duration < 1 ||
+    duration > 48
+  ) {
     return;
   }
 
   const rounded = Math.round(duration * 100) / 100;
-  const next = [
-    rounded,
-    ...readDurationHistory(userId).filter((item) => item !== rounded),
-  ].slice(0, durationHistoryLimit);
+  const next = [rounded, ...readDurationHistory(userId).filter((item) => item !== rounded)].slice(
+    0,
+    durationHistoryLimit,
+  );
 
   window.localStorage.setItem(durationHistoryKey(userId), JSON.stringify(next));
 }
 
 function formatDurationOption(value: number) {
   return Number.isInteger(value) ? String(value) : String(value).replace(".", ",");
+}
+
+function selectedWeekdayFromDate(value?: string) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(`${value}T12:00:00`);
+
+  return Number.isNaN(date.getTime()) ? null : date.getDay();
+}
+
+function normalizeWeekdays(values: Array<number | string> = []) {
+  return [
+    ...new Set(values.map((value) => Number(value)).filter((value) => value >= 0 && value <= 6)),
+  ].sort((left, right) => left - right);
 }
 
 export function ShiftForm({
@@ -95,7 +135,9 @@ export function ShiftForm({
   const { user } = useAuth();
   const userStorageId = user?.id || user?.email || undefined;
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
-  const [durationHistory, setDurationHistory] = useState<number[]>(() => readDurationHistory(userStorageId));
+  const [durationHistory, setDurationHistory] = useState<number[]>(() =>
+    readDurationHistory(userStorageId),
+  );
   const colorPickerId = useId();
   const durationListId = useId();
   const colorPickerRef = useRef<HTMLDivElement>(null);
@@ -120,7 +162,8 @@ export function ShiftForm({
       value: Number(shift?.value ?? shift?.value12 ?? activeLocations[0]?.value12 ?? 0),
       professional: shift?.professional ?? "",
       notes: shift?.notes ?? "",
-      marker_color: shift?.marker_color ?? colorFor(shift?.marker_label || shift?.location_name || "Plantao"),
+      marker_color:
+        shift?.marker_color ?? colorFor(shift?.marker_label || shift?.location_name || "Plantao"),
       marker_label: shift?.marker_label ?? "",
       status: "scheduled",
       createReceivable: true,
@@ -129,12 +172,19 @@ export function ShiftForm({
       interval_value: 1,
       end_date: "",
       occurrences: "",
+      weekdays: [],
     },
   });
 
   const selectedLocationId = watch("location_id");
   const durationValue = watch("duration");
   const repeat = watch("repeat");
+  const frequency = watch("frequency");
+  const selectedDate = watch("date");
+  const selectedWeekdays = normalizeWeekdays(watch("weekdays"));
+  const selectedWeekdaySet = new Set(selectedWeekdays);
+  const showWeekdays = repeat && (frequency === "weekly" || frequency === "biweekly");
+  const initialWeekday = selectedWeekdayFromDate(selectedDate);
   const markerColor = watch("marker_color") || colorFor("Plantao");
   const markerLabel = watch("marker_label")?.trim() || "Sem legenda";
   const markerColorName =
@@ -184,6 +234,18 @@ export function ShiftForm({
     };
   }, [colorPickerOpen]);
 
+  useEffect(() => {
+    if (showWeekdays || !selectedWeekdays.length) {
+      return;
+    }
+
+    setValue("weekdays", [], { shouldDirty: true, shouldValidate: true });
+  }, [selectedWeekdays.length, setValue, showWeekdays]);
+
+  const setWeekdaySelection = (weekdays: number[]) => {
+    setValue("weekdays", normalizeWeekdays(weekdays), { shouldDirty: true, shouldValidate: true });
+  };
+
   return (
     <form
       className="form-grid"
@@ -197,6 +259,11 @@ export function ShiftForm({
               interval_value: values.interval_value,
               end_date: values.end_date || null,
               occurrences: values.occurrences || null,
+              weekdays:
+                (values.frequency === "weekly" || values.frequency === "biweekly") &&
+                values.weekdays.length
+                  ? values.weekdays
+                  : undefined,
             })
           : undefined;
 
@@ -206,7 +273,9 @@ export function ShiftForm({
       <Controller
         control={control}
         name="date"
-        render={({ field }) => <DateField {...field} autoFocus error={errors.date?.message} label="Data" />}
+        render={({ field }) => (
+          <DateField {...field} autoFocus error={errors.date?.message} label="Data" />
+        )}
       />
       <Field error={errors.start_time?.message} label="Inicio">
         <input type="time" {...register("start_time")} />
@@ -221,7 +290,14 @@ export function ShiftForm({
         </select>
       </Field>
       <Field error={errors.duration?.message} label="Duracao em horas">
-        <input list={durationListId} min="1" max="48" step="0.5" type="number" {...register("duration")} />
+        <input
+          list={durationListId}
+          min="1"
+          max="48"
+          step="0.5"
+          type="number"
+          {...register("duration")}
+        />
         <datalist id={durationListId}>
           {durationHistory.map((duration) => (
             <option key={duration} value={duration} />
@@ -233,7 +309,9 @@ export function ShiftForm({
               <button
                 aria-pressed={Number(durationValue) === duration}
                 key={duration}
-                onClick={() => setValue("duration", duration, { shouldDirty: true, shouldValidate: true })}
+                onClick={() =>
+                  setValue("duration", duration, { shouldDirty: true, shouldValidate: true })
+                }
                 type="button"
               >
                 {formatDurationOption(duration)}h
@@ -253,9 +331,7 @@ export function ShiftForm({
               <i aria-hidden="true" style={{ backgroundColor: markerColor }} />
               <span>
                 <strong>{markerLabel}</strong>
-                <small>
-                  {markerColorName}
-                </small>
+                <small>{markerColorName}</small>
               </span>
             </div>
             <Button
@@ -284,7 +360,11 @@ export function ShiftForm({
                   </div>
                 </div>
               </div>
-              <div aria-label="Cor do marcador do plantao" className="marker-color-list" role="radiogroup">
+              <div
+                aria-label="Cor do marcador do plantao"
+                className="marker-color-list"
+                role="radiogroup"
+              >
                 {calendarColorOptions.map(({ color, name }) => (
                   <button
                     aria-checked={markerColor === color}
@@ -316,7 +396,10 @@ export function ShiftForm({
                 <input
                   aria-label="Cor personalizada do marcador"
                   onChange={(event) =>
-                    setValue("marker_color", event.target.value, { shouldDirty: true, shouldValidate: true })
+                    setValue("marker_color", event.target.value, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
                   }
                   type="color"
                   value={markerColor}
@@ -326,7 +409,11 @@ export function ShiftForm({
           )}
         </div>
         <Field error={errors.marker_label?.message} label="Legenda da cor">
-          <input maxLength={80} placeholder="Ex.: UTI, extra, pediatria" {...register("marker_label")} />
+          <input
+            maxLength={80}
+            placeholder="Ex.: UTI, extra, pediatria"
+            {...register("marker_label")}
+          />
         </Field>
       </div>
       <Field error={errors.professional?.message} label="Profissional">
@@ -358,11 +445,60 @@ export function ShiftForm({
               <Field error={errors.interval_value?.message} label="Intervalo">
                 <input min="1" max="365" type="number" {...register("interval_value")} />
               </Field>
+              {showWeekdays && (
+                <div className="weekday-picker">
+                  <div className="weekday-picker-head">
+                    <span>Dias da semana</span>
+                    <div className="weekday-actions">
+                      <button onClick={() => setWeekdaySelection([1, 2, 3, 4, 5])} type="button">
+                        Seg-sex
+                      </button>
+                      {initialWeekday !== null && (
+                        <button onClick={() => setWeekdaySelection([initialWeekday])} type="button">
+                          Dia inicial
+                        </button>
+                      )}
+                      <button onClick={() => setWeekdaySelection([])} type="button">
+                        Limpar
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    aria-label="Dias da semana da recorrencia"
+                    className="weekday-options"
+                    role="group"
+                  >
+                    {weekdayOptions.map((option) => (
+                      <label
+                        className={[
+                          "weekday-option",
+                          selectedWeekdaySet.has(option.value) ? "is-selected" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        key={option.value}
+                      >
+                        <input type="checkbox" value={option.value} {...register("weekdays")} />
+                        <span>{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <small>Sem selecao, a recorrencia usa somente o dia da data inicial.</small>
+                  {errors.weekdays?.message && (
+                    <span className="field-error">{errors.weekdays.message}</span>
+                  )}
+                </div>
+              )}
               <Controller
                 control={control}
                 name="end_date"
                 render={({ field }) => (
-                  <DateField {...field} error={errors.end_date?.message} label="Data final" value={field.value ?? ""} />
+                  <DateField
+                    {...field}
+                    error={errors.end_date?.message}
+                    label="Data final"
+                    value={field.value ?? ""}
+                  />
                 )}
               />
               <Field error={errors.occurrences?.message} label="Quantidade">

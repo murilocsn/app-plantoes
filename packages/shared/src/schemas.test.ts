@@ -144,6 +144,25 @@ describe("recurrenceInputSchema", () => {
   it("rejeita menos de 2 ocorrências", () => {
     expect(() => recurrenceInputSchema.parse({ frequency: "daily", occurrences: "1" })).toThrow();
   });
+
+  it("aceita dias da semana em recorrencias semanais", () => {
+    const result = recurrenceInputSchema.parse({
+      frequency: "weekly",
+      weekdays: ["5", "1", "3"],
+    });
+
+    expect(result.weekdays).toEqual([1, 3, 5]);
+  });
+
+  it("rejeita dias da semana duplicados ou fora do intervalo", () => {
+    expect(() => recurrenceInputSchema.parse({ frequency: "weekly", weekdays: [1, 1] })).toThrow();
+    expect(() => recurrenceInputSchema.parse({ frequency: "weekly", weekdays: [7] })).toThrow();
+  });
+
+  it("rejeita dias da semana em recorrencias diarias ou mensais", () => {
+    expect(() => recurrenceInputSchema.parse({ frequency: "daily", weekdays: [1] })).toThrow();
+    expect(() => recurrenceInputSchema.parse({ frequency: "monthly", weekdays: [1] })).toThrow();
+  });
 });
 
 describe("spaceInputSchema", () => {

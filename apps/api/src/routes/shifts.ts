@@ -66,21 +66,15 @@ function shiftConflictMessage(conflict: ShiftConflict) {
   return `Nesse horario nao pode, pois ja existe um plantao cadastrado (${when}${label}).`;
 }
 
-
 function shiftConflictError(conflict: ShiftConflict) {
-  return new HttpError(
-    409,
-    shiftConflictMessage(conflict),
-    "SHIFT_TIME_CONFLICT",
-    {
-      date: conflict.candidate.date,
-      start_time: conflict.candidate.start_time,
-      conflicting_shift_id: conflict.existing.id ?? null,
-      conflicting_date: conflict.existing.date,
-      conflicting_start_time: conflict.existing.start_time ?? null,
-      conflicting_location_name: conflict.existing.location_name ?? null,
-    },
-  );
+  return new HttpError(409, shiftConflictMessage(conflict), "SHIFT_TIME_CONFLICT", {
+    date: conflict.candidate.date,
+    start_time: conflict.candidate.start_time,
+    conflicting_shift_id: conflict.existing.id ?? null,
+    conflicting_date: conflict.existing.date,
+    conflicting_start_time: conflict.existing.start_time ?? null,
+    conflicting_location_name: conflict.existing.location_name ?? null,
+  });
 }
 
 async function ensureNoShiftTimeConflict(
@@ -120,7 +114,9 @@ async function getLocation(request: Request, id: string) {
   const location = await expectData<PaymentLocation>(
     request.auth.supabase
       .from("locations")
-      .select("id,name,value12,active,reference_start_day,reference_end_day,payment_due_day,payment_due_months_after")
+      .select(
+        "id,name,value12,active,reference_start_day,reference_end_day,payment_due_day,payment_due_months_after",
+      )
       .eq("id", id)
       .eq("user_id", request.auth.user.id)
       .single(),
@@ -204,6 +200,7 @@ shiftsRouter.post(
           end_date: input.recurrence.end_date ?? null,
           frequency: normalized.frequency,
           interval_value: normalized.interval_value,
+          weekdays: normalized.weekdays,
           start_time: input.shift.start_time,
           duration_hours: input.shift.duration,
           value: input.shift.value,
@@ -289,7 +286,8 @@ shiftsRouter.patch(
     );
 
     if (location || input.date || input.value !== undefined) {
-      const paymentLocation = location ?? (shift.location_id ? await getLocation(request, shift.location_id) : null);
+      const paymentLocation =
+        location ?? (shift.location_id ? await getLocation(request, shift.location_id) : null);
       await optionalData(
         request.auth.supabase
           .from("receivables")
@@ -297,7 +295,9 @@ shiftsRouter.patch(
             location_id: paymentLocation?.id,
             description: location ? `Plantao - ${location.name}` : undefined,
             amount: input.value,
-            expected_date: paymentLocation ? expectedPaymentDate(shift.date, paymentLocation) : undefined,
+            expected_date: paymentLocation
+              ? expectedPaymentDate(shift.date, paymentLocation)
+              : undefined,
           })
           .eq("shift_id", id)
           .eq("user_id", request.auth.user.id)

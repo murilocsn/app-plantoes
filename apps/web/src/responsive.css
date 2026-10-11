@@ -424,6 +424,19 @@ canvas {
     padding-right: 0;
   }
 
+  .weekday-picker-head {
+    align-items: stretch;
+    display: grid;
+  }
+
+  .weekday-actions {
+    justify-content: flex-start;
+  }
+
+  .weekday-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .table-row {
     grid-template-columns: minmax(0, 1fr) auto;
   }

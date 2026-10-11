@@ -9,7 +9,11 @@ const optionalText = z
 
 const optionalMarkerColor = z.preprocess(
   (value) => (typeof value === "string" && !value.trim().length ? null : value),
-  z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Informe uma cor valida").nullable().optional(),
+  z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Informe uma cor valida")
+    .nullable()
+    .optional(),
 );
 
 const optionalMarkerLabel = z.preprocess(
@@ -127,12 +131,34 @@ export const shiftInputSchema = z.object({
   createReceivable: z.boolean().default(true),
 });
 
-export const recurrenceInputSchema = z.object({
-  frequency: z.enum(["daily", "weekly", "biweekly", "monthly"]),
-  interval_value: z.coerce.number().min(1).max(365).default(1),
-  end_date: z.string().date().nullable().optional(),
-  occurrences: z.coerce.number().min(2).max(500).nullable().optional(),
-});
+const recurrenceWeekdaysSchema = z.preprocess(
+  (value) => (Array.isArray(value) && value.length === 0 ? undefined : value),
+  z
+    .array(z.coerce.number().int().min(0).max(6))
+    .min(1, "Selecione ao menos um dia da semana")
+    .max(7, "Selecione ate 7 dias da semana")
+    .refine((values) => new Set(values).size === values.length, "Nao repita dias da semana")
+    .transform((values) => [...values].sort((left, right) => left - right))
+    .optional(),
+);
+
+export const recurrenceInputSchema = z
+  .object({
+    frequency: z.enum(["daily", "weekly", "biweekly", "monthly"]),
+    interval_value: z.coerce.number().min(1).max(365).default(1),
+    end_date: z.string().date().nullable().optional(),
+    occurrences: z.coerce.number().min(2).max(500).nullable().optional(),
+    weekdays: recurrenceWeekdaysSchema,
+  })
+  .superRefine((values, context) => {
+    if (values.weekdays?.length && !["weekly", "biweekly"].includes(values.frequency)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["weekdays"],
+        message: "Dias da semana so podem ser usados em recorrencias semanais ou quinzenais",
+      });
+    }
+  });
 
 export const receivableStatusSchema = z.enum(["pending", "received", "overdue", "cancelled"]);
 
@@ -235,7 +261,11 @@ export const aiChatMessageSchema = z.object({
 });
 
 export const aiChatInputSchema = z.object({
-  question: z.string().trim().min(8, "Descreva melhor sua duvida").max(1600, "Use ate 1600 caracteres"),
+  question: z
+    .string()
+    .trim()
+    .min(8, "Descreva melhor sua duvida")
+    .max(1600, "Use ate 1600 caracteres"),
   history: z.array(aiChatMessageSchema).max(6).optional().default([]),
 });
 
