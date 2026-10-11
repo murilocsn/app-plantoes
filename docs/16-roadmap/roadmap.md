@@ -2,6 +2,8 @@
 
 Status: PLANEJADA
 
+Checklist consolidado da proxima fase: [checklist-implementacao-pendente.md](checklist-implementacao-pendente.md)
+
 ## Fase 1 - Base comercial minima
 
 - Finalizar politica de privacidade e termos de uso.

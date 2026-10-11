@@ -1,7 +1,8 @@
 import {
   Banknote,
-  Bot,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   Download,
   LogOut,
@@ -27,10 +28,13 @@ const navItems = [
   { to: "/locations", label: "Locais", icon: MapPin },
   { to: "/finance", label: "Financeiro", icon: Banknote },
   { to: "/expenses", label: "Despesas", icon: Receipt },
-  { to: "/ai", label: "Assistente IA", icon: Bot },
   { to: "/spaces", label: "Espacos", icon: UsersRound },
   { to: "/reports", label: "Relatorios", icon: Download },
 ];
+
+const mobileNavItems = navItems.filter((item) =>
+  ["/", "/shifts", "/locations", "/finance"].includes(item.to),
+);
 
 export function AppLayout() {
   const { user, signOut } = useAuth();
@@ -38,6 +42,9 @@ export function AppLayout() {
   const navigate = useNavigate();
   const [now, setNow] = useState(() => new Date());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
+    () => localStorage.getItem("financplantoes-sidebar") === "collapsed",
+  );
   const [dark, setDark] = useState<boolean>(
     () => localStorage.getItem("financplantoes-theme") === "dark",
   );
@@ -69,6 +76,10 @@ export function AppLayout() {
   }, [dark]);
 
   useEffect(() => {
+    localStorage.setItem("financplantoes-sidebar", sidebarCollapsed ? "collapsed" : "expanded");
+  }, [sidebarCollapsed]);
+
+  useEffect(() => {
     const interval = window.setInterval(() => setNow(new Date()), 60_000);
 
     return () => window.clearInterval(interval);
@@ -95,14 +106,31 @@ export function AppLayout() {
   }, [mobileMenuOpen]);
 
   return (
-    <div className="app-frame">
-      <aside className="sidebar">
-        <Link aria-label="FinancPlantoes" to="/">
-          <Brand />
-        </Link>
+    <div className={["app-frame", sidebarCollapsed ? "app-frame-collapsed" : ""].join(" ")}>
+      <aside className="sidebar" data-collapsed={sidebarCollapsed ? "true" : "false"}>
+        <div className="sidebar-head">
+          <Link aria-label="FinancPlantoes" to="/">
+            <Brand compact={sidebarCollapsed} />
+          </Link>
+          <Button
+            aria-label={sidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+            className="sidebar-toggle"
+            onClick={() => setSidebarCollapsed((value) => !value)}
+            size="icon"
+            title={sidebarCollapsed ? "Expandir menu" : "Recolher menu"}
+            variant="ghost"
+          >
+            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </Button>
+        </div>
         <nav className="side-nav" aria-label="Navegacao principal">
           {navItems.map((item) => (
-            <NavLink end={item.to === "/"} key={item.to} to={item.to}>
+            <NavLink
+              end={item.to === "/"}
+              key={item.to}
+              title={sidebarCollapsed ? item.label : undefined}
+              to={item.to}
+            >
               <item.icon size={18} />
               <span>{item.label}</span>
             </NavLink>
@@ -141,7 +169,9 @@ export function AppLayout() {
           </Button>
           <div className="topbar-copy">
             <p className="eyebrow">Rotina profissional</p>
-            <h1>{greeting}, {firstName}</h1>
+            <h1>
+              {greeting}, {firstName}
+            </h1>
             <p className="muted">{user?.email}</p>
           </div>
           <div className="topbar-actions">
@@ -221,6 +251,29 @@ export function AppLayout() {
           </aside>
         </>
       )}
+
+      <nav className="mobile-bottom-nav" aria-label="Navegacao principal mobile">
+        {mobileNavItems.slice(0, 2).map((item) => (
+          <NavLink end={item.to === "/"} key={item.to} to={item.to}>
+            <item.icon size={19} />
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+        <button
+          aria-label="Novo plantao"
+          className="mobile-bottom-create"
+          onClick={() => navigate("/shifts?new=1")}
+          type="button"
+        >
+          <Plus size={22} />
+        </button>
+        {mobileNavItems.slice(2).map((item) => (
+          <NavLink end={item.to === "/"} key={item.to} to={item.to}>
+            <item.icon size={19} />
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
     </div>
   );
 }

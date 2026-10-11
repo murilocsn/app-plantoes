@@ -20,6 +20,7 @@ Indice profissional da documentacao do produto FinancPlantoes, organizada para d
 - [14 Comercial](14-comercial/resumo-executivo.md)
 - [15 Governanca](15-governanca/dependencias.md)
 - [16 Roadmap](16-roadmap/roadmap.md)
+- [Checklist de implementacao pendente](16-roadmap/checklist-implementacao-pendente.md)
 - [CHANGELOG](CHANGELOG.md)
 
 ## Guia do Desenvolvedor
@@ -59,3 +60,4 @@ npm run test:e2e
 - Banco/RLS: [04-banco-de-dados/seguranca-rls.md](04-banco-de-dados/seguranca-rls.md)
 - Riscos: [15-governanca/riscos-tecnicos.md](15-governanca/riscos-tecnicos.md)
 - Due diligence: [14-comercial/checklist-due-diligence.md](14-comercial/checklist-due-diligence.md)
+- Proxima fase: [16-roadmap/checklist-implementacao-pendente.md](16-roadmap/checklist-implementacao-pendente.md)

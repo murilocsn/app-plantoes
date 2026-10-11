@@ -1,7 +1,13 @@
 :root {
   color-scheme: light;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --bg: #f6f7fb;
@@ -1078,7 +1084,10 @@ h3 {
 }
 
 .finance-filter-grid {
-  grid-template-columns: minmax(135px, 0.65fr) minmax(135px, 0.65fr) minmax(190px, 1fr) minmax(210px, 1fr);
+  grid-template-columns: minmax(135px, 0.65fr) minmax(135px, 0.65fr) minmax(190px, 1fr) minmax(
+      210px,
+      1fr
+    );
 }
 
 .finance-filter-panel .field {
@@ -2063,6 +2072,208 @@ h3 {
 }
 
 .mobile-reminder-control {
+  display: none;
+}
+
+.sidebar-head {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.sidebar-head > a {
+  min-width: 0;
+}
+
+.sidebar-toggle {
+  flex: 0 0 auto;
+}
+
+.app-frame-collapsed {
+  grid-template-columns: 84px minmax(0, 1fr);
+}
+
+.sidebar[data-collapsed="true"] {
+  align-items: center;
+  gap: 1.2rem;
+  padding-inline: 0.75rem;
+}
+
+.sidebar[data-collapsed="true"] .sidebar-head {
+  display: grid;
+  justify-items: center;
+}
+
+.sidebar[data-collapsed="true"] .brand {
+  justify-content: center;
+}
+
+.sidebar[data-collapsed="true"] .side-nav a,
+.sidebar[data-collapsed="true"] .sidebar-footer .button {
+  justify-content: center;
+  padding-inline: 0;
+  width: 44px;
+}
+
+.sidebar[data-collapsed="true"] .side-nav a span,
+.sidebar[data-collapsed="true"] .sidebar-footer .button span,
+.sidebar[data-collapsed="true"] .push-reminder-control small {
+  display: none;
+}
+
+.dashboard-page {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 1440px;
+}
+
+.dashboard-summary-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.dashboard-summary-grid .stat-card {
+  min-height: 112px;
+  padding: 0.9rem;
+}
+
+.dashboard-summary-grid .stat-card strong {
+  font-size: clamp(1.2rem, 1.6vw, 1.55rem);
+}
+
+.calendar-head {
+  align-items: flex-start;
+}
+
+.calendar-head-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  justify-content: flex-end;
+}
+
+.calendar-view-toggle {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-height: 40px;
+  padding: 3px;
+}
+
+.calendar-view-toggle button {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 800;
+  min-width: 76px;
+  padding: 0.35rem 0.6rem;
+}
+
+.calendar-view-toggle button.active {
+  background: var(--surface);
+  box-shadow: 0 1px 4px rgba(31, 42, 68, 0.1);
+  color: var(--blue);
+}
+
+.calendar-view-toggle button:focus-visible,
+.calendar-day:focus-visible,
+.mobile-bottom-nav a:focus-visible,
+.mobile-bottom-create:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.calendar-layout {
+  align-items: start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.42fr);
+  margin-top: 0.9rem;
+}
+
+.calendar-panel {
+  min-width: 0;
+}
+
+.calendar-layout .calendar-grid {
+  margin-top: 0;
+}
+
+.calendar-day {
+  position: relative;
+}
+
+.calendar-day:hover,
+.calendar-day:focus-visible {
+  background: color-mix(in srgb, var(--blue) 5%, var(--surface));
+}
+
+.calendar-day.selected-day {
+  background: color-mix(in srgb, var(--blue) 10%, var(--surface));
+}
+
+.calendar-day small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.week-day {
+  min-height: 104px;
+}
+
+.calendar-legend {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  gap: 0.45rem 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.calendar-legend span,
+.calendar-legend small {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.calendar-legend i {
+  border-radius: 999px;
+  display: inline-block;
+  height: 0.55rem;
+  width: 0.55rem;
+}
+
+.calendar-layout .day-detail {
+  border: 1px solid var(--border);
+  min-width: 0;
+}
+
+.day-detail-create {
+  flex: 0 0 auto;
+}
+
+.day-detail .row-item {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+}
+
+.day-detail .row-item b {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.mobile-bottom-nav {
   display: none;
 }
 
