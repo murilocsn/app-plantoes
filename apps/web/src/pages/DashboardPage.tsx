@@ -1,14 +1,12 @@
 import type { Shift } from "@financplantoes/shared";
-import { Banknote, CalendarDays, Clock, MapPin, Pencil, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Button } from "../components/Button";
+import { Banknote, CalendarDays, Clock, MapPin } from "lucide-react";
+import { useState } from "react";
 import { CalendarMonth } from "../components/CalendarMonth";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { ShiftCrudModals, type ShiftModalState } from "../components/ShiftCrudModals";
 import { StatCard } from "../components/StatCard";
 import { useDashboardOverview } from "../hooks/useBootstrap";
-import { markerColorForShift } from "../lib/calendar";
-import { dateLabel, money } from "../lib/formatters";
+import { money } from "../lib/formatters";
 
 function monthParam(date: Date) {
   return `${String(date.getMonth() + 1).padStart(2, "0")}-${date.getFullYear()}`;
@@ -19,21 +17,7 @@ export function DashboardPage() {
   const [viewDate, setViewDate] = useState(() => new Date());
   const monthKey = monthParam(viewDate);
   const dashboard = useDashboardOverview(monthKey);
-  const upcomingByLocation = useMemo(() => {
-    const byLocation = new Map<string, Shift[]>();
 
-    for (const shift of dashboard.data?.upcomingShifts ?? []) {
-      const key = shift.location_name || "Local";
-      byLocation.set(key, [...(byLocation.get(key) ?? []), shift]);
-    }
-
-    return [...byLocation.entries()]
-      .sort(([left], [right]) => left.localeCompare(right, "pt-BR"))
-      .map(([location, shifts]) => ({
-        location,
-        shifts: [...shifts].sort((left, right) => left.date.localeCompare(right.date)),
-      }));
-  }, [dashboard.data?.upcomingShifts]);
   if (dashboard.isLoading) {
     return <LoadingBlock />;
   }

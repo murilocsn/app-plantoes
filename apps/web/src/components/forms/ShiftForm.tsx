@@ -6,6 +6,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { calendarColorOptions, colorFor, dateKey } from "../../lib/calendar";
+import { shiftValueFromDuration } from "../../lib/shift-value";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../Button";
 import { DateField } from "../DateField";
@@ -141,10 +142,15 @@ export function ShiftForm({
   const colorPickerId = useId();
   const durationListId = useId();
   const colorPickerRef = useRef<HTMLDivElement>(null);
+  const initialValueSyncCompleteRef = useRef(false);
+  const valueManuallyEditedRef = useRef(false);
   const activeLocations = useMemo(
     () => locations.filter((location) => location.active !== false),
     [locations],
   );
+  const defaultLocation =
+    activeLocations.find((location) => location.id === shift?.location_id) ?? activeLocations[0];
+  const defaultDuration = Number(shift?.duration ?? 12);
   const {
     control,
     register,
@@ -157,9 +163,13 @@ export function ShiftForm({
     defaultValues: {
       date: shift?.date ?? initialDate ?? dateKey(new Date()),
       start_time: toTime(shift?.start_time),
-      location_id: shift?.location_id ?? activeLocations[0]?.id ?? "",
-      duration: Number(shift?.duration ?? 12),
-      value: Number(shift?.value ?? shift?.value12 ?? activeLocations[0]?.value12 ?? 0),
+      location_id: shift?.location_id ?? defaultLocation?.id ?? "",
+      duration: defaultDuration,
+      value: Number(
+        shift?.value ??
+          shift?.value12 ??
+          shiftValueFromDuration(defaultLocation?.value12 ?? 0, defaultDuration),
+      ),
       professional: shift?.professional ?? "",
       notes: shift?.notes ?? "",
       marker_color:
@@ -189,22 +199,41 @@ export function ShiftForm({
   const markerLabel = watch("marker_label")?.trim() || "Sem legenda";
   const markerColorName =
     calendarColorOptions.find((option) => option.color === markerColor)?.name ?? "Personalizada";
+  const locationField = register("location_id", {
+    onChange: () => {
+      valueManuallyEditedRef.current = false;
+    },
+  });
+  const valueField = register("value", {
+    onChange: () => {
+      valueManuallyEditedRef.current = true;
+    },
+  });
 
   useEffect(() => {
     setDurationHistory(readDurationHistory(userStorageId));
   }, [userStorageId]);
 
   useEffect(() => {
-    if (shift) {
-      return;
-    }
-
     const selected = activeLocations.find((location) => location.id === selectedLocationId);
 
     if (selected) {
-      setValue("value", Number(selected.value12 ?? 0), { shouldValidate: true });
+      if (shift && !initialValueSyncCompleteRef.current) {
+        initialValueSyncCompleteRef.current = true;
+        return;
+      }
+
+      initialValueSyncCompleteRef.current = true;
+
+      if (valueManuallyEditedRef.current) {
+        return;
+      }
+
+      setValue("value", shiftValueFromDuration(selected.value12, durationValue), {
+        shouldValidate: true,
+      });
     }
-  }, [activeLocations, selectedLocationId, setValue, shift]);
+  }, [activeLocations, durationValue, selectedLocationId, setValue, shift]);
 
   useEffect(() => {
     if (!colorPickerOpen) {
@@ -281,7 +310,7 @@ export function ShiftForm({
         <input type="time" {...register("start_time")} />
       </Field>
       <Field error={errors.location_id?.message} label="Local">
-        <select {...register("location_id")}>
+        <select {...locationField}>
           {activeLocations.map((location) => (
             <option key={location.id} value={location.id}>
               {location.name}
@@ -321,7 +350,7 @@ export function ShiftForm({
         )}
       </Field>
       <Field error={errors.value?.message} label="Valor">
-        <input min="0" step="0.01" type="number" {...register("value")} />
+        <input min="0" step="0.01" type="number" {...valueField} />
       </Field>
       <div className="field color-field">
         <span>Marcador do plantao</span>
