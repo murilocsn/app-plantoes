@@ -17,7 +17,7 @@ import { ok } from "../lib/respond";
 export const dashboardRouter = Router();
 
 const shiftSelect =
-  "id,date,start_time,location_id,location_name,duration,value,value12,professional,notes,marker_color,marker_label,recurring_group_id,created_at";
+  "id,date,start_time,location_id,location_name,duration,value,value12,professional,notes,status,marker_color,marker_label,recurring_group_id,created_at";
 
 const locationSelect =
   "id,name,value12,doc,active,reference_start_day,reference_end_day,payment_due_day,payment_due_months_after,created_at";
@@ -254,6 +254,19 @@ dashboardRouter.get(
       ),
     ]);
 
+    const calendarShiftIds = calendarShifts.map((shift) => shift.id);
+    const calendarReceivables = calendarShiftIds.length
+      ? await measure(timings, "calendar_receivables", () =>
+          optionalData<Receivable[]>(
+            supabase
+              .from("receivables")
+              .select(receivableSelect)
+              .eq("user_id", userId)
+              .in("shift_id", calendarShiftIds),
+            [],
+          ),
+        )
+      : [];
     const normalizedCalendarShifts = calendarShifts.map(normalizeShiftStatus);
     const normalizedUpcomingShifts = upcomingShifts.map(normalizeShiftStatus);
     const monthShifts = normalizedCalendarShifts.filter(
@@ -286,7 +299,7 @@ dashboardRouter.get(
       },
       calendarShifts: normalizedCalendarShifts,
       upcomingShifts: normalizedUpcomingShifts,
-      receivables: dashboardReceivables,
+      receivables: calendarReceivables,
       locations,
       spaceCount: membershipRows.filter((row) => row.spaces && row.spaces.archived !== true).length,
     };

@@ -529,6 +529,267 @@ canvas {
     margin-top: -1.1rem;
     width: 52px;
   }
+
+  .workspace-dashboard {
+    background: var(--surface);
+    padding: 0 0 calc(5.8rem + env(safe-area-inset-bottom));
+  }
+
+  .workspace-dashboard .topbar,
+  .workspace-dashboard .dashboard-summary-grid,
+  .workspace-dashboard .calendar-head-actions,
+  .workspace-dashboard .calendar-view-toggle,
+  .workspace-dashboard .calendar-month-actions,
+  .workspace-dashboard .calendar-legend,
+  .workspace-dashboard .day-detail-head {
+    display: none;
+  }
+
+  .workspace-dashboard .dashboard-page {
+    background: var(--surface);
+    gap: 0;
+    max-width: none;
+    min-height: 100dvh;
+  }
+
+  .workspace-dashboard .calendar-tool {
+    background: var(--surface);
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+    max-width: none;
+    padding: calc(0.7rem + env(safe-area-inset-top)) 0 0;
+    width: 100%;
+  }
+
+  .workspace-dashboard .calendar-tool .section-head {
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    grid-template-columns: minmax(64px, 1fr) auto minmax(64px, 1fr);
+    min-height: 58px;
+    padding: 0 1.25rem 0.7rem;
+  }
+
+  .workspace-dashboard .calendar-mobile-action {
+    display: inline-flex;
+  }
+
+  .workspace-dashboard .calendar-today-button {
+    background: transparent;
+    color: var(--text);
+    font-size: 1.2rem;
+    font-weight: 500;
+    justify-self: start;
+    padding: 0;
+  }
+
+  .workspace-dashboard .calendar-create-round {
+    background: var(--text);
+    border-radius: 999px;
+    color: var(--surface);
+    height: 40px;
+    justify-self: end;
+    min-height: 40px;
+    width: 40px;
+  }
+
+  .workspace-dashboard .calendar-title-block {
+    text-align: center;
+  }
+
+  .workspace-dashboard .calendar-title-block .eyebrow {
+    display: none;
+  }
+
+  .workspace-dashboard .calendar-tool h2 {
+    font-size: 1.45rem;
+    font-weight: 850;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .workspace-dashboard .calendar-layout {
+    display: block;
+    margin-top: 0;
+  }
+
+  .workspace-dashboard .calendar-panel {
+    padding: 0 1.35rem;
+  }
+
+  .workspace-dashboard .calendar-grid {
+    gap: 0;
+    grid-auto-rows: clamp(66px, 9.5dvh, 98px);
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 1.05rem;
+    max-width: 620px;
+  }
+
+  .workspace-dashboard .calendar-weekday {
+    color: var(--text);
+    font-size: 1.05rem;
+    font-weight: 500;
+    min-height: 28px;
+    text-align: center;
+  }
+
+  .workspace-dashboard .calendar-day {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    color: var(--text);
+    font-size: 1.3rem;
+    gap: 0.18rem;
+    justify-content: flex-start;
+    min-height: 0;
+    padding: 0.2rem 0;
+  }
+
+  .workspace-dashboard .calendar-day:hover,
+  .workspace-dashboard .calendar-day:focus-visible,
+  .workspace-dashboard .calendar-day.selected-day {
+    background: transparent;
+  }
+
+  .workspace-dashboard .calendar-day strong {
+    align-items: center;
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 1.28rem;
+    font-weight: 500;
+    height: 42px;
+    justify-content: center;
+    line-height: 1;
+    width: 42px;
+  }
+
+  .workspace-dashboard .calendar-day.today {
+    box-shadow: none;
+  }
+
+  .workspace-dashboard .calendar-day.today strong {
+    color: #ff3b3b;
+  }
+
+  .workspace-dashboard .calendar-day.selected-day strong {
+    background: var(--text);
+    color: var(--surface);
+  }
+
+  .workspace-dashboard .calendar-day.today.selected-day strong {
+    background: #ff3b3b;
+    color: #ffffff;
+  }
+
+  .workspace-dashboard .calendar-day.muted-day strong {
+    color: color-mix(in srgb, var(--muted) 60%, transparent);
+  }
+
+  .workspace-dashboard .calendar-day.muted-day.selected-day strong {
+    color: #ffffff;
+  }
+
+  .workspace-dashboard .day-dots {
+    justify-content: center;
+    min-height: 0.55rem;
+  }
+
+  .workspace-dashboard .day-dots i,
+  .workspace-dashboard .row-dot {
+    height: 0.58rem;
+    width: 0.58rem;
+  }
+
+  .workspace-dashboard .calendar-day small {
+    display: none;
+  }
+
+  .workspace-dashboard .calendar-layout .day-detail {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    margin-top: 1rem;
+    padding: 0;
+  }
+
+  .workspace-dashboard .stack {
+    gap: 0;
+  }
+
+  .workspace-dashboard .day-detail-free .empty-state {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    min-height: 120px;
+  }
+
+  .workspace-dashboard .shift-day-card {
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    box-shadow: none;
+    gap: 0.75rem;
+    grid-template-columns: 0.8rem minmax(0, 1fr) auto auto;
+    min-height: 112px;
+    padding: 1.1rem 1.65rem;
+  }
+
+  .workspace-dashboard .shift-day-card > .row-dot {
+    align-self: stretch;
+    border-radius: 999px;
+    height: auto;
+    width: 0.55rem;
+  }
+
+  .workspace-dashboard .shift-card-main {
+    gap: 0.22rem;
+  }
+
+  .workspace-dashboard .shift-card-main strong {
+    font-size: 1.05rem;
+  }
+
+  .workspace-dashboard .shift-card-main span {
+    color: color-mix(in srgb, var(--muted) 78%, var(--text));
+    font-size: 1rem;
+  }
+
+  .workspace-dashboard .shift-card-main .shift-time-range {
+    color: var(--text) !important;
+  }
+
+  .workspace-dashboard .shift-card-side {
+    gap: 0.45rem;
+    justify-items: end;
+  }
+
+  .workspace-dashboard .shift-card-side b {
+    font-size: 1.02rem;
+    font-weight: 500;
+  }
+
+  .workspace-dashboard .shift-status-badge {
+    border-radius: 8px;
+    font-size: 0.84rem !important;
+    padding: 0.5rem 0.65rem;
+  }
+
+  .workspace-dashboard .shift-card-actions {
+    display: none;
+  }
+
+  .workspace-dashboard .shift-row-chevron {
+    align-self: center;
+    display: block;
+  }
 }
 
 /* Celulares comuns */
@@ -822,6 +1083,54 @@ canvas {
 
   .mobile-bottom-nav a {
     font-size: 0.6rem;
+  }
+
+  .workspace-dashboard .calendar-tool .section-head {
+    gap: 0.3rem;
+    grid-template-columns: minmax(52px, 1fr) auto minmax(52px, 1fr);
+    padding-inline: 0.85rem;
+  }
+
+  .workspace-dashboard .calendar-today-button {
+    font-size: 1rem;
+  }
+
+  .workspace-dashboard .calendar-create-round {
+    height: 36px;
+    min-height: 36px;
+    width: 36px;
+  }
+
+  .workspace-dashboard .calendar-tool h2 {
+    font-size: 1.14rem;
+  }
+
+  .workspace-dashboard .calendar-panel {
+    padding: 0 0.85rem;
+  }
+
+  .workspace-dashboard .calendar-grid {
+    grid-auto-rows: clamp(58px, 8.5dvh, 82px);
+  }
+
+  .workspace-dashboard .calendar-weekday {
+    font-size: 0.9rem;
+  }
+
+  .workspace-dashboard .calendar-day strong {
+    font-size: 1.08rem;
+    height: 36px;
+    width: 36px;
+  }
+
+  .workspace-dashboard .shift-day-card {
+    gap: 0.55rem;
+    grid-template-columns: 0.65rem minmax(0, 1fr) auto auto;
+    padding: 1rem 0.95rem;
+  }
+
+  .workspace-dashboard .shift-status-badge {
+    font-size: 0.72rem !important;
   }
 }
 

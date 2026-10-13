@@ -12,7 +12,7 @@ Este documento registra o fluxo operacional dos alertas de plantao no celular.
 4. A assinatura e salva em `push_subscriptions`.
 5. O cron do Supabase executa a Edge Function `send-shift-reminders` a cada 5 minutos.
 6. A Edge Function busca plantoes `scheduled` com `start_time` preenchido.
-7. Se o plantao estiver na janela de 24h ou 90min, a funcao envia o push.
+7. Se o plantao estiver na janela de 24h, 90min ou no horario de inicio, a funcao envia o push.
 8. Entregas bem-sucedidas sao registradas em `push_reminder_deliveries`.
 
 ## Secrets necessarios

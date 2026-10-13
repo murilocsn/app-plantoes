@@ -1,14 +1,12 @@
 import type { Shift } from "@financplantoes/shared";
-import { Banknote, CalendarDays, Clock, MapPin, Pencil, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Button } from "../components/Button";
+import { Banknote, CalendarDays, Clock, MapPin } from "lucide-react";
+import { useState } from "react";
 import { CalendarMonth } from "../components/CalendarMonth";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { ShiftCrudModals, type ShiftModalState } from "../components/ShiftCrudModals";
 import { StatCard } from "../components/StatCard";
 import { useDashboardOverview } from "../hooks/useBootstrap";
-import { markerColorForShift } from "../lib/calendar";
-import { dateLabel, money } from "../lib/formatters";
+import { money } from "../lib/formatters";
 
 function monthParam(date: Date) {
   return `${String(date.getMonth() + 1).padStart(2, "0")}-${date.getFullYear()}`;
@@ -19,21 +17,7 @@ export function DashboardPage() {
   const [viewDate, setViewDate] = useState(() => new Date());
   const monthKey = monthParam(viewDate);
   const dashboard = useDashboardOverview(monthKey);
-  const upcomingByLocation = useMemo(() => {
-    const byLocation = new Map<string, Shift[]>();
 
-    for (const shift of dashboard.data?.upcomingShifts ?? []) {
-      const key = shift.location_name || "Local";
-      byLocation.set(key, [...(byLocation.get(key) ?? []), shift]);
-    }
-
-    return [...byLocation.entries()]
-      .sort(([left], [right]) => left.localeCompare(right, "pt-BR"))
-      .map(([location, shifts]) => ({
-        location,
-        shifts: [...shifts].sort((left, right) => left.date.localeCompare(right.date)),
-      }));
-  }, [dashboard.data?.upcomingShifts]);
   if (dashboard.isLoading) {
     return <LoadingBlock />;
   }
@@ -42,7 +26,7 @@ export function DashboardPage() {
     return <ErrorBlock error={dashboard.error} />;
   }
 
-  const { calendarShifts, locations, summary } = dashboard.data;
+  const { calendarShifts, locations, receivables, summary } = dashboard.data;
 
   function editShift(shift: Shift) {
     setShiftModal({ type: "edit", shift });
@@ -87,75 +71,10 @@ export function DashboardPage() {
           onDelete={(shift) => setShiftModal({ type: "delete", shift })}
           onEdit={editShift}
           onViewDateChange={setViewDate}
+          receivables={receivables}
           shifts={calendarShifts}
           viewDate={viewDate}
         />
-
-        {upcomingByLocation.length > 0 && (
-          <section
-            className="page-section dashboard-upcoming"
-            data-testid="dashboard-upcoming-shifts"
-          >
-            <header className="section-head">
-              <div>
-                <p className="eyebrow">Proximos</p>
-                <h2>Plantoes por unidade</h2>
-              </div>
-            </header>
-            <div className="shift-groups">
-              {upcomingByLocation.map((group) => (
-                <section className="shift-group" key={group.location}>
-                  <header className="shift-group-head">
-                    <strong>{group.location}</strong>
-                    <small>
-                      {group.shifts.length} {group.shifts.length === 1 ? "plantao" : "plantoes"}
-                    </small>
-                  </header>
-                  <div className="table-list">
-                    {group.shifts.map((shift) => (
-                      <article className="table-row shift-row" key={shift.id}>
-                        <div>
-                          <strong>{dateLabel(shift.date)}</strong>
-                          <span className="shift-row-meta">
-                            {String(shift.start_time ?? "--:--").slice(0, 5)} · {shift.duration}h
-                            {shift.marker_label && (
-                              <em
-                                className="shift-marker-inline"
-                                style={{ backgroundColor: markerColorForShift(shift) }}
-                                title={shift.marker_label}
-                              >
-                                {shift.marker_label}
-                              </em>
-                            )}
-                          </span>
-                        </div>
-                        <div className="row-actions">
-                          <Button
-                            aria-label="Editar plantao"
-                            onClick={() => editShift(shift)}
-                            size="icon"
-                            title="Editar"
-                          >
-                            <Pencil size={16} />
-                          </Button>
-                          <Button
-                            aria-label="Excluir plantao"
-                            onClick={() => setShiftModal({ type: "delete", shift })}
-                            size="icon"
-                            title="Excluir"
-                            variant="danger"
-                          >
-                            <Trash2 size={16} />
-                          </Button>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          </section>
-        )}
       </div>
 
       <ShiftCrudModals

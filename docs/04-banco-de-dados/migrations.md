@@ -12,6 +12,7 @@ As migrations ficam em `database/migrations`.
 | `004_shift_markers.sql`            | IMPLEMENTADA | Marcadores/cor dos plantoes.                                 |
 | `005_push_reminder_deliveries.sql` | IMPLEMENTADA | Historico de lembretes push.                                 |
 | `006_recurrence_weekdays.sql`      | IMPLEMENTADA | Dias da semana opcionais para recorrencias semanais.         |
+| `007_push_reminder_start.sql`      | IMPLEMENTADA | Lembrete push adicional no horario do plantao.               |
 
 ## Procedimento recomendado
 

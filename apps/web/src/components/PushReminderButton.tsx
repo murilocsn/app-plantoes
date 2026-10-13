@@ -2,7 +2,11 @@ import { Bell, BellOff, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
-import { normalizeVapidPublicKey, unsupportedPushMessage, vapidPublicKeyError } from "../lib/push-support";
+import {
+  normalizeVapidPublicKey,
+  unsupportedPushMessage,
+  vapidPublicKeyError,
+} from "../lib/push-support";
 import { Button } from "./Button";
 
 const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
@@ -63,7 +67,12 @@ export function PushReminderButton() {
 
     const publicKey = normalizeVapidPublicKey(vapidPublicKey);
 
-    if (!user || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+    if (
+      !user ||
+      !("serviceWorker" in navigator) ||
+      !("PushManager" in window) ||
+      !("Notification" in window)
+    ) {
       setMessage(unsupportedPushMessage());
       return;
     }
@@ -73,7 +82,9 @@ export function PushReminderButton() {
 
     try {
       if (Notification.permission === "denied") {
-        throw new Error("Notificacoes bloqueadas. Libere as notificacoes do site nas configuracoes do navegador.");
+        throw new Error(
+          "Notificacoes bloqueadas. Libere as notificacoes do site nas configuracoes do navegador.",
+        );
       }
 
       const permission = await Notification.requestPermission();
@@ -199,7 +210,9 @@ export function PushReminderButton() {
 
       setMessage("Notificacao de teste enviada.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Nao foi possivel enviar a notificacao de teste.");
+      setMessage(
+        error instanceof Error ? error.message : "Nao foi possivel enviar a notificacao de teste.",
+      );
     } finally {
       setPending(false);
     }
@@ -232,7 +245,7 @@ export function PushReminderButton() {
         )}
       </div>
       <small aria-live="polite" role="status">
-        {message || "Avisos: 24h e 90min antes, mesmo com o app fechado."}
+        {message || "Avisos: 24h, 90min e no horario do plantao, mesmo com o appo fechado."}
       </small>
     </div>
   );

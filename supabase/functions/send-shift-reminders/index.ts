@@ -15,7 +15,14 @@ const reminderWindowMinutes =
     : 10;
 const timeZone = "America/Sao_Paulo";
 
-if (!supabaseUrl || !serviceRoleKey || !vapidPublicKey || !vapidPrivateKey || !vapidSubject || !cronSecret) {
+if (
+  !supabaseUrl ||
+  !serviceRoleKey ||
+  !vapidPublicKey ||
+  !vapidPrivateKey ||
+  !vapidSubject ||
+  !cronSecret
+) {
   throw new Error("Missing notification environment variables.");
 }
 
@@ -30,7 +37,7 @@ type Shift = {
   location_name: string | null;
 };
 
-type ReminderKind = "24h" | "90m";
+type ReminderKind = "24h" | "90m" | "start";
 
 type ReminderCandidate = {
   kind: ReminderKind;
@@ -54,6 +61,7 @@ type ReminderDelivery = {
 const reminderRules: Array<{ kind: ReminderKind; minutesBefore: number }> = [
   { kind: "24h", minutesBefore: 24 * 60 },
   { kind: "90m", minutesBefore: 90 },
+  { kind: "start", minutesBefore: 0 },
 ];
 
 function jsonResponse(body: unknown, status = 200) {
@@ -147,10 +155,19 @@ function notificationPayload(candidate: ReminderCandidate) {
     };
   }
 
+  if (candidate.kind === "90m") {
+    return {
+      title: "Plantao em 90 minutos",
+      body: `${time} - ${location}`,
+      tag: `shift-${candidate.shift.id}-90m`,
+      url: webAppUrl,
+    };
+  }
+
   return {
-    title: "Plantao em 90 minutos",
+    title: "Plantao agora",
     body: `${time} - ${location}`,
-    tag: `shift-${candidate.shift.id}-90m`,
+    tag: `shift-${candidate.shift.id}-start`,
     url: webAppUrl,
   };
 }

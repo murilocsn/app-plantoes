@@ -72,7 +72,7 @@ body.fp-refresh .btn.primary { box-shadow: 0 5px 14px rgba(217,138,36,.22); }
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
     position: fixed; z-index: 1000; left: 10px; right: 10px; bottom: 10px;
     padding: 7px; border: 1px solid var(--fp-border); border-radius: 18px;
-    background: rgba(255,255,255,.94); box-shadow: 0 10px 35px rgba(23,32,43,.14); backdrop-filter: blur(14px);
+    background: rgba(255,255,255,.94); box-shadow: 0 10px 50px rgba(23,32,43,.14); backdrop-filter: blur(14px);
   }
   .fp-bottom-nav button { border: 0; background: transparent; color: var(--fp-muted); padding: 8px 4px; border-radius: 12px; font: 600 11px Inter, sans-serif; }
   .fp-bottom-nav button.active { color: var(--fp-accent); background: var(--fp-accent-soft); }

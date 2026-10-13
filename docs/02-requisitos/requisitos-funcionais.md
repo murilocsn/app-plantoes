@@ -54,7 +54,7 @@
 
 ## RF-009 - Lembretes push
 
-- Descricao: registrar inscricao push e enviar lembretes 24h/90m.
+- Descricao: registrar inscricao push e enviar lembretes 24h, 90m e no horario do plantao.
 - Arquivos: `PushReminderButton.tsx`, `public/sw.js`, `supabase/functions/send-shift-reminders/index.ts`.
 - Status: PARCIALMENTE IMPLEMENTADA.
 

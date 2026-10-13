@@ -2,7 +2,7 @@
 --
 -- Objetivo:
 --   Executar a Edge Function send-shift-reminders a cada 5 minutos para
---   capturar as janelas de lembrete de 24h e 90min antes do plantao.
+--   capturar as janelas de lembrete de 24h, 90min e do horario do plantao.
 --
 -- Pre-requisitos:
 --   1. Edge Function publicada:
@@ -32,7 +32,7 @@ where exists (
   select 1 from cron.job where jobname = 'financplantoes-lembrete-diario'
 );
 
--- Runs frequently enough to catch the 24h and 90min reminder windows.
+-- Runs frequently enough to catch the 24h, 90min and start-time reminder windows.
 select cron.schedule(
   'financplantoes-lembrete-diario',
   '*/5 * * * *',

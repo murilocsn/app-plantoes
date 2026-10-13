@@ -1,4 +1,4 @@
-import type { Shift } from "@financplantoes/shared";
+import type { Receivable, Shift } from "@financplantoes/shared";
 import type { KeyboardEvent } from "react";
 import { CalendarPlus, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -9,6 +9,7 @@ import { EmptyState } from "./EmptyState";
 
 type CalendarMonthProps = {
   shifts: Shift[];
+  receivables?: Receivable[];
   viewDate?: Date;
   onViewDateChange?: (date: Date) => void;
   onCreate: (date?: string) => void;
@@ -18,7 +19,7 @@ type CalendarMonthProps = {
 
 type CalendarView = "month" | "week";
 
-const weekdays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+const weekdays = ["Dom.", "Seg.", "Ter.", "Qua.", "Qui.", "Sex.", "Sab."];
 
 function dateFromKey(value: string) {
   const [year = 0, month = 1, day = 1] = value.split("-").map(Number);
@@ -49,8 +50,42 @@ function shiftCountLabel(count: number) {
   return `${count} ${count === 1 ? "plantao" : "plantoes"}`;
 }
 
+function timeRangeLabel(shift: Shift) {
+  const start = String(shift.start_time ?? "").slice(0, 5);
+
+  if (!/^\d{2}:\d{2}$/.test(start)) {
+    return `${shift.duration}h`;
+  }
+
+  const [hour = 0, minute = 0] = start.split(":").map(Number);
+  const durationMinutes = Math.round(Number(shift.duration || 0) * 60);
+  const endMinutes = (hour * 60 + minute + durationMinutes) % 1440;
+  const end = `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(
+    endMinutes % 60,
+  ).padStart(2, "0")}`;
+
+  return `${start} - ${end}`;
+}
+
+function shiftStatusBadge(shift: Shift, receivable?: Receivable) {
+  if (shift.status === "cancelled") {
+    return { label: "Cancelado", tone: "cancelled" };
+  }
+
+  if (receivable?.status === "received") {
+    return { label: "Pago", tone: "paid" };
+  }
+
+  if (receivable?.status === "cancelled") {
+    return { label: "Sem cobranca", tone: "neutral" };
+  }
+
+  return { label: "Nao pago", tone: "unpaid" };
+}
+
 export function CalendarMonth({
   shifts,
+  receivables = [],
   viewDate: controlledViewDate,
   onViewDateChange,
   onCreate,
@@ -76,6 +111,17 @@ export function CalendarMonth({
     }, {});
   }, [shifts]);
   const selectedShifts = shiftsByDay[selectedDate] ?? [];
+  const receivablesByShift = useMemo(() => {
+    const items = new Map<string, Receivable>();
+
+    for (const receivable of receivables) {
+      if (receivable.shift_id) {
+        items.set(receivable.shift_id, receivable);
+      }
+    }
+
+    return items;
+  }, [receivables]);
   const legendItems = useMemo(() => {
     const items = new Map<string, { color: string; label: string }>();
 
@@ -169,10 +215,27 @@ export function CalendarMonth({
   return (
     <section className="calendar-tool">
       <header className="section-head calendar-head">
-        <div>
+        <Button
+          className="calendar-mobile-action calendar-today-button"
+          onClick={goToToday}
+          variant="ghost"
+        >
+          Hoje
+        </Button>
+        <div className="calendar-title-block">
           <p className="eyebrow">Agenda</p>
           <h2>{monthTitle(viewDate)}</h2>
         </div>
+        <Button
+          aria-label="Novo plantao"
+          className="calendar-mobile-action calendar-create-round"
+          onClick={() => onCreate(selectedDate)}
+          size="icon"
+          title="Novo plantao"
+          variant="ghost"
+        >
+          <Plus size={22} />
+        </Button>
         <div className="calendar-head-actions">
           <div
             className="calendar-view-toggle"
@@ -277,25 +340,28 @@ export function CalendarMonth({
           </div>
 
           <div className="calendar-legend" aria-label="Legenda do calendario">
-            {legendItems.length > 0 ? (
-              <>
-                {legendItems.slice(0, 6).map((item) => (
-                  <span key={`${item.label}-${item.color}`}>
-                    <i style={{ backgroundColor: item.color }} />
-                    {item.label}
-                  </span>
-                ))}
-                {legendItems.length > 6 && <small>+{legendItems.length - 6} marcadores</small>}
-                {hasNightShift && (
-                  <span>
-                    <i className="night-dot" />
-                    Noturno
-                  </span>
-                )}
-              </>
-            ) : (
-              <span>Nenhum plantao no periodo.</span>
-            )}
+            <strong className="calendar-legend-title">Legenda</strong>
+            <div className="calendar-legend-items">
+              {legendItems.length > 0 ? (
+                <>
+                  {legendItems.slice(0, 6).map((item) => (
+                    <span key={`${item.label}-${item.color}`}>
+                      <i style={{ backgroundColor: item.color }} />
+                      {item.label}
+                    </span>
+                  ))}
+                  {legendItems.length > 6 && <small>+{legendItems.length - 6} marcadores</small>}
+                  {hasNightShift && (
+                    <span>
+                      <i className="night-dot" />
+                      Noturno
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span>Nenhum plantao no periodo.</span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -319,42 +385,69 @@ export function CalendarMonth({
           </header>
           {selectedShifts.length ? (
             <div className="stack">
-              {selectedShifts.map((shift) => (
-                <article className="row-item" key={shift.id}>
-                  <i
-                    aria-hidden="true"
-                    className={isNightShift(shift) ? "row-dot night-dot" : "row-dot"}
-                    style={{ backgroundColor: markerColorForShift(shift) }}
-                  />
-                  <div>
-                    <strong>{shift.location_name || "Local"}</strong>
-                    <span>
-                      {String(shift.start_time ?? "--:--").slice(0, 5)} - {shift.duration}h
-                      {shift.marker_label ? ` - ${shift.marker_label}` : ""}
-                    </span>
-                  </div>
-                  <b>{money(shift.value ?? shift.value12)}</b>
-                  <div className="row-actions">
-                    <Button
-                      aria-label="Editar plantao"
-                      onClick={() => onEdit(shift)}
-                      size="icon"
-                      title="Editar"
-                    >
-                      <Pencil size={16} />
-                    </Button>
-                    <Button
-                      aria-label="Excluir plantao"
-                      onClick={() => onDelete(shift)}
-                      size="icon"
-                      title="Excluir"
-                      variant="danger"
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  </div>
-                </article>
-              ))}
+              {selectedShifts.map((shift) => {
+                const markerColor = markerColorForShift(shift);
+                const statusBadge = shiftStatusBadge(shift, receivablesByShift.get(shift.id));
+
+                return (
+                  <article
+                    className="row-item shift-day-card"
+                    key={shift.id}
+                    onClick={() => onEdit(shift)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onEdit(shift);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <i
+                      aria-hidden="true"
+                      className={isNightShift(shift) ? "row-dot night-dot" : "row-dot"}
+                      style={{ backgroundColor: markerColor }}
+                    />
+                    <div className="shift-card-main">
+                      <span className="shift-time-range">{timeRangeLabel(shift)}</span>
+                      <strong>{shift.location_name || "Local"}</strong>
+                      <span>{shift.marker_label || shift.location_name || "Plantao"}</span>
+                    </div>
+                    <div className="shift-card-side">
+                      <b>{money(shift.value ?? shift.value12)}</b>
+                      <span className={`shift-status-badge shift-status-${statusBadge.tone}`}>
+                        {statusBadge.label}
+                      </span>
+                    </div>
+                    <ChevronRight aria-hidden="true" className="shift-row-chevron" size={22} />
+                    <div className="row-actions shift-card-actions">
+                      <Button
+                        aria-label="Editar plantao"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onEdit(shift);
+                        }}
+                        size="icon"
+                        title="Editar"
+                      >
+                        <Pencil size={16} />
+                      </Button>
+                      <Button
+                        aria-label="Excluir plantao"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onDelete(shift);
+                        }}
+                        size="icon"
+                        title="Excluir"
+                        variant="danger"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           ) : (
             <EmptyState icon={CalendarPlus} text="Nenhum plantao neste dia." title="Dia livre" />

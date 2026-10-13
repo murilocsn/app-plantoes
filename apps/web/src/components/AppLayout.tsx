@@ -32,14 +32,15 @@ const navItems = [
   { to: "/reports", label: "Relatorios", icon: Download },
 ];
 
-const mobileNavItems = navItems.filter((item) =>
-  ["/", "/shifts", "/locations", "/finance"].includes(item.to),
-);
+const mobileNavItems = navItems
+  .filter((item) => ["/", "/shifts", "/locations", "/finance"].includes(item.to))
+  .map((item) => (item.to === "/" ? { ...item, label: "Calendario" } : item));
 
 export function AppLayout() {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const isDashboard = location.pathname === "/";
   const [now, setNow] = useState(() => new Date());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
@@ -154,7 +155,7 @@ export function AppLayout() {
         </div>
       </aside>
 
-      <main className="workspace">
+      <main className={["workspace", isDashboard ? "workspace-dashboard" : ""].join(" ")}>
         <header className="topbar">
           <Button
             aria-controls="mobile-menu"
