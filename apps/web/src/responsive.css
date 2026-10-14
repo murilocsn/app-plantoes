@@ -777,6 +777,7 @@ canvas {
   }
 
   .workspace-dashboard .shift-status-badge {
+    color: #ffffff;
     border-radius: 8px;
     font-size: 0.84rem !important;
     padding: 0.5rem 0.65rem;
@@ -1130,7 +1131,8 @@ canvas {
   }
 
   .workspace-dashboard .shift-status-badge {
-    font-size: 0.72rem !important;
+    color: #ffffff;
+    font-size: 0.78rem !important;
   }
 }
 
