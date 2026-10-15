@@ -99,7 +99,30 @@ test.beforeEach(async ({ page }) => {
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page).not.toHaveURL(/#\/login/);
   await page.goto("/#/shifts");
+  await expect(page.getByText("Selecione um filtro", { exact: true })).toBeVisible();
+  await expect(page.locator(".shift-card")).toHaveCount(0);
+});
+
+test("inicia sem plantoes e limpa os resultados ao remover os filtros", async ({ page }) => {
+  const clear = page.getByRole("button", { name: "Limpar", exact: true });
+  await expect(clear).toBeDisabled();
+
+  await page.getByRole("combobox", { name: "Filtrar por unidade" }).selectOption(location.id);
   await expect(page.locator(".shift-card")).toHaveCount(3);
+  await clear.click();
+  await expect(page.locator(".shift-card")).toHaveCount(0);
+  await expect(page.getByText("Selecione um filtro", { exact: true })).toBeVisible();
+
+  await page.getByRole("textbox", { name: "De", exact: true }).fill("08/09/2026");
+  await expect(page.locator(".shift-card")).toHaveCount(2);
+  await clear.click();
+  await expect(page.locator(".shift-card")).toHaveCount(0);
+
+  await page.getByRole("textbox", { name: "Até", exact: true }).fill("09/08/2026");
+  await expect(page.locator(".shift-card")).toHaveCount(1);
+  await clear.click();
+  await expect(page.locator(".shift-card")).toHaveCount(0);
+  await expect(clear).toBeDisabled();
 });
 
 test("filtra por data brasileira, intervalo e unidade sem inverter dia e mes", async ({ page }) => {

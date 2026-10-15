@@ -172,6 +172,7 @@ test.describe("Login E2E mockado", () => {
     await expect(page.locator(".calendar-grid")).toBeVisible({ timeout: 30000 });
 
     await page.goto("/#/shifts");
+    await page.getByRole("combobox", { name: "Filtrar por unidade" }).selectOption(location.id);
 
     const firstGroup = page.locator(".shift-date-head").first();
 
@@ -208,6 +209,7 @@ for (const user of realAuthUsers) {
       await expect(page.locator(".calendar-grid")).toBeVisible({ timeout: 30000 });
 
       await page.goto("/#/shifts");
+      await page.getByRole("textbox", { name: "De", exact: true }).fill("01/01/1900");
 
       // Espera até a página carregar E mostrar um dos dois estados possíveis
       // (lista com plantoes OU estado vazio), evitando corrida na checagem.

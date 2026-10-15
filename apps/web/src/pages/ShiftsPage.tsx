@@ -63,6 +63,7 @@ export function ShiftsPage() {
   const bootstrap = useBootstrap();
   const [params, setParams] = useSearchParams();
   const [filters, setFilters] = useState({ from: "", to: "", locationId: "" });
+  const hasFilters = Boolean(filters.from || filters.to || filters.locationId);
   const [shiftModal, setShiftModal] = useState<ShiftModalState>(null);
 
   useEffect(() => {
@@ -73,6 +74,10 @@ export function ShiftsPage() {
   }, [params, setParams]);
 
   const filtered = useMemo(() => {
+    if (!hasFilters) {
+      return [];
+    }
+
     const shifts = bootstrap.data?.shifts ?? [];
 
     return shifts.filter((shift) => {
@@ -86,7 +91,7 @@ export function ShiftsPage() {
 
       return !filters.locationId || shift.location_id === filters.locationId;
     });
-  }, [bootstrap.data?.shifts, filters]);
+  }, [bootstrap.data?.shifts, filters, hasFilters]);
 
   // ⚠️ Regras dos Hooks: este useMemo precisa rodar em TODAS as renderizações,
   // antes de qualquer return condicional (mesmo padrão da correção do Dashboard).
@@ -205,7 +210,9 @@ export function ShiftsPage() {
             </Button>
           </div>
           <p className="filter-summary">
-            {filtered.length} {filtered.length === 1 ? "plantao encontrado" : "plantoes encontrados"}
+            {hasFilters
+              ? `${filtered.length} ${filtered.length === 1 ? "plantao encontrado" : "plantoes encontrados"}`
+              : "Aplique um filtro para exibir os plantões."}
           </p>
         </div>
 
@@ -250,7 +257,13 @@ export function ShiftsPage() {
             ))}
           </div>
         ) : (
-          <EmptyState icon={CalendarPlus} text="Crie seu primeiro plantao para iniciar a agenda." title="Sem plantoes" />
+          <EmptyState
+            icon={CalendarPlus}
+            text={hasFilters
+              ? "Nenhum plantão encontrado para os filtros selecionados."
+              : "Informe uma data ou selecione uma unidade para visualizar os plantões."}
+            title={hasFilters ? "Sem plantoes" : "Selecione um filtro"}
+          />
         )}
       </section>
 
