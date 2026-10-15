@@ -8,7 +8,7 @@ type AuthContextValue = {
   session: Session | null;
   user: User | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, profile: SignUpProfile) => Promise<void>;
+  signUp: (email: string, password: string, profile?: SignUpProfile) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -76,18 +76,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       },
       async signUp(email, password, profile) {
-        const fullName = profile.fullName.trim();
-        const firstName = fullName.split(/\s+/)[0] || fullName;
+        const fullName = profile?.fullName.trim();
+        const firstName = fullName?.split(/\s+/)[0] || fullName;
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            data: {
-              birth_date: profile.birthDate,
-              first_name: firstName,
-              full_name: fullName,
+          ...(profile && {
+            options: {
+              data: {
+                birth_date: profile.birthDate,
+                first_name: firstName,
+                full_name: fullName,
+              },
             },
-          },
+          }),
         });
 
         if (error) {
