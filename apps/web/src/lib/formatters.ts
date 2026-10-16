@@ -16,6 +16,10 @@ export function dateLabel(value?: string | null, fallback = "-") {
   return format(parseISO(value), "dd/MM/yyyy", { locale: ptBR });
 }
 
+export function dateGroupLabel(value: string) {
+  return format(parseISO(value), "d 'de' MMM 'de' yyyy", { locale: ptBR });
+}
+
 export function parseDateInput(value: string) {
   const text = value.trim();
   const pattern = /^\d{8}$/.test(text) ? "ddMMyyyy" : "dd/MM/yyyy";

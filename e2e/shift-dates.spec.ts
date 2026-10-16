@@ -14,7 +14,9 @@ const location: Location = {
   payment_due_months_after: 1,
 };
 
-const shifts: Shift[] = ["2026-09-08", "2026-08-09", "2026-09-09"].map((date, index) => ({
+const shifts: Shift[] = [
+  "2026-09-08", "2026-08-09", "2026-09-09", "2026-08-31", "2026-09-01", "2026-09-30", "2026-10-01",
+].map((date, index) => ({
   id: `test-shift-${index}`,
   date,
   location_id: location.id,
@@ -36,13 +38,13 @@ const bootstrap: AppBootstrap = {
   plans: [],
   summary: {
     monthKey: "2026-09",
-    incomeProjected: 4500,
+    incomeProjected: shifts.length * 1500,
     received: 0,
     pending: 0,
     expenses: 0,
     net: 0,
-    shiftCount: 3,
-    shiftHours: 36,
+    shiftCount: shifts.length,
+    shiftHours: shifts.length * 12,
     activeLocationCount: 1,
     nextReceivable: null,
   },
@@ -73,7 +75,9 @@ test.beforeEach(async ({ page }) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
 
-    if (path === "/api/dashboard/bootstrap") {
+    if (path === "/api/receivables") {
+      await route.fulfill({ json: { data: [] } });
+    } else if (path === "/api/dashboard/bootstrap") {
       await route.fulfill({ json: { data: bootstrap } });
     } else if (path === "/api/dashboard/overview") {
       await route.fulfill({ json: { data: {
@@ -99,7 +103,63 @@ test.beforeEach(async ({ page }) => {
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page).not.toHaveURL(/#\/login/);
   await page.goto("/#/shifts");
-  await expect(page.locator(".shift-card")).toHaveCount(3);
+  await expect(page.locator("[data-entry-type=shift]")).toHaveCount(4);
+  await page.locator(".ledger-filters > summary").click();
+});
+
+test("abre somente com os plantoes do mes vigente e permite consultar outros periodos", async ({ page }) => {
+  const from = page.getByRole("textbox", { name: "De", exact: true });
+  const to = page.getByRole("textbox", { name: "Até", exact: true });
+
+  await expect(from).toHaveValue("01/09/2026");
+  await expect(to).toHaveValue("30/09/2026");
+  await expect(page.locator(".shift-date-head strong")).toHaveText([
+    "1 de set de 2026", "8 de set de 2026", "9 de set de 2026", "30 de set de 2026",
+  ]);
+
+  await from.fill("01/08/2026");
+  await to.fill("31/08/2026");
+  await expect(page.locator(".shift-date-head strong")).toHaveText(["9 de ago de 2026", "31 de ago de 2026"]);
+
+  await from.fill("01/10/2026");
+  await to.fill("31/10/2026");
+  await expect(page.locator(".shift-date-head strong")).toHaveText(["1 de out de 2026"]);
+
+  await page.getByRole("button", { name: "Limpar", exact: true }).click();
+  await expect(from).toHaveValue("");
+  await expect(to).toHaveValue("");
+  await expect(page.locator("[data-entry-type=shift]")).toHaveCount(shifts.length);
+
+  // Ao voltar para a tela, o filtro inicial volta ao mes vigente.
+  await page.goto("/#/");
+  await expect(page.locator(".calendar-grid")).toBeVisible();
+  await page.goto("/#/shifts");
+  await page.locator(".ledger-filters > summary").click();
+  await expect(from).toHaveValue("01/09/2026");
+  await expect(to).toHaveValue("30/09/2026");
+  await expect(page.locator("[data-entry-type=shift]")).toHaveCount(4);
+});
+
+test("calcula o mes no horario local, incluindo fevereiro e virada do ano", async ({ page }) => {
+  const cases = [
+    { now: "2026-09-01T01:30:00Z", from: "01/08/2026", to: "31/08/2026" },
+    { now: "2027-02-15T12:00:00Z", from: "01/02/2027", to: "28/02/2027" },
+    { now: "2028-02-29T12:00:00Z", from: "01/02/2028", to: "29/02/2028" },
+    { now: "2026-12-31T12:00:00Z", from: "01/12/2026", to: "31/12/2026" },
+    { now: "2027-01-01T12:00:00Z", from: "01/01/2027", to: "31/01/2027" },
+  ];
+
+  for (const item of cases) {
+    await page.clock.setFixedTime(new Date(item.now));
+    await page.reload();
+    await page.locator(".ledger-filters > summary").click();
+    await expect(page.getByRole("textbox", { name: "De", exact: true })).toHaveValue(item.from);
+    await expect(page.getByRole("textbox", { name: "Até", exact: true })).toHaveValue(item.to);
+  }
+
+  await expect(page.locator("[data-entry-type=shift]")).toHaveCount(0);
+  await expect(page.getByText("Sem plantoes", { exact: true })).toBeVisible();
+  await expect(page.getByText("Nenhum plantao encontrado neste periodo ou unidade. Ajuste os filtros para consultar outros plantoes.")).toBeVisible();
 });
 
 test("filtra por data brasileira, intervalo e unidade sem inverter dia e mes", async ({ page }) => {
@@ -109,18 +169,18 @@ test("filtra por data brasileira, intervalo e unidade sem inverter dia e mes", a
 
   await from.fill("08/09/2026");
   await to.fill("08/09/2026");
-  await expect(page.locator(".shift-card")).toHaveCount(1);
-  await expect(page.locator(".shift-date-head strong")).toHaveText("08/09/2026");
+  await expect(page.locator("[data-entry-type=shift]")).toHaveCount(1);
+  await expect(page.locator(".shift-date-head strong")).toHaveText("8 de set de 2026");
 
   await from.fill("08/09/2026");
   await to.fill("09/09/2026");
-  await expect(page.locator(".shift-card")).toHaveCount(2);
+  await expect(page.locator("[data-entry-type=shift]")).toHaveCount(2);
 
   await locationFilter.selectOption(location.id);
-  await expect(page.locator(".shift-card")).toHaveCount(2);
+  await expect(page.locator("[data-entry-type=shift]")).toHaveCount(2);
 
   await from.fill("31/12/2030");
-  await expect(page.locator(".shift-card")).toHaveCount(0);
+  await expect(page.locator("[data-entry-type=shift]")).toHaveCount(0);
 });
 
 test("cadastra data e repeticao em formato brasileiro e envia datas ISO para a API", async ({ page }, testInfo) => {
@@ -151,6 +211,7 @@ test("cadastra data e repeticao em formato brasileiro e envia datas ISO para a A
 test("edita datas existentes e preserva o seletor de calendario", async ({ page }) => {
   await page.getByRole("textbox", { name: "De", exact: true }).fill("08/09/2026");
   await page.getByRole("textbox", { name: "Até", exact: true }).fill("08/09/2026");
+  await page.locator(".ledger-trigger").click();
   await page.getByRole("button", { name: "Editar", exact: true }).click();
   const dialog = page.getByRole("dialog");
   const date = dialog.getByRole("textbox", { name: "Data", exact: true });

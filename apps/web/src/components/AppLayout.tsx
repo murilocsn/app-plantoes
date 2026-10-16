@@ -1,7 +1,5 @@
 import {
   Banknote,
-  BookOpenCheck,
-  Bot,
   CalendarDays,
   ClipboardList,
   Download,
@@ -15,7 +13,7 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Brand } from "./Brand";
@@ -23,16 +21,16 @@ import { Button } from "./Button";
 import { PushReminderButton } from "./PushReminderButton";
 
 const navItems = [
-  { to: "/", label: "Painel", icon: CalendarDays },
-  { to: "/shifts", label: "Plantoes", icon: ClipboardList },
+  { to: "/", label: "Painel", mobileLabel: "Calendário", icon: CalendarDays },
+  { to: "/shifts", label: "Plantoes", mobileLabel: "Plantões", icon: ClipboardList },
   { to: "/locations", label: "Locais", icon: MapPin },
-  { to: "/finance", label: "Financeiro", icon: Banknote },
+  { to: "/finance", label: "Financeiro", mobileLabel: "Recebimento", icon: Banknote },
   { to: "/expenses", label: "Despesas", icon: Receipt },
-  { to: "/ai", label: "Assistente IA", icon: Bot },
-  { to: "/guidelines", label: "Guidelines", icon: BookOpenCheck },
   { to: "/spaces", label: "Espacos", icon: UsersRound },
   { to: "/reports", label: "Relatorios", icon: Download },
 ];
+
+const mobileNavItems = navItems.filter((item) => item.mobileLabel);
 
 export function AppLayout() {
   const { user, signOut } = useAuth();
@@ -150,7 +148,7 @@ export function AppLayout() {
             <div className="mobile-reminder-control">
               <PushReminderButton />
             </div>
-            <Button onClick={() => navigate("/shifts?new=1")} variant="primary">
+            <Button className="topbar-new-shift" onClick={() => navigate("/shifts?new=1")} variant="primary">
               <Plus size={18} />
               <span>Novo plantao</span>
             </Button>
@@ -158,6 +156,39 @@ export function AppLayout() {
         </header>
         <Outlet />
       </main>
+
+      <nav aria-label="Navegação inferior" className="mobile-nav">
+        {mobileNavItems.map((item) => (
+          <Fragment key={item.to}>
+            {item.to === "/finance" && (
+              <Button
+                aria-label="Novo plantão"
+                className="mobile-new"
+                onClick={() => navigate("/shifts?new=1")}
+                size="icon"
+                title="Novo plantão"
+                variant="primary"
+              >
+                <Plus aria-hidden="true" size={26} />
+              </Button>
+            )}
+            <NavLink end={item.to === "/"} to={item.to}>
+              <span className="mobile-nav-icon"><item.icon aria-hidden="true" size={20} /></span>
+              <span className="mobile-nav-label">{item.mobileLabel}</span>
+            </NavLink>
+          </Fragment>
+        ))}
+        <Button
+          aria-controls="mobile-menu"
+          aria-expanded={mobileMenuOpen}
+          className="mobile-menu-shortcut"
+          onClick={() => setMobileMenuOpen((value) => !value)}
+          variant="ghost"
+        >
+          <span className="mobile-nav-icon"><Menu aria-hidden="true" size={20} /></span>
+          <span className="mobile-nav-label">Menu</span>
+        </Button>
+      </nav>
 
       {mobileMenuOpen && (
         <>
