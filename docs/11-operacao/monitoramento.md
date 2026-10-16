@@ -7,6 +7,13 @@ Status: PARCIALMENTE IMPLEMENTADA
 - Health check `/health`.
 - Logs HTTP com `morgan` no backend.
 - Render pode fornecer logs e status do servico.
+- Metricas HTTP OpenTelemetry opcionais: volume, duracao e status, com lista fechada de atributos.
+
+Configuracao, limites de privacidade e validacao:
+[OpenTelemetry](opentelemetry.md).
+
+Auditoria de dependencias e verificacao do bootstrap:
+[Seguranca e validacao da API](dependencias-seguranca.md).
 
 ## Itens recomendados
 
