@@ -1,44 +1,32 @@
 import type { Receivable } from "@financplantoes/shared";
-import { Banknote, Check, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { Banknote, Check, ChevronDown, Pencil, Plus, Search, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/Button";
 import { DateField } from "../components/DateField";
 import { EmptyState } from "../components/EmptyState";
 import { Field } from "../components/Field";
+import { LedgerRow } from "../components/LedgerRow";
+import { PaymentSummary } from "../components/PaymentSummary";
 import { MarkPaidForm } from "../components/forms/MarkPaidForm";
 import { ReceivableForm } from "../components/forms/ReceivableForm";
 import { Modal } from "../components/Modal";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
-import { StatCard } from "../components/StatCard";
 import { useAppMutation, useBootstrap } from "../hooks/useBootstrap";
 import { domainApi } from "../lib/domain-api";
-import { dateLabel, money } from "../lib/formatters";
-
-function isOverdue(item: Receivable) {
-  if (item.status === "received" || item.status === "cancelled") {
-    return false;
-  }
-
-  return Boolean(item.expected_date && item.expected_date < new Date().toISOString().slice(0, 10));
-}
+import { dateKey } from "../lib/calendar";
+import { dateGroupLabel, money } from "../lib/formatters";
+import {
+  adjacentMonthRange,
+  monthDateRange,
+  receivablePaymentState,
+  shiftTimeLabel,
+} from "../lib/payment-view";
 
 function isOpenReceivable(item: Receivable) {
   return item.status !== "received" && item.status !== "cancelled";
 }
 
-function statusLabel(item: Receivable) {
-  if (item.status === "received") {
-    return "Recebido";
-  }
-
-  if (item.status === "cancelled") {
-    return "Cancelado";
-  }
-
-  return isOverdue(item) ? "Atrasado" : "Pendente";
-}
-
-type ReceivableStatusFilter = "all" | "pending" | "received";
+type ReceivableStatusFilter = "all" | "pending" | "received" | "overdue";
 
 type ReceivableFilters = {
   query: string;
@@ -60,6 +48,7 @@ const statusFilterOptions: Array<{ value: ReceivableStatusFilter; label: string 
   { value: "all", label: "Todos" },
   { value: "pending", label: "Pendentes" },
   { value: "received", label: "Pagos" },
+  { value: "overdue", label: "Atrasados" },
 ];
 
 function normalizeSearchText(value: string) {
@@ -130,6 +119,10 @@ export function FinancePage() {
     return String(left.expected_date ?? "").localeCompare(String(right.expected_date ?? ""));
   });
   const locationsById = new Map(bootstrap.data.locations.map((location) => [location.id, location.name]));
+  const today = dateKey(new Date());
+  const paymentStates = new Map(receivables.map((item) => [
+    item.id, receivablePaymentState(item.status, item.expected_date, today),
+  ]));
   const filteredReceivables = receivables.filter((item) => {
     const expectedDate = item.expected_date ?? "";
     const locationName = item.location_id ? locationsById.get(item.location_id) ?? "" : "";
@@ -156,7 +149,11 @@ export function FinancePage() {
       return false;
     }
 
-    if (filters.status === "pending" && !isOpenReceivable(item)) {
+    if (filters.status === "pending" && (!isOpenReceivable(item) || paymentStates.get(item.id) === "overdue")) {
+      return false;
+    }
+
+    if (filters.status === "overdue" && paymentStates.get(item.id) !== "overdue") {
       return false;
     }
 
@@ -166,45 +163,45 @@ export function FinancePage() {
   const received = filteredReceivables
     .filter((item) => item.status === "received")
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const pending = filteredOpenReceivables.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const overdue = filteredReceivables.filter(isOverdue);
+  const pending = filteredOpenReceivables
+    .filter((item) => paymentStates.get(item.id) !== "overdue")
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const overdue = filteredReceivables.filter((item) => paymentStates.get(item.id) === "overdue");
+  const overdueTotal = overdue.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const hasActiveFilters = Boolean(
     filters.query || filters.from || filters.to || filters.locationId || filters.status !== "all",
   );
   const resultLabel =
     filteredReceivables.length === receivables.length
-      ? `${receivables.length} recebivel${receivables.length === 1 ? "" : "is"}`
-      : `${filteredReceivables.length} de ${receivables.length} recebiveis`;
+      ? `${receivables.length} ${receivables.length === 1 ? "recebimento" : "recebimentos"}`
+      : `${filteredReceivables.length} de ${receivables.length} recebimentos`;
   const bulkActionLabel =
     filteredOpenReceivables.length > 1
       ? `Marcar ${filteredOpenReceivables.length} pagos`
       : "Marcar pago";
+  const shiftsById = new Map(bootstrap.data.shifts.map((shift) => [shift.id, shift]));
+  const byDate = new Map<string, Receivable[]>();
+  for (const item of filteredReceivables) {
+    const date = item.expected_date || "";
+    byDate.set(date, [...(byDate.get(date) ?? []), item]);
+  }
+  const dateGroups = [...byDate.entries()].sort(([left], [right]) =>
+    left && right ? left.localeCompare(right) : left ? -1 : right ? 1 : 0,
+  );
 
   return (
     <>
-      <section className="stat-grid two">
-        <StatCard icon={Check} label="Recebido" tone="green" value={money(received)} />
-        <StatCard icon={Banknote} label="Pendente" tone="amber" value={money(pending)} />
-      </section>
-
       {formError && !modal && (
         <p className="form-message" role="alert">
           {formError}
         </p>
       )}
 
-      {overdue.length > 0 && (
-        <section className="page-section finance-alert" role="alert">
-          <strong>{overdue.length} recebimento{overdue.length === 1 ? "" : "s"} atrasado{overdue.length === 1 ? "" : "s"}</strong>
-          <span>O prazo previsto passou. Confira a nota fiscal e registre o pagamento.</span>
-        </section>
-      )}
-
-      <section className="page-section">
+      <section className="page-section ledger-page">
         <header className="section-head">
           <div>
             <p className="eyebrow">Recebimentos</p>
-            <h2>Recebiveis</h2>
+            <h2>Recebimentos e pendências</h2>
           </div>
           <Button onClick={() => openModal({ type: "create" })} variant="primary">
             <Plus size={18} />
@@ -212,69 +209,104 @@ export function FinancePage() {
           </Button>
         </header>
 
-        <div aria-label="Filtros de recebimentos" className="finance-filter-panel">
-          <div className="finance-search-row">
-            <Field label="Busca">
-              <div className="input-icon">
-                <Search size={18} />
-                <input
-                  onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
-                  placeholder="Descricao ou unidade"
-                  type="search"
-                  value={filters.query}
-                />
-              </div>
-            </Field>
-            <Button
-              className="finance-filter-clear"
-              disabled={!hasActiveFilters}
-              onClick={() => setFilters(emptyReceivableFilters)}
-              variant="ghost"
-            >
-              <X size={16} />
-              <span>Limpar</span>
-            </Button>
-          </div>
+        <PaymentSummary
+          countLabel={`${filteredReceivables.length} ${filteredReceivables.length === 1 ? "recebimento" : "recebimentos"}`}
+          from={filters.from}
+          onCurrentMonth={() => setFilters((current) => ({ ...current, ...monthDateRange(new Date()) }))}
+          onNavigate={(offset) => setFilters((current) => ({ ...current, ...adjacentMonthRange(current.from, current.to, offset) }))}
+          overdue={overdueTotal}
+          pending={pending}
+          received={received}
+          to={filters.to}
+          total={received + pending + overdueTotal}
+        />
 
-          <div className="finance-filter-grid">
-            <DateField
-              label="De"
-              name="receivable-filter-from"
-              onBlur={() => undefined}
-              onChange={(from) =>
-                setFilters((current) => ({
-                  ...current,
-                  from,
-                  to: current.to && from && current.to < from ? from : current.to,
-                }))
-              }
-              value={filters.from}
-            />
-            <DateField
-              label="Até"
-              name="receivable-filter-to"
-              onBlur={() => undefined}
-              onChange={(to) =>
-                setFilters((current) => ({
-                  ...current,
-                  to: current.from && to && to < current.from ? current.from : to,
-                }))
-              }
-              value={filters.to}
-            />
-            <Field label="Unidade">
-              <select
-                onChange={(event) => setFilters((current) => ({ ...current, locationId: event.target.value }))}
-                value={filters.locationId}
+        {overdue.length > 0 && (
+          <div className="finance-alert finance-alert-inline" role="alert">
+            <strong>{overdue.length} recebimento{overdue.length === 1 ? "" : "s"} atrasado{overdue.length === 1 ? "" : "s"}</strong>
+            <span>O prazo previsto passou. Confira a nota fiscal e registre o pagamento.</span>
+          </div>
+        )}
+
+        <details className="ledger-filters">
+          <summary>
+            <SlidersHorizontal aria-hidden="true" size={16} />
+            <span>Filtros</span>
+            <small>{resultLabel}</small>
+            <ChevronDown aria-hidden="true" className="filter-chevron" size={16} />
+          </summary>
+          <div aria-label="Filtros de recebimentos" className="finance-filter-panel">
+            <div className="finance-search-row">
+              <Field label="Busca">
+                <div className="input-icon">
+                  <Search size={18} />
+                  <input
+                    onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
+                    placeholder="Descricao ou unidade"
+                    type="search"
+                    value={filters.query}
+                  />
+                </div>
+              </Field>
+              <Button
+                className="finance-filter-clear"
+                disabled={!hasActiveFilters}
+                onClick={() => setFilters(emptyReceivableFilters)}
+                variant="ghost"
               >
-                <option value="">Todas</option>
-                {bootstrap.data.locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+                <X size={16} />
+                <span>Limpar</span>
+              </Button>
+            </div>
+
+            <details className="finance-advanced-filters">
+              <summary>
+                <SlidersHorizontal aria-hidden="true" size={16} />
+                <span>Período e unidade</span>
+                {(filters.from || filters.to || filters.locationId) && <small>Ativos</small>}
+                <ChevronDown aria-hidden="true" className="filter-chevron" size={16} />
+              </summary>
+              <div className="finance-filter-grid">
+                <DateField
+                  label="De"
+                  name="receivable-filter-from"
+                  onBlur={() => undefined}
+                  onChange={(from) =>
+                    setFilters((current) => ({
+                      ...current,
+                      from,
+                      to: current.to && from && current.to < from ? from : current.to,
+                    }))
+                  }
+                  value={filters.from}
+                />
+                <DateField
+                  label="Até"
+                  name="receivable-filter-to"
+                  onBlur={() => undefined}
+                  onChange={(to) =>
+                    setFilters((current) => ({
+                      ...current,
+                      to: current.from && to && to < current.from ? current.from : to,
+                    }))
+                  }
+                  value={filters.to}
+                />
+                <Field label="Unidade">
+                  <select
+                    onChange={(event) => setFilters((current) => ({ ...current, locationId: event.target.value }))}
+                    value={filters.locationId}
+                  >
+                    <option value="">Todas</option>
+                    {bootstrap.data.locations.map((location) => (
+                      <option key={location.id} value={location.id}>
+                        {location.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            </details>
             <div className="field">
               <span>Status</span>
               <div aria-label="Status do recebimento" className="finance-status-filter" role="group">
@@ -291,67 +323,85 @@ export function FinancePage() {
                 ))}
               </div>
             </div>
-          </div>
 
-          <div className="finance-result-row">
-            <p className="filter-summary">{resultLabel}</p>
-            {hasActiveFilters && (
-              <Button
-                className="finance-bulk-button"
-                disabled={!filteredOpenReceivables.length || markFilteredPaid.isPending}
-                onClick={() => openModal({ type: "bulk-paid", receivables: filteredOpenReceivables })}
-                variant="primary"
-              >
-                <Check size={17} />
-                <span>{bulkActionLabel}</span>
-              </Button>
-            )}
+            <div className="finance-result-row">
+              <p className="filter-summary">{resultLabel}</p>
+              {hasActiveFilters && (
+                <Button
+                  className="finance-bulk-button"
+                  disabled={!filteredOpenReceivables.length || markFilteredPaid.isPending}
+                  onClick={() => openModal({ type: "bulk-paid", receivables: filteredOpenReceivables })}
+                  variant="primary"
+                >
+                  <Check size={17} />
+                  <span>{bulkActionLabel}</span>
+                </Button>
+              )}
+            </div>
           </div>
+        </details>
+
+        <div aria-label="Cores dos recebimentos" className="payment-legend" role="group">
+          <span className="payment-legend-item" data-payment-state="paid">Pago</span>
+          <span className="payment-legend-item" data-payment-state="pending">Pendente</span>
+          <span className="payment-legend-item" data-payment-state="overdue">Atrasado</span>
         </div>
 
         {filteredReceivables.length ? (
-          <div className="table-list">
-            {filteredReceivables.map((item) => (
-              <article className="table-row" key={item.id}>
-                <div>
-                  <strong>{item.description}</strong>
-                  <span>
-                    {dateLabel(item.expected_date)} - {statusLabel(item)}
-                  </span>
+          <div aria-label="Recebimentos por data prevista" className="shift-date-list">
+            {dateGroups.map(([date, items]) => (
+              <section className="shift-date-group" key={date}>
+                <header className="shift-date-head">
+                  <strong>{date ? dateGroupLabel(date) : "Sem data prevista"}</strong>
+                </header>
+                <div className="ledger-list">
+                  {items.map((item) => {
+                    const shift = item.shift_id ? shiftsById.get(item.shift_id) : undefined;
+                    const locationName = item.location_id ? locationsById.get(item.location_id) : undefined;
+                    return (
+                      <LedgerRow
+                        amount={Number(item.amount)}
+                        entryType="receivable"
+                        key={item.id}
+                        paymentState={paymentStates.get(item.id) ?? "unknown"}
+                        subtitle={shift?.location_name ? item.description : locationName || "Avulso"}
+                        time={shift ? shiftTimeLabel(shift) : "Recebimento avulso"}
+                        title={shift?.location_name || item.description}
+                      >
+                        {isOpenReceivable(item) && (
+                          <Button
+                            aria-label="Marcar recebido"
+                            onClick={() => openModal({ type: "paid", receivable: item })}
+                            size="icon"
+                            title="Marcar recebido"
+                            variant="primary"
+                          >
+                            <Check size={16} />
+                          </Button>
+                        )}
+                        <Button
+                          aria-label="Editar recebivel"
+                          onClick={() => openModal({ type: "edit", receivable: item })}
+                          size="icon"
+                          title="Editar"
+                        >
+                          <Pencil size={16} />
+                        </Button>
+                        <Button
+                          aria-label="Excluir recebivel"
+                          disabled={deleteReceivable.isPending}
+                          onClick={() => deleteReceivable.mutate(item.id)}
+                          size="icon"
+                          title="Excluir"
+                          variant="danger"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </LedgerRow>
+                    );
+                  })}
                 </div>
-                <b>{money(item.amount)}</b>
-                <div className="row-actions">
-                  {isOpenReceivable(item) && (
-                    <Button
-                      aria-label="Marcar recebido"
-                      onClick={() => openModal({ type: "paid", receivable: item })}
-                      size="icon"
-                      title="Marcar recebido"
-                      variant="primary"
-                    >
-                      <Check size={16} />
-                    </Button>
-                  )}
-                  <Button
-                    aria-label="Editar recebivel"
-                    onClick={() => openModal({ type: "edit", receivable: item })}
-                    size="icon"
-                    title="Editar"
-                  >
-                    <Pencil size={16} />
-                  </Button>
-                  <Button
-                    aria-label="Excluir recebivel"
-                    disabled={deleteReceivable.isPending}
-                    onClick={() => deleteReceivable.mutate(item.id)}
-                    size="icon"
-                    title="Excluir"
-                    variant="danger"
-                  >
-                    <Trash2 size={16} />
-                  </Button>
-                </div>
-              </article>
+              </section>
             ))}
           </div>
         ) : (

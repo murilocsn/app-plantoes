@@ -11,6 +11,7 @@ import { api, download } from "./api";
 
 export const domainApi = {
   bootstrap: () => api<AppBootstrap>("/dashboard/bootstrap"),
+  receivables: () => api<Receivable[]>("/receivables"),
   dashboardOverview: (filters?: { month?: string }) => {
     const params = new URLSearchParams();
     if (filters?.month) params.set("month", filters.month);

@@ -1,14 +1,25 @@
 import type { Shift } from "@financplantoes/shared";
-import { CalendarPlus, Pencil, Trash2, X } from "lucide-react";
+import { CalendarPlus, ChevronDown, Pencil, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "../components/Button";
 import { DateField } from "../components/DateField";
 import { EmptyState } from "../components/EmptyState";
+import { LedgerRow } from "../components/LedgerRow";
+import { PaymentSummary } from "../components/PaymentSummary";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { ShiftCrudModals, type ShiftModalState } from "../components/ShiftCrudModals";
 import { useBootstrap } from "../hooks/useBootstrap";
-import { dateLabel } from "../lib/formatters";
+import { markerColorForShift } from "../lib/calendar";
+import { dateGroupLabel } from "../lib/formatters";
+import {
+  adjacentMonthRange,
+  indexShiftReceivables,
+  monthDateRange,
+  shiftPaymentState,
+  shiftPaymentTotals,
+  shiftTimeLabel,
+} from "../lib/payment-view";
 
 const MINUTES_PER_DAY = 24 * 60;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -46,23 +57,15 @@ function shiftsOverlap(first: Shift, second: Shift) {
   return firstInterval.start < secondInterval.end && firstInterval.end > secondInterval.start;
 }
 
-function endTimeLabel(shift: Shift) {
-  const interval = shiftInterval(shift);
-
-  if (!interval) {
-    return "--:--";
-  }
-
-  const endMinutes = interval.end % MINUTES_PER_DAY;
-  const hour = Math.floor(endMinutes / 60);
-  const minute = endMinutes % 60;
-  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-}
-
 export function ShiftsPage() {
   const bootstrap = useBootstrap();
   const [params, setParams] = useSearchParams();
-  const [filters, setFilters] = useState({ from: "", to: "", locationId: "" });
+  const [filters, setFilters] = useState(() => {
+    return {
+      ...monthDateRange(new Date()),
+      locationId: "",
+    };
+  });
   const [shiftModal, setShiftModal] = useState<ShiftModalState>(null);
 
   useEffect(() => {
@@ -134,13 +137,16 @@ export function ShiftsPage() {
     return <ErrorBlock error={bootstrap.error} />;
   }
 
+  const payments = indexShiftReceivables(bootstrap.data.receivables);
+  const totals = shiftPaymentTotals(filtered, bootstrap.data.receivables);
+
   function edit(shift: Shift) {
     setShiftModal({ type: "edit", shift });
   }
 
   return (
     <>
-      <section className="page-section">
+      <section className="page-section ledger-page">
         <header className="section-head">
           <div>
             <p className="eyebrow">Agenda</p>
@@ -152,105 +158,133 @@ export function ShiftsPage() {
           </Button>
         </header>
 
-        <div aria-label="Filtros de plantoes" className="shift-filter-panel">
-          <div className="shift-filter-grid">
-            <DateField
-              label="De"
-              name="shift-filter-from"
-              onBlur={() => undefined}
-              onChange={(from) =>
-                setFilters((current) => ({
-                  ...current,
-                  from,
-                  to: current.to && from && current.to < from ? from : current.to,
-                }))
-              }
-              value={filters.from}
-            />
-            <DateField
-              label="Até"
-              name="shift-filter-to"
-              onBlur={() => undefined}
-              onChange={(to) =>
-                setFilters((current) => ({
-                  ...current,
-                  to: current.from && to && to < current.from ? current.from : to,
-                }))
-              }
-              value={filters.to}
-            />
-            <label className="field">
-              <span>Unidade</span>
-              <select
-                aria-label="Filtrar por unidade"
-                value={filters.locationId}
-                onChange={(event) => setFilters((current) => ({ ...current, locationId: event.target.value }))}
+        <PaymentSummary
+          countLabel={`${filtered.length} ${filtered.length === 1 ? "plantão" : "plantões"}`}
+          from={filters.from}
+          hours={filtered.reduce((sum, shift) => sum + Number(shift.duration), 0)}
+          notice={totals.unlinked ? `${totals.unlinked} sem recebível vinculado; pagamento não informado.` : undefined}
+          onCurrentMonth={() => setFilters((current) => ({ ...current, ...monthDateRange(new Date()) }))}
+          onNavigate={(offset) => setFilters((current) => ({ ...current, ...adjacentMonthRange(current.from, current.to, offset) }))}
+          pending={totals.pending}
+          received={totals.received}
+          to={filters.to}
+          total={filtered.reduce((sum, shift) => sum + Number(shift.value ?? shift.value12 ?? 0), 0)}
+        />
+
+        <details className="ledger-filters">
+          <summary>
+            <SlidersHorizontal aria-hidden="true" size={16} />
+            <span>Filtros</span>
+            <small>{filtered.length} {filtered.length === 1 ? "plantão" : "plantões"}</small>
+            <ChevronDown aria-hidden="true" className="filter-chevron" size={16} />
+          </summary>
+          <div aria-label="Filtros de plantoes" className="shift-filter-panel">
+            <div className="shift-filter-grid">
+              <DateField
+                label="De"
+                name="shift-filter-from"
+                onBlur={() => undefined}
+                onChange={(from) =>
+                  setFilters((current) => ({
+                    ...current,
+                    from,
+                    to: current.to && from && current.to < from ? from : current.to,
+                  }))
+                }
+                value={filters.from}
+              />
+              <DateField
+                label="Até"
+                name="shift-filter-to"
+                onBlur={() => undefined}
+                onChange={(to) =>
+                  setFilters((current) => ({
+                    ...current,
+                    to: current.from && to && to < current.from ? current.from : to,
+                  }))
+                }
+                value={filters.to}
+              />
+              <label className="field">
+                <span>Unidade</span>
+                <select
+                  aria-label="Filtrar por unidade"
+                  value={filters.locationId}
+                  onChange={(event) => setFilters((current) => ({ ...current, locationId: event.target.value }))}
+                >
+                  <option value="">Todas</option>
+                  {bootstrap.data.locations.map((location) => (
+                    <option key={location.id} value={location.id}>
+                      {location.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Button
+                className="shift-filter-clear"
+                disabled={!filters.from && !filters.to && !filters.locationId}
+                onClick={() => setFilters({ from: "", to: "", locationId: "" })}
+                variant="ghost"
               >
-                <option value="">Todas</option>
-                {bootstrap.data.locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button
-              className="shift-filter-clear"
-              disabled={!filters.from && !filters.to && !filters.locationId}
-              onClick={() => setFilters({ from: "", to: "", locationId: "" })}
-              variant="ghost"
-            >
-              <X size={16} />
-              <span>Limpar</span>
-            </Button>
+                <X size={16} />
+                <span>Limpar</span>
+              </Button>
+            </div>
+            <p className="filter-summary">
+              {filtered.length} {filtered.length === 1 ? "plantao encontrado" : "plantoes encontrados"}
+            </p>
           </div>
-          <p className="filter-summary">
-            {filtered.length} {filtered.length === 1 ? "plantao encontrado" : "plantoes encontrados"}
-          </p>
-        </div>
+        </details>
 
         {grouped.length ? (
           <div className="shift-date-list">
             {grouped.map((group) => (
               <section className="shift-date-group" key={group.date}>
                 <header className="shift-date-head">
-                  <strong>{dateLabel(group.date)}</strong>
+                  <strong>{dateGroupLabel(group.date)}</strong>
                   <small>
                     {group.shifts.length} {group.shifts.length === 1 ? "plantao" : "plantoes"}
                   </small>
                 </header>
-                <div className="shift-card-grid">
+                <div className="ledger-list">
                   {group.shifts.map((shift) => (
-                    <article className={conflictIds.has(shift.id) ? "shift-card shift-card-conflict" : "shift-card"} key={shift.id}>
-                      <div className="shift-card-main">
-                        <strong>{shift.location_name || "Local"}</strong>
-                        <span>
-                          {String(shift.start_time ?? "--:--").slice(0, 5)} - {endTimeLabel(shift)} · {shift.duration}h
-                        </span>
-                        {conflictIds.has(shift.id) && <em>Conflito de horario</em>}
-                      </div>
-                      <div className="row-actions">
-                        <Button aria-label="Editar" onClick={() => edit(shift)} size="icon" title="Editar">
-                          <Pencil size={16} />
-                        </Button>
-                        <Button
-                          aria-label="Excluir"
-                          onClick={() => setShiftModal({ type: "delete", shift })}
-                          size="icon"
-                          title="Excluir"
-                          variant="danger"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
-                    </article>
+                    <LedgerRow
+                      amount={Number(shift.value ?? shift.value12 ?? 0)}
+                      color={markerColorForShift(shift)}
+                      entryType="shift"
+                      key={shift.id}
+                      paymentState={shiftPaymentState(shift.id, payments)}
+                      subtitle={shift.marker_label || `Plantão de ${shift.duration}h`}
+                      time={shiftTimeLabel(shift)}
+                      title={shift.location_name || "Local"}
+                      warning={conflictIds.has(shift.id) ? "Conflito de horario" : undefined}
+                    >
+                      <Button aria-label="Editar" onClick={() => edit(shift)} size="icon" title="Editar">
+                        <Pencil size={16} />
+                      </Button>
+                      <Button
+                        aria-label="Excluir"
+                        onClick={() => setShiftModal({ type: "delete", shift })}
+                        size="icon"
+                        title="Excluir"
+                        variant="danger"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </LedgerRow>
                   ))}
                 </div>
               </section>
             ))}
           </div>
         ) : (
-          <EmptyState icon={CalendarPlus} text="Crie seu primeiro plantao para iniciar a agenda." title="Sem plantoes" />
+          <EmptyState
+            icon={CalendarPlus}
+            text={bootstrap.data.shifts.length
+              ? "Nenhum plantao encontrado neste periodo ou unidade. Ajuste os filtros para consultar outros plantoes."
+              : "Crie seu primeiro plantao para iniciar a agenda."}
+            title="Sem plantoes"
+          />
         )}
       </section>
 

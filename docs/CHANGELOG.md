@@ -2,6 +2,33 @@
 
 Todas as mudancas relevantes de documentacao, arquitetura e produto devem ser registradas aqui.
 
+## 2026-10-16
+
+### Alterado
+
+- Acoes de editar e excluir agrupadas em painel flutuante no calendario, proximos plantoes, lista de plantoes e recebimentos: editar em azul claro e excluir no vermelho do selo financeiro. O painel fecha ao selecionar uma acao, tocar fora, rolar ou pressionar Esc, sem aumentar a altura das linhas.
+
+- Recebimentos e pendencias usam faixa e selo financeiros: verde para pago, amarelo para pendente e vermelho para atrasado, com legenda e filtro de atrasados. Resumo separa valores pendentes e atrasados sem somar duas vezes, considerando o dia local para o vencimento.
+- Plantoes preservam as cores dos marcadores do calendario, independentemente do pagamento.
+
+- Dia selecionado no calendario, Plantoes e Recebimentos usam linhas compactas com faixa colorida, horario, local, valor, selo financeiro e seta para abrir as acoes existentes.
+- Plantoes e Recebimentos exibem resumo financeiro, percentual pago, navegacao mensal e filtros expansiveis; recebimentos continuam consultando todos os periodos ate a selecao de um mes.
+- Selos de plantoes usam somente recebiveis ligados por `shift_id`, distinguindo pagamento parcial, cancelamento, ausencia de vinculo e informacao indisponivel. O status de agendamento nao determina pagamento.
+- Calendario consulta a rota autenticada existente de recebiveis e atualiza o cache apos alteracoes; falha financeira mantem a agenda disponivel com selo neutro. Banco, RLS e regras de pagamento preservados.
+
+## 2026-10-15
+
+### Alterado
+
+- Interface compacta em todas as abas: hierarquia tipografica, espacamentos menores, filtros em colunas e botoes com novo acabamento visual.
+- Recebimentos mantem busca e status acessiveis e agrupa periodo/unidade em painel expansivel; navegacao inferior passa a usar icones destacados e botao central arredondado.
+- Navegacao inferior fixa no celular com atalhos Calendario, Plantoes e Recebimento, botao central azul para novo plantao e acesso ao Menu, respeitando a area segura e o espaco do conteudo.
+- Tela de Plantoes inicia com o primeiro e o ultimo dia do mes vigente nos filtros, permitindo consultar outros periodos ou limpar a selecao.
+- Estado vazio da lista de plantoes orienta ajustar os filtros quando existem registros em outros periodos ou unidades.
+- Guidelines e Assistente IA inativadas nos menus desktop e mobile; os enderecos antigos redirecionam ao painel.
+- Endpoint da Assistente IA desativado com resposta 404 e codigo `FEATURE_DISABLED`, preservando a autenticacao e sem chamar o provedor de IA.
+- Paginas, conteudos e implementacao da assistente preservados no repositorio para eventual reativacao.
+
 ## 2026-09-19
 
 ### Adicionado

@@ -1,13 +1,16 @@
-import type { Shift } from "@financplantoes/shared";
+import type { Receivable, Shift } from "@financplantoes/shared";
 import { CalendarPlus, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { dateKey, isNightShift, markerColorForShift, monthDays } from "../lib/calendar";
-import { dateLabel, money, monthTitle } from "../lib/formatters";
+import { dateLabel, monthTitle } from "../lib/formatters";
+import { indexShiftReceivables, shiftPaymentState, shiftTimeLabel } from "../lib/payment-view";
 import { Button } from "./Button";
 import { EmptyState } from "./EmptyState";
+import { LedgerRow } from "./LedgerRow";
 
 type CalendarMonthProps = {
   shifts: Shift[];
+  receivables?: Receivable[];
   viewDate?: Date;
   onViewDateChange?: (date: Date) => void;
   onCreate: (date?: string) => void;
@@ -19,6 +22,7 @@ const weekdays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
 export function CalendarMonth({
   shifts,
+  receivables,
   viewDate: controlledViewDate,
   onViewDateChange,
   onCreate,
@@ -36,6 +40,7 @@ export function CalendarMonth({
     }, {});
   }, [shifts]);
   const selectedShifts = shiftsByDay[selectedDate] ?? [];
+  const payments = useMemo(() => receivables ? indexShiftReceivables(receivables) : undefined, [receivables]);
 
   function changeMonth(offset: number) {
     const next = new Date(viewDate);
@@ -86,6 +91,8 @@ export function CalendarMonth({
 
           return (
             <button
+              aria-label={dateLabel(key)}
+              aria-pressed={key === selectedDate}
               className={[
                 "calendar-day",
                 muted ? "muted-day" : "",
@@ -114,7 +121,7 @@ export function CalendarMonth({
       </div>
 
       <div className="calendar-footer">
-        <section className={selectedShifts.length ? "day-detail" : "day-detail day-detail-free"}>
+        <section className={selectedShifts.length ? "day-detail day-detail-filled" : "day-detail day-detail-free"}>
           <header className="day-detail-head">
             <div>
               <p className="eyebrow">Dia selecionado</p>
@@ -126,36 +133,31 @@ export function CalendarMonth({
             </Button>
           </header>
           {selectedShifts.length ? (
-            <div className="stack">
+            <div className="ledger-list">
               {selectedShifts.map((shift) => (
-                <article className="row-item" key={shift.id}>
-                  <i
-                    className={isNightShift(shift) ? "row-dot night-dot" : "row-dot"}
-                    style={{ backgroundColor: markerColorForShift(shift) }}
-                  />
-                  <div>
-                    <strong>{shift.location_name}</strong>
-                    <span>
-                      {String(shift.start_time ?? "--:--").slice(0, 5)} - {shift.duration}h
-                      {shift.marker_label ? ` - ${shift.marker_label}` : ""}
-                    </span>
-                  </div>
-                  <b>{money(shift.value ?? shift.value12)}</b>
-                  <div className="row-actions">
-                    <Button aria-label="Editar plantao" onClick={() => onEdit(shift)} size="icon" title="Editar">
-                      <Pencil size={16} />
-                    </Button>
-                    <Button
-                      aria-label="Excluir plantao"
-                      onClick={() => onDelete(shift)}
-                      size="icon"
-                      title="Excluir"
-                      variant="danger"
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  </div>
-                </article>
+                <LedgerRow
+                  amount={Number(shift.value ?? shift.value12 ?? 0)}
+                  color={markerColorForShift(shift)}
+                  entryType="shift"
+                  key={shift.id}
+                  paymentState={shiftPaymentState(shift.id, payments)}
+                  subtitle={shift.marker_label || `Plantão de ${shift.duration}h`}
+                  time={shiftTimeLabel(shift)}
+                  title={shift.location_name || "Local"}
+                >
+                  <Button aria-label="Editar plantao" onClick={() => onEdit(shift)} size="icon" title="Editar">
+                    <Pencil size={16} />
+                  </Button>
+                  <Button
+                    aria-label="Excluir plantao"
+                    onClick={() => onDelete(shift)}
+                    size="icon"
+                    title="Excluir"
+                    variant="danger"
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </LedgerRow>
               ))}
             </div>
           ) : (

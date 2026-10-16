@@ -1,11 +1,12 @@
 import type { Shift } from "@financplantoes/shared";
-import { Pencil, Trash2 } from "lucide-react";
+import { Ellipsis, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "../components/Button";
+import { ActionsPopover } from "../components/ActionsPopover";
 import { CalendarMonth } from "../components/CalendarMonth";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { ShiftCrudModals, type ShiftModalState } from "../components/ShiftCrudModals";
-import { useDashboardOverview } from "../hooks/useBootstrap";
+import { useDashboardOverview, useReceivables } from "../hooks/useBootstrap";
 import { markerColorForShift } from "../lib/calendar";
 import { dateLabel } from "../lib/formatters";
 
@@ -18,6 +19,7 @@ export function DashboardPage() {
   const [viewDate, setViewDate] = useState(() => new Date());
   const monthKey = monthParam(viewDate);
   const dashboard = useDashboardOverview(monthKey);
+  const receivables = useReceivables();
   const upcomingByLocation = useMemo(() => {
     const byLocation = new Map<string, Shift[]>();
 
@@ -55,6 +57,7 @@ export function DashboardPage() {
         onEdit={editShift}
         onViewDateChange={setViewDate}
         shifts={calendarShifts}
+        receivables={receivables.data}
         viewDate={viewDate}
       />
 
@@ -92,18 +95,27 @@ export function DashboardPage() {
                         </span>
                       </div>
                       <div className="row-actions">
-                        <Button aria-label="Editar plantao" onClick={() => editShift(shift)} size="icon" title="Editar">
-                          <Pencil size={16} />
-                        </Button>
-                        <Button
-                          aria-label="Excluir plantao"
-                          onClick={() => setShiftModal({ type: "delete", shift })}
-                          size="icon"
-                          title="Excluir"
-                          variant="danger"
+                        <ActionsPopover
+                          label="Ações do plantão"
+                          renderTrigger={(props) => (
+                            <Button {...props} aria-label="Ações do plantão" size="icon" title="Ações do plantão" variant="ghost">
+                              <Ellipsis size={20} />
+                            </Button>
+                          )}
                         >
-                          <Trash2 size={16} />
-                        </Button>
+                          <Button aria-label="Editar plantao" onClick={() => editShift(shift)} size="icon" title="Editar">
+                            <Pencil size={16} />
+                          </Button>
+                          <Button
+                            aria-label="Excluir plantao"
+                            onClick={() => setShiftModal({ type: "delete", shift })}
+                            size="icon"
+                            title="Excluir"
+                            variant="danger"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </ActionsPopover>
                       </div>
                     </article>
                   ))}

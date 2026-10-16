@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Button } from "../components/Button";
 import { DateField } from "../components/DateField";
 import { EmptyState } from "../components/EmptyState";
+import { Field } from "../components/Field";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { StatCard } from "../components/StatCard";
 import { useBootstrap } from "../hooks/useBootstrap";
@@ -108,7 +109,12 @@ export function ReportsPage() {
             onChange={(value) => setTo(from && value && value < from ? from : value)}
             value={to}
           />
-          <label>Local<select value={locationId} onChange={(event) => setLocationId(event.target.value)}><option value="">Todos os locais</option>{bootstrap.data.locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select></label>
+          <Field label="Local">
+            <select value={locationId} onChange={(event) => setLocationId(event.target.value)}>
+              <option value="">Todos os locais</option>
+              {bootstrap.data.locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
+            </select>
+          </Field>
         </div>
 
         {byLocation.length ? (

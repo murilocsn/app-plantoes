@@ -3,6 +3,7 @@ import { domainApi } from "../lib/domain-api";
 
 const bootstrapKey = ["bootstrap"];
 const dashboardOverviewKey = ["dashboard-overview"];
+const receivablesKey = ["receivables"];
 
 export function useBootstrap() {
   return useQuery({
@@ -18,6 +19,10 @@ export function useDashboardOverview(month: string) {
   });
 }
 
+export function useReceivables() {
+  return useQuery({ queryKey: receivablesKey, queryFn: domainApi.receivables });
+}
+
 export function useRefreshBootstrap() {
   const queryClient = useQueryClient();
 
@@ -25,6 +30,7 @@ export function useRefreshBootstrap() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: bootstrapKey }),
       queryClient.invalidateQueries({ queryKey: dashboardOverviewKey }),
+      queryClient.invalidateQueries({ queryKey: receivablesKey }),
     ]);
   };
 }

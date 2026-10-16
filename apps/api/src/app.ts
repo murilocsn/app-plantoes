@@ -3,9 +3,9 @@ import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./config/env";
+import { HttpError } from "./lib/http-error";
 import { errorHandler } from "./middleware/error-handler";
 import { requireAuth } from "./middleware/auth";
-import { aiRouter } from "./routes/ai";
 import { dashboardRouter } from "./routes/dashboard";
 import { expensesRouter } from "./routes/expenses";
 import { locationsRouter } from "./routes/locations";
@@ -44,7 +44,10 @@ export function createApp() {
   });
 
   app.use("/api", requireAuth);
-  app.use("/api/ai", aiRouter);
+  // Keep the implementation in routes/ai.ts dormant until the feature is reactivated.
+  app.use("/api/ai", (_request, _response, next) => {
+    next(new HttpError(404, "Assistente IA indisponivel.", "FEATURE_DISABLED"));
+  });
   app.use("/api/dashboard", dashboardRouter);
   app.use("/api/locations", locationsRouter);
   app.use("/api/shifts", shiftsRouter);
