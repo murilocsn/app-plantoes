@@ -46,6 +46,106 @@ canvas {
   overflow-wrap: anywhere;
 }
 
+/* Perfil da conta */
+.profile-page {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.profile-summary {
+  align-items: center;
+  display: flex;
+  gap: 0.8rem;
+}
+
+.profile-summary > div,
+.profile-card {
+  min-width: 0;
+}
+
+.profile-avatar {
+  align-items: center;
+  background: var(--blue-soft);
+  border-radius: 14px;
+  color: var(--blue);
+  display: flex;
+  flex-shrink: 0;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
+}
+
+.profile-email {
+  overflow-wrap: anywhere;
+}
+
+.profile-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.profile-card h3 {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.profile-card .form-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.profile-password-card {
+  grid-column: 1 / -1;
+}
+
+.profile-card .form-grid > .field {
+  grid-column: auto;
+}
+
+.profile-password-card .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-password-card .form-grid > .field:first-child {
+  grid-column: 1 / -1;
+}
+
+.profile-page .form-hint,
+.profile-page .form-message,
+.profile-success {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.profile-success {
+  color: var(--text);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+  .profile-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-card .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-card .form-actions .button {
+    width: 100%;
+  }
+}
+
 /* Tablets e notebooks estreitos */
 @media (max-width: 1120px) {
   .app-frame {

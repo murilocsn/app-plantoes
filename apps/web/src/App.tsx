@@ -14,6 +14,7 @@ const ExpensesPage = lazy(() => import("./pages/ExpensesPage").then((m) => ({ de
 const FinancePage = lazy(() => import("./pages/FinancePage").then((m) => ({ default: m.FinancePage })));
 const LocationsPage = lazy(() => import("./pages/LocationsPage").then((m) => ({ default: m.LocationsPage })));
 const LoginPage = lazy(() => import("./pages/LoginPage").then((m) => ({ default: m.LoginPage })));
+const ProfilePage = lazy(() => import("./pages/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const ReportsPage = lazy(() => import("./pages/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const ShiftsPage = lazy(() => import("./pages/ShiftsPage").then((m) => ({ default: m.ShiftsPage })));
 const SpacesPage = lazy(() => import("./pages/SpacesPage").then((m) => ({ default: m.SpacesPage })));
@@ -72,6 +73,7 @@ export function App() {
           <Route element={<Navigate replace to="/" />} path="guidelines" />
           <Route element={<SpacesPage />} path="spaces" />
           <Route element={<ReportsPage />} path="reports" />
+          <Route element={<ProfilePage />} path="profile" />
         </Route>
         <Route element={<Navigate replace to="/" />} path="*" />
       </Routes>

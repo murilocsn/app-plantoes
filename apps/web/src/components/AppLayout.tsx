@@ -11,6 +11,7 @@ import {
   Receipt,
   Sun,
   UsersRound,
+  UserRound,
   X,
 } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
@@ -28,6 +29,7 @@ const navItems = [
   { to: "/expenses", label: "Despesas", icon: Receipt },
   { to: "/spaces", label: "Espacos", icon: UsersRound },
   { to: "/reports", label: "Relatorios", icon: Download },
+  { to: "/profile", label: "Meu perfil", icon: UserRound },
 ];
 
 const mobileNavItems = navItems.filter((item) => item.mobileLabel);
