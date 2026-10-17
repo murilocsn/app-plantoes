@@ -32,6 +32,9 @@ export function ActionsPopover({ label, renderTrigger, children }: ActionsPopove
     const onPointerDown = (event: PointerEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) dismiss();
     };
+    const onFocusIn = (event: FocusEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) dismiss();
+    };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -41,25 +44,28 @@ export function ActionsPopover({ label, renderTrigger, children }: ActionsPopove
       }
     };
     document.addEventListener("pointerdown", onPointerDown);
+    // Safari may blur the trigger without focusing the action being clicked.
+    // Dismiss on an actual focus destination so that click can finish first.
+    document.addEventListener("focusin", onFocusIn);
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("wheel", dismiss, { passive: true });
     document.addEventListener("touchmove", dismiss, { passive: true });
     window.addEventListener("resize", dismiss);
+    window.addEventListener("blur", dismiss);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("focusin", onFocusIn);
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("wheel", dismiss);
       document.removeEventListener("touchmove", dismiss);
       window.removeEventListener("resize", dismiss);
+      window.removeEventListener("blur", dismiss);
     };
   }, [open]);
 
   return (
     <div
       className={`row-action-popover${open ? " open" : ""}`}
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
-      }}
       ref={rootRef}
     >
       {renderTrigger({

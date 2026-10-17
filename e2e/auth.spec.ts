@@ -331,6 +331,30 @@ test.describe("Login E2E mockado", () => {
     await expect(row).toHaveAttribute("data-payment-state", "paid");
   });
 
+  test("menu de acoes preserva foco interno e fecha ao navegar para fora pelo teclado", async ({ page }) => {
+    await mockPaymentLayout(page);
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    await page.getByRole("button", { name: "14/09/2026", exact: true }).click();
+    const row = page.locator(".day-detail .ledger-row");
+    const trigger = row.locator(".ledger-trigger");
+    const panel = row.getByRole("group", { name: "Ações do plantão" });
+
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await expect(panel).toBeVisible();
+    await panel.getByRole("button", { name: "Editar plantao" }).focus();
+    await expect(panel).toBeVisible();
+    await page.getByRole("button", { name: "Mes anterior", exact: true }).focus();
+    await expect(panel).toBeHidden();
+
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await expect(panel).toBeVisible();
+    for (let index = 0; index < 3; index++) await page.keyboard.press("Tab");
+    await expect(panel).toBeHidden();
+  });
+
   test("acoes flutuantes de plantao preservam altura, cores, teclado e confirmacao", async ({ page, isMobile }, testInfo) => {
     await mockPaymentLayout(page);
     if (isMobile) await page.setViewportSize({ width: 320, height: 720 });
