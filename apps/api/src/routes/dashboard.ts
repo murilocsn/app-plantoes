@@ -1,5 +1,6 @@
 import {
   monthQuerySchema,
+  expenseCardCosts,
   type AppBootstrap,
   type DashboardOverview,
   type Expense,
@@ -13,6 +14,7 @@ import { performance } from "node:perf_hooks";
 import { asyncHandler } from "../lib/async-handler";
 import { normalizeShiftStatus, optionalData } from "../lib/db";
 import { ok } from "../lib/respond";
+import { expenseSharingSnapshot } from "../lib/expense-sharing";
 
 export const dashboardRouter = Router();
 
@@ -121,7 +123,7 @@ function calculateBootstrap(data: Omit<AppBootstrap, "summary">): AppBootstrap {
     (item) => item.amount,
   );
   const expenses = sumBy(
-    data.personalExpenses.filter((item) => inMonth(item.expense_date, monthKey)),
+    [...data.personalExpenses, ...data.sharedExpenses].filter((item) => inMonth(item.expense_date, monthKey)),
     (item) => item.amount,
   );
   const incomeProjected = sumBy(monthShifts, (item) => item.value ?? item.value12);
@@ -169,6 +171,8 @@ dashboardRouter.get(
       dashboardReceivables,
       personalExpenses,
       membershipRows,
+      sharing,
+      legacySharedExpenses,
     ] = await Promise.all([
       measure(timings, "calendar_shifts", () =>
         optionalData<Shift[]>(
@@ -252,6 +256,11 @@ dashboardRouter.get(
           [],
         ),
       ),
+      measure(timings, "expense_cards", () => expenseSharingSnapshot(supabase)),
+      measure(timings, "legacy_shared_expenses", () => optionalData<Expense[]>(
+        supabase.from("expenses").select(expenseSelect).eq("paid_by", userId)
+          .gte("expense_date", monthRange.from).lte("expense_date", monthRange.to), [],
+      )),
     ]);
 
     const normalizedCalendarShifts = calendarShifts.map(normalizeShiftStatus);
@@ -268,7 +277,8 @@ dashboardRouter.get(
       activeReceivables.filter((item) => item.status === "pending" || item.status === "overdue"),
       (item) => item.amount,
     );
-    const expenses = sumBy(personalExpenses, (item) => item.amount);
+    const expenses = sumBy([...personalExpenses, ...legacySharedExpenses, ...expenseCardCosts(sharing.cards)]
+      .filter(item => item.expense_date >= monthRange.from && item.expense_date <= monthRange.to), item => item.amount);
     const incomeProjected = sumBy(monthShifts, (item) => item.value ?? item.value12);
     const nextReceivable = dashboardReceivables[0] ?? null;
     const overview: DashboardOverview = {
@@ -304,7 +314,7 @@ dashboardRouter.get(
     const userId = request.auth.user.id;
     const supabase = request.auth.supabase;
 
-    const [shifts, locations, receivables, personalExpenses, membershipRows, directSharedExpenses] =
+    const [shifts, locations, receivables, personalExpenses, membershipRows, directSharedExpenses, sharing] =
       await Promise.all([
         measure(timings, "shifts", () =>
           optionalData<Shift[]>(
@@ -369,6 +379,7 @@ dashboardRouter.get(
             [],
           ),
         ),
+        measure(timings, "expense_cards", () => expenseSharingSnapshot(supabase)),
       ]);
 
     const spaces = membershipRows
@@ -386,7 +397,8 @@ dashboardRouter.get(
         locations,
         receivables,
         personalExpenses,
-        sharedExpenses: directSharedExpenses,
+        sharedExpenses: [...directSharedExpenses, ...expenseCardCosts(sharing.cards)],
+        expenseSharing: sharing,
         spaces,
         plans: [],
       }),

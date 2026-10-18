@@ -232,7 +232,7 @@ export function PushReminderButton() {
         )}
       </div>
       <small aria-live="polite" role="status">
-        {message || "Avisos: 24h e 90min antes, mesmo com o app fechado."}
+        {message || "Avisos: 24h e 90min antes e no início do plantão, mesmo com o app fechado."}
       </small>
     </div>
   );

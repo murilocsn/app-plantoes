@@ -1,5 +1,14 @@
 import webpush from "npm:web-push@3.6.7";
 import { createClient } from "npm:@supabase/supabase-js@2.48.1";
+import {
+  candidatesFor,
+  dateToDayNumber,
+  minutesToTime,
+  notificationPayload,
+  reminderDateRange,
+  type ReminderKind,
+  type Shift,
+} from "./reminders.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -22,21 +31,6 @@ if (!supabaseUrl || !serviceRoleKey || !vapidPublicKey || !vapidPrivateKey || !v
 const admin = createClient(supabaseUrl, serviceRoleKey);
 webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
 
-type Shift = {
-  id: string;
-  user_id: string;
-  date: string;
-  start_time: string | null;
-  location_name: string | null;
-};
-
-type ReminderKind = "24h" | "90m";
-
-type ReminderCandidate = {
-  kind: ReminderKind;
-  shift: Shift;
-};
-
 type Subscription = {
   id: string | number;
   user_id: string;
@@ -51,46 +45,11 @@ type ReminderDelivery = {
   reminder_kind: ReminderKind;
 };
 
-const reminderRules: Array<{ kind: ReminderKind; minutesBefore: number }> = [
-  { kind: "24h", minutesBefore: 24 * 60 },
-  { kind: "90m", minutesBefore: 90 },
-];
-
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json" },
   });
-}
-
-function dateToDayNumber(date: string) {
-  const [year, month, day] = date.split("-").map(Number);
-  return Math.floor(Date.UTC(year, month - 1, day) / 86_400_000);
-}
-
-function dayNumberToDate(dayNumber: number) {
-  return new Date(dayNumber * 86_400_000).toISOString().slice(0, 10);
-}
-
-function pad2(value: number) {
-  return String(value).padStart(2, "0");
-}
-
-function minutesToTime(value: number) {
-  return `${pad2(Math.floor(value / 60))}:${pad2(value % 60)}`;
-}
-
-function timeToMinutes(value: string | null) {
-  if (!value) {
-    return null;
-  }
-
-  const [hour, minute] = value.split(":").map(Number);
-  if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
-    return null;
-  }
-
-  return hour * 60 + minute;
 }
 
 function localNowInSaoPaulo() {
@@ -117,66 +76,6 @@ function localNowInSaoPaulo() {
   };
 }
 
-function localInstant(date: string, startTime: string | null) {
-  const minutes = timeToMinutes(startTime);
-  if (minutes === null) {
-    return null;
-  }
-
-  return dateToDayNumber(date) * 1440 + minutes;
-}
-
-function timeLabel(value: string | null) {
-  return value ? value.slice(0, 5) : "Horario nao informado";
-}
-
-function locationLabel(value: string | null) {
-  return value || "Unidade nao informada";
-}
-
-function notificationPayload(candidate: ReminderCandidate) {
-  const time = timeLabel(candidate.shift.start_time);
-  const location = locationLabel(candidate.shift.location_name);
-
-  if (candidate.kind === "24h") {
-    return {
-      title: `Plantao amanha as ${time}`,
-      body: location,
-      tag: `shift-${candidate.shift.id}-24h`,
-      url: webAppUrl,
-    };
-  }
-
-  return {
-    title: "Plantao em 90 minutos",
-    body: `${time} - ${location}`,
-    tag: `shift-${candidate.shift.id}-90m`,
-    url: webAppUrl,
-  };
-}
-
-function candidatesFor(shifts: Shift[], nowInstant: number) {
-  const candidates: ReminderCandidate[] = [];
-
-  for (const shift of shifts) {
-    const shiftInstant = localInstant(shift.date, shift.start_time);
-    if (shiftInstant === null) {
-      continue;
-    }
-
-    for (const rule of reminderRules) {
-      const windowStart = nowInstant + rule.minutesBefore;
-      const windowEnd = windowStart + reminderWindowMinutes;
-
-      if (shiftInstant >= windowStart && shiftInstant < windowEnd) {
-        candidates.push({ kind: rule.kind, shift });
-      }
-    }
-  }
-
-  return candidates;
-}
-
 Deno.serve(async (request) => {
   if (request.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
@@ -188,12 +87,7 @@ Deno.serve(async (request) => {
 
   const localNow = localNowInSaoPaulo();
   const nowInstant = dateToDayNumber(localNow.date) * 1440 + localNow.minuteOfDay;
-  const minTarget = Math.min(...reminderRules.map((rule) => nowInstant + rule.minutesBefore));
-  const maxTarget = Math.max(
-    ...reminderRules.map((rule) => nowInstant + rule.minutesBefore + reminderWindowMinutes),
-  );
-  const fromDate = dayNumberToDate(Math.floor(minTarget / 1440));
-  const toDate = dayNumberToDate(Math.floor(maxTarget / 1440));
+  const { fromDate, toDate } = reminderDateRange(nowInstant, reminderWindowMinutes);
 
   const { data: shifts, error: shiftsError } = await admin
     .from("shifts")
@@ -209,7 +103,7 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: shiftsError.message }, 500);
   }
 
-  const candidates = candidatesFor((shifts ?? []) as Shift[], nowInstant);
+  const candidates = candidatesFor((shifts ?? []) as Shift[], nowInstant, reminderWindowMinutes);
 
   if (!candidates.length) {
     return jsonResponse({
@@ -283,7 +177,7 @@ Deno.serve(async (request) => {
   for (const candidate of pendingCandidates) {
     const userSubscriptions = subscriptionsByUser.get(candidate.shift.user_id) ?? [];
     let sentForReminder = 0;
-    const payload = notificationPayload(candidate);
+    const payload = notificationPayload(candidate, webAppUrl);
 
     for (const subscription of userSubscriptions) {
       try {

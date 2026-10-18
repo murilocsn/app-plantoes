@@ -1,8 +1,9 @@
-import { dateRangeQuerySchema, type Expense, type Receivable, type Shift } from "@financplantoes/shared";
+import { dateRangeQuerySchema, expenseCardCosts, type Expense, type Receivable, type Shift } from "@financplantoes/shared";
 import { Router } from "express";
 import { z } from "zod";
 import { asyncHandler } from "../lib/async-handler";
 import { optionalData } from "../lib/db";
+import { expenseSharingSnapshot } from "../lib/expense-sharing";
 
 export const reportsRouter = Router();
 
@@ -29,7 +30,7 @@ reportsRouter.get(
       .eq("user_id", userId).order("expected_date", { ascending: true });
     if (query.location_id) receivablesQuery = receivablesQuery.eq("location_id", query.location_id);
     const inPeriod = (date: string | null | undefined) => Boolean(date && (!query.from || date >= query.from) && (!query.to || date <= query.to));
-    const [shifts, receivables, expenses, sharedExpenses] = await Promise.all([
+    const [shifts, receivables, expenses, sharedExpenses, sharing] = await Promise.all([
       optionalData<Shift[]>(
         shiftsQuery.order("date", { ascending: true }),
         [],
@@ -50,6 +51,7 @@ reportsRouter.get(
         request.auth.supabase.from("expenses").select("expense_date,description,amount")
           .eq("paid_by", userId).order("expense_date", { ascending: true }), [],
       ),
+      query.location_id ? Promise.resolve({ cards: [] }) : expenseSharingSnapshot(request.auth.supabase),
     ]);
 
     const rows = [
@@ -68,7 +70,7 @@ reportsRouter.get(
         item.amount,
         item.status,
       ]),
-      ...[...expenses, ...sharedExpenses].filter(item => inPeriod(item.expense_date)).map((item) => [
+      ...[...expenses, ...sharedExpenses, ...expenseCardCosts(sharing.cards)].filter(item => inPeriod(item.expense_date)).map((item) => [
         "Despesa",
         item.expense_date,
         item.description,

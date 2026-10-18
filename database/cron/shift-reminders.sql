@@ -1,8 +1,9 @@
 -- FinancPlantoes - Cron tecnico dos lembretes de plantao.
 --
 -- Objetivo:
---   Executar a Edge Function send-shift-reminders a cada 5 minutos para
---   capturar as janelas de lembrete de 24h e 90min antes do plantao.
+--   Executar a Edge Function send-shift-reminders a cada minuto para
+--   capturar os lembretes de 24h, 90min e inicio do plantao.
+--   Aplicar somente apos a migration de start e a publicacao da funcao.
 --
 -- Pre-requisitos:
 --   1. Edge Function publicada:
@@ -32,10 +33,10 @@ where exists (
   select 1 from cron.job where jobname = 'financplantoes-lembrete-diario'
 );
 
--- Runs frequently enough to catch the 24h and 90min reminder windows.
+-- One-minute polling keeps the start reminder close to its scheduled time.
 select cron.schedule(
   'financplantoes-lembrete-diario',
-  '*/5 * * * *',
+  '* * * * *',
   $$
   select net.http_post(
     url := 'https://onqbnogccjfgihmmxrid.supabase.co/functions/v1/send-shift-reminders',

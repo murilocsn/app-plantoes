@@ -169,6 +169,7 @@ export const markReceivablePaidSchema = z.object({
 
 export const expenseSchema = z.object({
   id: z.string(),
+  sharing_card_id: z.string().optional(),
   description: z.string(),
   amount: z.coerce.number(),
   expense_date: z.string(),

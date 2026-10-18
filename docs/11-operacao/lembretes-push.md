@@ -1,6 +1,6 @@
 # Lembretes push de plantao
 
-Status: PARCIALMENTE IMPLEMENTADA
+Status: aviso de inicio preparado localmente; ativacao em producao pendente.
 
 Este documento registra o fluxo operacional dos alertas de plantao no celular.
 
@@ -10,10 +10,71 @@ Este documento registra o fluxo operacional dos alertas de plantao no celular.
 2. O navegador registra o Service Worker `sw.js`.
 3. O navegador cria uma assinatura Web Push usando `VITE_VAPID_PUBLIC_KEY`.
 4. A assinatura e salva em `push_subscriptions`.
-5. O cron do Supabase executa a Edge Function `send-shift-reminders` a cada 5 minutos.
+5. O cron proposto executa a Edge Function `send-shift-reminders` a cada minuto.
 6. A Edge Function busca plantoes `scheduled` com `start_time` preenchido.
-7. Se o plantao estiver na janela de 24h ou 90min, a funcao envia o push.
+7. Se o plantao estiver na janela de 24h, 90min ou inicio, a funcao envia o push.
 8. Entregas bem-sucedidas sao registradas em `push_reminder_deliveries`.
+
+O aviso de inicio nunca e antecipado. Ele e elegivel a partir do horario do
+plantao e por menos de `REMINDER_WINDOW_MINUTES` minutos depois, permitindo
+recuperar uma execucao atrasada. A busca inclui o dia anterior ao passar da
+meia-noite. Os avisos de 24h e 90min mantem as janelas e mensagens anteriores.
+
+O cron nao e um alarme de precisao: com execucao por minuto, a tentativa de envio
+normalmente acontece em ate um minuto apos o inicio. Rede, dispositivo e sistema
+operacional podem atrasar a entrega; nao existe garantia de exibicao instantanea.
+
+## Diagnostico e ativacao do aviso de inicio
+
+Em 18/10/2026, a leitura de producao confirmou: a Edge Function publicada nao tem
+regra de inicio; a constraint `push_reminder_deliveries_reminder_kind_check`
+aceita apenas `24h`/`90m`; o cron esta ativo com `*/5 * * * *`.
+Nenhuma dessas configuracoes de producao foi modificada por esta preparacao.
+
+Ativar somente apos autorizacao, nesta ordem:
+
+1. Aplicar `database/migrations/20261018213821_shift_start_reminder.sql`.
+   Inclui `start` na validacao existente, sem apagar entregas ou mudar RLS/permissoes.
+2. Publicar `send-shift-reminders`, incluindo `index.ts` e `reminders.ts`.
+3. Aplicar `database/cron/shift-reminders.sql`, passando de cinco para um minuto.
+   Isso aumenta de 12 para 60 invocacoes por hora; confirmar a capacidade do plano.
+4. Publicar o frontend com a descricao atualizada dos tres avisos.
+5. Validar o aviso no aparelho com um plantao de teste autorizado, conferindo a
+   entrega `start` e a ausencia de repeticao nas execucoes seguintes.
+
+Nao publicar a funcao antes da migration: a constraint antiga impediria o
+registro do novo aviso apos o envio, causando falhas e possiveis repeticoes.
+
+Testes locais: `npm.cmd run test -w @financplantoes/api` cobre a logica real da
+Edge Function em `apps/api/src/lib/shift-reminders.test.ts`, sem enviar push.
+Para o SQL, no cluster temporario descrito em `database/tests/README.md`:
+
+```powershell
+psql -h 127.0.0.1 -p 55426 -U expense_test_admin -d postgres -v ON_ERROR_STOP=1 -f database/tests/shift_start_reminder.sql
+```
+
+O teste SQL verifica preservacao das entregas de 24h/90m, novo tipo `start`,
+unicidade, rejeicao de tipos invalidos e manutencao de RLS/permissoes; termina
+com rollback. Nunca executar o fixture ou esse teste contra producao.
+
+Validacao local em 18/10/2026: 134 testes da API passaram, incluindo 24 casos
+novos de lembretes. O teste SQL passou no PostgreSQL 18 temporario. O handler
+real foi executado em um ambiente isolado com transporte push e banco de teste
+substituidos: os tres avisos foram selecionados, a segunda execucao nao repetiu
+entregas, pedidos sem autenticacao foram recusados e a recuperacao na virada da
+meia-noite passou. Nenhuma notificacao real foi enviada. A verificacao de
+entrega em aparelho real continua pendente da ativacao autorizada.
+
+Arquivos da correcao:
+
+- `supabase/functions/send-shift-reminders/index.ts`
+- `supabase/functions/send-shift-reminders/reminders.ts`
+- `apps/api/src/lib/shift-reminders.test.ts`
+- `database/migrations/20261018213821_shift_start_reminder.sql`
+- `database/tests/shift_start_reminder.sql`
+- `database/cron/shift-reminders.sql`
+- `apps/web/src/components/PushReminderButton.tsx`
+- `docs/11-operacao/lembretes-push.md`
 
 ## Secrets necessarios
 
@@ -53,7 +114,7 @@ database/cron/shift-reminders.sql
 O cron esperado e:
 
 ```text
-*/5 * * * *
+* * * * *
 ```
 
 O comando do job precisa conter:
