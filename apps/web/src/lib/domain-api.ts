@@ -41,6 +41,12 @@ export const domainApi = {
     api("/expenses/personal", { method: "POST", body: payload }),
   createSharedExpense: (payload: unknown) =>
     api("/expenses/shared", { method: "POST", body: payload }),
+  createExpenseCard: (payload: unknown) => api("/expenses/cards", { method: "POST", body: payload }),
+  inviteExpenseParticipant: ({ id, ...body }: { id: string; email: string; amount: number }) =>
+    api(`/expenses/cards/${id}/invitations`, { method: "POST", body }),
+  respondExpenseInvitation: ({ id, action }: { id: string; action: "accepted" | "declined" }) =>
+    api(`/expenses/invitations/${id}/respond`, { method: "POST", body: { action } }),
+  cancelExpenseInvitation: (id: string) => api(`/expenses/invitations/${id}/cancel`, { method: "POST" }),
   createSpace: (payload: unknown) => api<Space>("/spaces", { method: "POST", body: payload }),
   updateSpace: (id: string, payload: unknown) =>
     api<Space>(`/spaces/${id}`, { method: "PATCH", body: payload }),

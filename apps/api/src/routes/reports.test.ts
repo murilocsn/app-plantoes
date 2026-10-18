@@ -17,6 +17,7 @@ let rows: Record<string, Row[]>;
 let errorTable: string | undefined;
 let server: Server | undefined;
 const filters = new Map<string, Array<[string, string, string]>>();
+const sharingRpc = vi.fn();
 const from = vi.fn((table: string) => {
   const applied: Array<[string, string, string]> = [];
   filters.set(table, applied);
@@ -90,7 +91,8 @@ beforeEach(() => {
   filters.clear();
   from.mockClear();
   getUser.mockReset().mockResolvedValue({ data: { user: { id: "user-a" } }, error: null });
-  createSupabaseForToken.mockReset().mockReturnValue({ from });
+  sharingRpc.mockReset().mockResolvedValue({ data: { cards: [], invitations: [] }, error: null });
+  createSupabaseForToken.mockReset().mockReturnValue({ from, rpc: sharingRpc });
   vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Unexpected external request"));
 });
 
@@ -218,5 +220,16 @@ describe("monthly report export", () => {
     const result = await exportCsv();
     expect(result.status).toBe(400);
     expect(JSON.parse(result.body).error.code).toBe("42501");
+  });
+  it("exports the individual shared cost and excludes a different month", async () => {
+    sharingRpc.mockResolvedValue({ data: { cards: [
+      { id: "card", description: "Individual shared cost", total_amount: 300.01, amount: 100.01, expense_date: "2026-09-15" },
+      { id: "other", description: "Different month card", total_amount: 900, amount: 450, expense_date: "2026-10-15" },
+    ], invitations: [] }, error: null });
+    const result = await exportCsv();
+    expect(result.status).toBe(200);
+    expect(result.body).toContain('"Despesa";"2026-09-15";"Individual shared cost";"-100.01"');
+    expect(result.body).not.toContain("Different month card");
+    expect(result.body).not.toContain("300.01");
   });
 });

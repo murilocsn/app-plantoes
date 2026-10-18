@@ -202,8 +202,8 @@ export function FinancePage() {
       <section className="page-section ledger-page">
         <header className="section-head">
           <div>
-            <p className="eyebrow">Recebimentos</p>
-            <h2>Recebimentos e pendências</h2>
+            <p className="eyebrow">Faturamento</p>
+            <h2>Faturamento e pendências</h2>
           </div>
           <Button onClick={() => openModal({ type: "create" })} variant="primary">
             <Plus size={18} />
