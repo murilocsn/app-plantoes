@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { ExpenseSharingSnapshot } from "./expense-sharing";
 import type {
   expenseSchema,
   aiChatInputSchema,
@@ -67,6 +68,7 @@ export type AppBootstrap = {
   sharedExpenses: Expense[];
   spaces: Space[];
   plans: Plan[];
+  expenseSharing?: ExpenseSharingSnapshot;
 };
 
 export type DashboardOverview = {

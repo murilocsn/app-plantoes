@@ -389,19 +389,23 @@ test.describe("Login E2E mockado", () => {
     await expect(firstGroup.locator("strong")).toBeVisible({ timeout: 30000 });
   });
 
-  test("atalhos inferiores navegam entre calendario, plantoes e recebimento no celular", async ({ page, isMobile }) => {
+  test("atalhos inferiores navegam entre calendario, plantoes e faturamento no celular", async ({ page, isMobile }) => {
     await login(page, mockedUser);
     await expect(page.locator(".calendar-grid")).toBeVisible({ timeout: 30000 });
     const navigation = page.getByRole("navigation", { name: "Navegação inferior" });
 
     if (!isMobile) {
       await expect(navigation).toBeHidden();
-      await expect(page.getByRole("navigation", { name: "Navegacao principal", exact: true })).toBeVisible();
+      const sidebar = page.getByRole("navigation", { name: "Navegacao principal", exact: true });
+      await expect(sidebar).toBeVisible();
+      await sidebar.getByRole("link", { name: "Faturamento", exact: true }).click();
+      await expect(page).toHaveURL(/#\/finance$/);
+      await expect(page.getByRole("heading", { name: "Faturamento e pendências", exact: true })).toBeVisible();
       return;
     }
 
     await expect(navigation).toBeVisible();
-    await expect(navigation.getByRole("link")).toHaveText(["Calendário", "Plantões", "Recebimento"]);
+    await expect(navigation.getByRole("link")).toHaveText(["Calendário", "Plantões", "Faturamento"]);
     await expect(navigation.getByRole("link", { name: "Calendário", exact: true })).toHaveAttribute("aria-current", "page");
     const newShift = navigation.getByRole("button", { name: "Novo plantão", exact: true });
     const buttonBounds = await newShift.boundingBox();
@@ -419,10 +423,10 @@ test.describe("Login E2E mockado", () => {
     await expect(page.getByRole("dialog").getByRole("heading", { name: "Novo plantao", exact: true })).toBeVisible();
     await page.getByRole("dialog").getByRole("button", { name: "Cancelar", exact: true }).click();
 
-    await navigation.getByRole("link", { name: "Recebimento", exact: true }).click();
+    await navigation.getByRole("link", { name: "Faturamento", exact: true }).click();
     await expect(page).toHaveURL(/#\/finance$/);
-    await expect(page.getByRole("heading", { name: "Recebimentos e pendências", exact: true })).toBeVisible();
-    await expect(navigation.getByRole("link", { name: "Recebimento", exact: true })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("heading", { name: "Faturamento e pendências", exact: true })).toBeVisible();
+    await expect(navigation.getByRole("link", { name: "Faturamento", exact: true })).toHaveAttribute("aria-current", "page");
     await newShift.click();
     await expect(page.getByRole("dialog").getByRole("heading", { name: "Novo plantao", exact: true })).toBeVisible();
     await page.getByRole("dialog").getByRole("button", { name: "Cancelar", exact: true }).click();
@@ -432,7 +436,11 @@ test.describe("Login E2E mockado", () => {
     await expect(page.locator(".calendar-grid")).toBeVisible();
     await navigation.getByRole("button", { name: "Menu", exact: true }).click();
     await expect(page.getByRole("complementary", { name: "Menu mobile" })).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Navegacao principal mobile" })).toBeVisible();
+    const mobileMenu = page.getByRole("navigation", { name: "Navegacao principal mobile" });
+    await expect(mobileMenu).toBeVisible();
+    await mobileMenu.getByRole("link", { name: "Faturamento", exact: true }).click();
+    await expect(page.getByRole("complementary", { name: "Menu mobile" })).toBeHidden();
+    await expect(page.getByRole("heading", { name: "Faturamento e pendências", exact: true })).toBeVisible();
   });
 
   test("barra inferior fica acessivel ao rolar sem cobrir conteudo ou modais em tela estreita", async ({ page, isMobile }, testInfo) => {
@@ -966,13 +974,153 @@ test.describe("Login E2E mockado", () => {
     await expect(row.getByRole("button", { name: "Editar plantao" })).toBeVisible();
   });
 
+  test.describe("despesas compartilhadas por card", () => {
+    test.use({ timezoneId: "America/Sao_Paulo" });
+    const cardId = "40000000-0000-4000-8000-000000000001";
+    const inviteId = "40000000-0000-4000-8000-000000000002";
+    const makeData = () => ({ ...structuredClone(bootstrap), personalExpenses: [], sharedExpenses: [], expenseSharing: { available: true, cards: [], invitations: [] } } as AppBootstrap);
+    const makeCard = () => ({
+      id: cardId, owner_id: mockedAuthUser.id, owner_name: "Usuario de teste", description: "Aluguel da equipe e materiais de atendimento",
+      expense_date: "2026-09-09", created_at: "2026-09-09", total_amount: 300.01, amount: 300.01,
+      is_owner: true, participant_count: 1, invitations: [],
+    });
+    const enterExpenses = async (page: Page) => {
+      await login(page, mockedUser);
+      await expect(page).toHaveURL(/\/#\/$/);
+      await page.goto("/#/expenses");
+      await expect(page.getByRole("heading", { name: "Despesas pessoais", exact: true })).toBeVisible();
+    };
+    test("criador salva card, confirma email e define valor individual antes de convidar", async ({ page, isMobile }, testInfo) => {
+      if (isMobile) await page.setViewportSize({ width: 320, height: 720 });
+      const data = makeData();
+      const card = makeCard();
+      let sent = 0;
+      await page.route("**/api/dashboard/bootstrap", route => route.fulfill({ json: { data } }));
+      await page.route("**/api/expenses/cards", async route => {
+        expect(route.request().postDataJSON()).toMatchObject({ amount: 300.01, expense_date: "2026-09-09" });
+        data.expenseSharing!.cards.push(card);
+        data.sharedExpenses.push({ id: cardId, sharing_card_id: cardId, description: card.description, amount: 300.01, expense_date: card.expense_date });
+        await route.fulfill({ status: 201, json: { data: { id: cardId } } });
+      });
+      await page.route(`**/api/expenses/cards/${cardId}/invitations`, async route => {
+        sent++;
+        expect(route.request().postDataJSON()).toEqual({ email: "guest@example.test", amount: 100.01 });
+        data.expenseSharing!.cards[0]!.invitations.push({ id: inviteId, card_id: cardId, invited_email: "guest@example.test", amount: 100.01, status: "pending", created_at: "2026-09-09" });
+        await route.fulfill({ status: 201, json: { data: { id: inviteId } } });
+      });
+      await page.route(`**/api/expenses/invitations/${inviteId}/cancel`, async route => {
+        data.expenseSharing!.cards[0]!.invitations[0]!.status = "cancelled";
+        await route.fulfill({ json: { data: { id: inviteId } } });
+      });
+      await enterExpenses(page);
+      await page.getByRole("button", { name: "Compartilhar", exact: true }).click();
+      const modal = page.getByRole("dialog");
+      await modal.getByLabel("Descricao", { exact: true }).fill(card.description);
+      await modal.getByLabel("Valor", { exact: true }).fill("300.01");
+      await expect(modal.getByLabel("Data", { exact: true })).toHaveValue("2026-09-09");
+      await modal.getByRole("button", { name: "Salvar", exact: true }).click();
+      const expense = page.getByRole("article", { name: `Despesa compartilhada ${card.description}`, exact: true });
+      await expect(expense).toBeVisible();
+      await expense.getByRole("button", { name: "Convidar pessoa", exact: true }).click();
+      await expect(modal.getByLabel("E-mail do convidado", { exact: true })).toBeFocused();
+      await modal.getByRole("button", { name: "Enviar convite", exact: true }).focus();
+      await page.keyboard.press("Tab");
+      await expect(modal.getByRole("button", { name: "Fechar", exact: true })).toBeFocused();
+      await page.keyboard.press("Shift+Tab");
+      await expect(modal.getByRole("button", { name: "Enviar convite", exact: true })).toBeFocused();
+      await page.keyboard.press("Escape");
+      await expect(modal).toBeHidden();
+      await expect(expense.getByRole("button", { name: "Convidar pessoa", exact: true })).toBeFocused();
+      await expense.getByRole("button", { name: "Convidar pessoa", exact: true }).click();
+      await modal.getByLabel("E-mail do convidado", { exact: true }).fill("guest@example.test");
+      await modal.getByLabel("Confirme o e-mail", { exact: true }).fill("wrong@example.test");
+      await modal.getByLabel("Valor dessa pessoa", { exact: true }).fill("100.01");
+      await modal.getByRole("button", { name: "Enviar convite", exact: true }).click();
+      await expect(modal.getByRole("alert")).toContainText("Os e-mails precisam ser iguais");
+      expect(sent).toBe(0);
+      await modal.getByLabel("Confirme o e-mail", { exact: true }).fill("GUEST@example.test");
+      await page.screenshot({ path: testInfo.outputPath("convite-popup.png"), fullPage: true, animations: "disabled" });
+      await modal.getByRole("button", { name: "Enviar convite", exact: true }).click();
+      await expect(modal).toBeHidden();
+      await expense.locator("summary").click();
+      await expect(expense).toContainText("Aguardando aceite");
+      await expect(expense.locator(".expense-card-share")).toContainText("R$ 300,01");
+      expect(sent).toBe(1);
+      await page.screenshot({ path: testInfo.outputPath("despesa-card.png"), fullPage: true, animations: "disabled" });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await expense.getByRole("button", { name: "Cancelar convite para guest@example.test", exact: true }).click();
+      await expect(expense).toContainText("Cancelado");
+      await page.getByRole("button", { name: "Mês anterior das despesas", exact: true }).click();
+      await expect(expense).toHaveCount(0);
+    });
+
+    test("destinatario aceita ou recusa no app e somente sua parte entra nos gastos", async ({ page, isMobile }, testInfo) => {
+      if (isMobile) await page.setViewportSize({ width: 320, height: 720 });
+      const data = makeData();
+      data.expenseSharing!.invitations = [
+        { id: inviteId, card_id: cardId, invited_email: mockedUser.email, amount: 100.01, status: "pending", created_at: "2026-09-09", description: "Materiais da equipe", expense_date: "2026-09-09", total_amount: 300.01, owner_name: "Colega de teste" },
+        { id: "40000000-0000-4000-8000-000000000003", card_id: "other", invited_email: mockedUser.email, amount: 50, status: "pending", created_at: "2026-09-09", description: "Despesa recusada", expense_date: "2026-09-09", total_amount: 100, owner_name: "Colega de teste" },
+      ];
+      let failOnce = true;
+      await page.route("**/api/dashboard/bootstrap", route => route.fulfill({ json: { data } }));
+      await page.route("**/api/expenses/invitations/*/respond", async route => {
+        const pathId = new URL(route.request().url()).pathname.split("/").at(-2)!;
+        const { action } = route.request().postDataJSON();
+        if (failOnce) { failOnce = false; return route.fulfill({ status: 503, json: { error: { message: "Falha de teste ao registrar resposta" } } }); }
+        if (action === "accepted") {
+          data.expenseSharing!.cards.push({ ...makeCard(), owner_id: "other-user", owner_name: "Colega de teste", description: "Materiais da equipe", is_owner: false, amount: 100.01, participant_count: 2 });
+          data.sharedExpenses.push({ id: cardId, sharing_card_id: cardId, description: "Materiais da equipe", expense_date: "2026-09-09", amount: 100.01 });
+        }
+        data.expenseSharing!.invitations = data.expenseSharing!.invitations.filter(item => item.id !== pathId);
+        await route.fulfill({ json: { data: { id: pathId } } });
+      });
+      await enterExpenses(page);
+      await expect(page.locator(".stat-card").filter({ hasText: "Compartilhado" })).toContainText("R$ 0,00");
+      await page.getByRole("button", { name: "Convites (2)", exact: true }).click();
+      const modal = page.getByRole("dialog");
+      await modal.getByRole("button", { name: "Aceitar convite para Materiais da equipe", exact: true }).click();
+      await expect(modal.getByRole("alert")).toContainText("Falha de teste");
+      await modal.getByRole("button", { name: "Recusar convite para Despesa recusada", exact: true }).click();
+      await expect(modal.getByRole("article", { name: "Convite para Despesa recusada", exact: true })).toHaveCount(0);
+      await page.screenshot({ path: testInfo.outputPath("convites-recebidos.png"), fullPage: true, animations: "disabled" });
+      await modal.getByRole("button", { name: "Aceitar convite para Materiais da equipe", exact: true }).click();
+      await expect(modal.getByText("Nenhum convite pendente", { exact: true })).toBeVisible();
+      await modal.getByRole("button", { name: "Fechar", exact: true }).click();
+      const expense = page.getByRole("article", { name: "Despesa compartilhada Materiais da equipe", exact: true });
+      await expect(expense).toContainText("R$ 300,01");
+      await expect(expense.locator(".expense-card-share")).toContainText("R$ 100,01");
+      await expect(expense.getByRole("button", { name: "Convidar pessoa", exact: true })).toHaveCount(0);
+      await expect(page.locator(".stat-card").filter({ hasText: "Compartilhado" })).toContainText("R$ 100,01");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    });
+
+    test("indisponibilidade do compartilhamento preserva despesas pessoais e registros antigos", async ({ page }) => {
+      const data = makeData(); data.expenseSharing!.available = false;
+      data.sharedExpenses.push({ id: "legacy", description: "Despesa anterior", amount: 30, expense_date: "2026-09-01" });
+      await page.route("**/api/dashboard/bootstrap", route => route.fulfill({ json: { data } }));
+      await page.route("**/api/expenses/personal", async route => {
+        data.personalExpenses.push({ id: "personal", ...route.request().postDataJSON() });
+        await route.fulfill({ status: 201, json: { data: data.personalExpenses[0] } });
+      });
+      await enterExpenses(page);
+      await expect(page.getByRole("button", { name: "Compartilhar", exact: true })).toBeDisabled();
+      await expect(page.getByText("Despesa anterior", { exact: true })).toBeVisible();
+      await page.getByRole("button", { name: "Nova", exact: true }).click();
+      const modal = page.getByRole("dialog");
+      await modal.getByLabel("Descricao", { exact: true }).fill("Transporte pessoal");
+      await modal.getByLabel("Valor", { exact: true }).fill("25");
+      await modal.getByRole("button", { name: "Salvar", exact: true }).click();
+      await expect(page.getByText("Transporte pessoal", { exact: true })).toBeVisible();
+      await expect(page.locator(".stat-card").filter({ hasText: "Pessoal" })).toContainText("R$ 25,00");
+    });
+  });
+
   for (const screen of [
     { path: "", heading: "Setembro 2026", action: "Plantao", dialog: "Novo plantao" },
     { path: "shifts", heading: "Plantoes", action: "Novo plantao", dialog: "Novo plantao" },
-    { path: "finance", heading: "Recebimentos e pendências", action: "Novo recebivel", dialog: "Novo recebivel" },
+    { path: "finance", heading: "Faturamento e pendências", action: "Novo recebivel", dialog: "Novo recebivel" },
     { path: "locations", heading: "Locais de trabalho", action: "Novo local", dialog: "Novo local" },
     { path: "expenses", heading: "Despesas pessoais", action: "Nova", dialog: "Nova despesa pessoal" },
-    { path: "spaces", heading: "Espacos", action: "Novo espaco", dialog: "Novo espaco" },
     { path: "reports", heading: "Comparativo por local", action: null, dialog: null },
   ]) {
     test(`layout compacto: ${screen.path || "calendario"} preserva dados e acoes`, async ({ page, isMobile }, testInfo) => {
@@ -1056,7 +1204,7 @@ test.describe("Login E2E mockado", () => {
     await page.screenshot({ path: testInfo.outputPath("finance-error-dark.png"), fullPage: true });
   });
 
-  test("abas Guidelines e Assistente IA ficam inativas nos menus", async ({ page, isMobile }) => {
+  test("abas Espacos, Guidelines e Assistente IA ficam inativas nos menus", async ({ page, isMobile }) => {
     await login(page, mockedUser);
     await expect(page.locator(".calendar-grid")).toBeVisible({ timeout: 30000 });
 
@@ -1066,8 +1214,14 @@ test.describe("Login E2E mockado", () => {
 
     await expect(page.getByRole("link", { name: "Guidelines", exact: true })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Assistente IA", exact: true })).toHaveCount(0);
+    await expect(page.locator('a[href="#/spaces"]')).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Painel", exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Plantoes", exact: true })).toBeVisible();
+
+    await page.goto("/#/spaces");
+    await expect(page).toHaveURL(/\/#\/expenses$/);
+    await expect(page.getByRole("heading", { name: "Despesas pessoais", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Novo espaco", exact: true })).toHaveCount(0);
   });
 
   for (const path of ["ai", "guidelines"]) {

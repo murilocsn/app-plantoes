@@ -10,7 +10,6 @@ import {
   Plus,
   Receipt,
   Sun,
-  UsersRound,
   UserRound,
   X,
 } from "lucide-react";
@@ -26,9 +25,8 @@ const navItems = [
   { to: "/", label: "Painel", mobileLabel: "Calendário", icon: CalendarDays },
   { to: "/shifts", label: "Plantoes", mobileLabel: "Plantões", icon: ClipboardList },
   { to: "/locations", label: "Locais", icon: MapPin },
-  { to: "/finance", label: "Financeiro", mobileLabel: "Recebimento", icon: Banknote },
+  { to: "/finance", label: "Faturamento", mobileLabel: "Faturamento", icon: Banknote },
   { to: "/expenses", label: "Despesas", icon: Receipt },
-  { to: "/spaces", label: "Espacos", icon: UsersRound },
   { to: "/reports", label: "Relatorios", icon: Download },
 ];
 

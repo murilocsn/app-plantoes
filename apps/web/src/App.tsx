@@ -19,7 +19,6 @@ const LegalPage = lazy(() => import("./pages/LegalPage").then((m) => ({ default:
 const ProfilePage = lazy(() => import("./pages/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const ReportsPage = lazy(() => import("./pages/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const ShiftsPage = lazy(() => import("./pages/ShiftsPage").then((m) => ({ default: m.ShiftsPage })));
-const SpacesPage = lazy(() => import("./pages/SpacesPage").then((m) => ({ default: m.SpacesPage })));
 
 function LoadingScreen() {
   return (
@@ -77,7 +76,7 @@ export function App() {
             <Route element={<ExpensesPage />} path="expenses" />
             <Route element={<Navigate replace to="/" />} path="ai" />
             <Route element={<Navigate replace to="/" />} path="guidelines" />
-            <Route element={<SpacesPage />} path="spaces" />
+            <Route element={<Navigate replace to="/expenses" />} path="spaces" />
             <Route element={<ReportsPage />} path="reports" />
           </Route>
           <Route element={<Navigate replace to="/" />} path="*" />
