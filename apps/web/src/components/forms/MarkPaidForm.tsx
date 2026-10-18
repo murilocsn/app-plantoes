@@ -3,6 +3,7 @@ import { markReceivablePaidSchema, PAYMENT_METHODS } from "@financplantoes/share
 import { Check } from "lucide-react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
+import { dateKey } from "../../lib/calendar";
 import { Button } from "../Button";
 import { Field } from "../Field";
 
@@ -22,7 +23,7 @@ export function MarkPaidForm({ submitting, onCancel, onSubmit }: MarkPaidFormPro
   } = useForm<MarkPaidValues>({
     resolver: zodResolver(markReceivablePaidSchema),
     defaultValues: {
-      received_date: new Date().toISOString().slice(0, 10),
+      received_date: dateKey(new Date()),
       // Valor na forma aceita pela constraint do banco (minúsculo)
       payment_method: "pix",
       notes: "",

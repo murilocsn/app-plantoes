@@ -14,7 +14,8 @@ import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { useAppMutation, useBootstrap } from "../hooks/useBootstrap";
 import { domainApi } from "../lib/domain-api";
 import { dateKey } from "../lib/calendar";
-import { dateGroupLabel, money } from "../lib/formatters";
+import { dateGroupLabel, dateLabel, money } from "../lib/formatters";
+import { groupBillingReceivables, sumMoney } from "../lib/monthly-finance";
 import {
   adjacentMonthRange,
   monthDateRange,
@@ -62,14 +63,14 @@ type ReceivableModal =
   | { type: "create" }
   | { type: "edit"; receivable: Receivable }
   | { type: "paid"; receivable: Receivable }
-  | { type: "bulk-paid"; receivables: Receivable[] }
+  | { type: "bulk-paid"; receivables: Receivable[]; invoice?: { name: string; reference: string; expectedDate: string } }
   | null;
 
 export function FinancePage() {
   const bootstrap = useBootstrap();
   const [modal, setModal] = useState<ReceivableModal>(null);
   const [formError, setFormError] = useState("");
-  const [filters, setFilters] = useState<ReceivableFilters>(emptyReceivableFilters);
+  const [filters, setFilters] = useState<ReceivableFilters>(() => ({ ...emptyReceivableFilters, ...monthDateRange(new Date()) }));
 
   const showError = (error: Error) => setFormError(error.message);
   const onSuccess = () => {
@@ -94,8 +95,8 @@ export function FinancePage() {
     { onSuccess, onError: showError },
   );
   const markFilteredPaid = useAppMutation(
-    (input: { ids: string[]; payload: unknown }) =>
-      Promise.all(input.ids.map((id) => domainApi.markReceivablePaid(id, input.payload))),
+    (input: { ids: string[]; payload: Record<string, unknown> }) =>
+      domainApi.markReceivablesPaid({ ...input.payload, ids: input.ids }),
     { onSuccess, onError: showError },
   );
   const deleteReceivable = useAppMutation((id: string) => domainApi.deleteReceivable(id), {
@@ -188,6 +189,7 @@ export function FinancePage() {
   const dateGroups = [...byDate.entries()].sort(([left], [right]) =>
     left && right ? left.localeCompare(right) : left ? -1 : right ? 1 : 0,
   );
+  const invoiceGroups = new Map(groupBillingReceivables(receivables, bootstrap.data.locations, bootstrap.data.shifts).map(group => [group.key, group]));
 
   return (
     <>
@@ -219,6 +221,7 @@ export function FinancePage() {
           received={received}
           to={filters.to}
           total={received + pending + overdueTotal}
+          notice="Agrupado pelo mês previsto para pagamento. A data de realização aparece em cada plantão."
         />
 
         {overdue.length > 0 && (
@@ -251,7 +254,7 @@ export function FinancePage() {
               <Button
                 className="finance-filter-clear"
                 disabled={!hasActiveFilters}
-                onClick={() => setFilters(emptyReceivableFilters)}
+                onClick={() => setFilters({ ...emptyReceivableFilters, ...monthDateRange(new Date()) })}
                 variant="ghost"
               >
                 <X size={16} />
@@ -352,55 +355,87 @@ export function FinancePage() {
             {dateGroups.map(([date, items]) => (
               <section className="shift-date-group" key={date}>
                 <header className="shift-date-head">
-                  <strong>{date ? dateGroupLabel(date) : "Sem data prevista"}</strong>
+                  <strong>{date ? `Pagamento previsto em ${dateGroupLabel(date)}` : "Sem data prevista"}</strong>
                 </header>
-                <div className="ledger-list">
-                  {items.map((item) => {
-                    const shift = item.shift_id ? shiftsById.get(item.shift_id) : undefined;
-                    const locationName = item.location_id ? locationsById.get(item.location_id) : undefined;
-                    return (
-                      <LedgerRow
-                        amount={Number(item.amount)}
-                        entryType="receivable"
-                        key={item.id}
-                        paymentState={paymentStates.get(item.id) ?? "unknown"}
-                        subtitle={shift?.location_name ? item.description : locationName || "Avulso"}
-                        time={shift ? shiftTimeLabel(shift) : "Recebimento avulso"}
-                        title={shift?.location_name || item.description}
-                      >
-                        {isOpenReceivable(item) && (
-                          <Button
-                            aria-label="Marcar recebido"
-                            onClick={() => openModal({ type: "paid", receivable: item })}
-                            size="icon"
-                            title="Marcar recebido"
-                            variant="primary"
-                          >
-                            <Check size={16} />
-                          </Button>
-                        )}
-                        <Button
-                          aria-label="Editar recebivel"
-                          onClick={() => openModal({ type: "edit", receivable: item })}
-                          size="icon"
-                          title="Editar"
-                        >
-                          <Pencil size={16} />
-                        </Button>
-                        <Button
-                          aria-label="Excluir recebivel"
-                          disabled={deleteReceivable.isPending}
-                          onClick={() => deleteReceivable.mutate(item.id)}
-                          size="icon"
-                          title="Excluir"
-                          variant="danger"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </LedgerRow>
-                    );
-                  })}
-                </div>
+                {groupBillingReceivables(items, bootstrap.data.locations, bootstrap.data.shifts).map(group => {
+                  const invoice = invoiceGroups.get(group.key) ?? group;
+                  const openItems = invoice.items.filter(item => item.status === "pending" || item.status === "overdue");
+                  return (
+                    <section className="finance-invoice" key={group.key} aria-label={`Faturamento ${group.name}`}>
+                      <header className="finance-invoice-head">
+                        <div><h4>{group.name}</h4><p>{group.reference}</p></div>
+                        <div>
+                          <strong className="finance-invoice-total">{money(sumMoney(invoice.items.filter(item => item.status !== "cancelled"), item => item.amount))}</strong>
+                          <small className="finance-invoice-count">{group.items.length === invoice.items.length ? `${invoice.items.length} lançamento(s)` : `${group.items.length} de ${invoice.items.length} lançamentos visíveis`}</small>
+                          {openItems.length > 0 && (
+                            <>
+                              <small className="finance-invoice-open">Em aberto: {money(sumMoney(openItems, item => item.amount))}</small>
+                              <Button
+                                aria-label="Receber faturamento"
+                                className="finance-invoice-receive"
+                                disabled={markFilteredPaid.isPending}
+                                onClick={() => openModal({ type: "bulk-paid", receivables: openItems, invoice: { name: invoice.name, reference: invoice.reference, expectedDate: date } })}
+                                size="sm"
+                                variant="primary"
+                              >
+                                <Check aria-hidden="true" size={16} />
+                                <span>Receber<span className="finance-invoice-receive-suffix"> faturamento</span></span>
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </header>
+                      <div className="ledger-list">
+                        {group.items.map((item) => {
+                          const shift = item.shift_id ? shiftsById.get(item.shift_id) : undefined;
+                          const locationName = item.location_id ? locationsById.get(item.location_id) : undefined;
+                          return (
+                            <LedgerRow
+                              amount={Number(item.amount)}
+                              entryType="receivable"
+                              key={item.id}
+                              paymentState={paymentStates.get(item.id) ?? "unknown"}
+                              subtitle={shift?.location_name ? item.description : locationName || "Avulso"}
+                              time={shift ? shiftTimeLabel(shift) : "Recebimento avulso"}
+                              date={shift?.date ? `Plantão em ${dateLabel(shift.date)}` : undefined}
+                              title={shift?.location_name || item.description}
+                            >
+                              {isOpenReceivable(item) && (
+                                <Button
+                                  aria-label="Marcar recebido"
+                                  onClick={() => openModal({ type: "paid", receivable: item })}
+                                  size="icon"
+                                  title="Marcar recebido"
+                                  variant="primary"
+                                >
+                                  <Check size={16} />
+                                </Button>
+                              )}
+                              <Button
+                                aria-label="Editar recebivel"
+                                onClick={() => openModal({ type: "edit", receivable: item })}
+                                size="icon"
+                                title="Editar"
+                              >
+                                <Pencil size={16} />
+                              </Button>
+                              <Button
+                                aria-label="Excluir recebivel"
+                                disabled={deleteReceivable.isPending}
+                                onClick={() => deleteReceivable.mutate(item.id)}
+                                size="icon"
+                                title="Excluir"
+                                variant="danger"
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            </LedgerRow>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  );
+                })}
               </section>
             ))}
           </div>
@@ -464,18 +499,34 @@ export function FinancePage() {
       )}
 
       {modal?.type === "bulk-paid" && (
-        <Modal eyebrow="Pagamento" onClose={() => setModal(null)} title="Confirmar recebimentos">
+        <Modal eyebrow="Pagamento" onClose={() => { if (!markFilteredPaid.isPending) setModal(null); }} title={modal.invoice ? "Receber faturamento" : "Confirmar recebimentos"}>
+          {modal.invoice && (
+            <div className="bulk-payment-invoice">
+              <strong>{modal.invoice.name}</strong>
+              <p>{modal.invoice.reference}</p>
+              <p>Pagamento previsto: {dateLabel(modal.invoice.expectedDate, "Não informado")}</p>
+              <p>Todos os itens em aberto deste faturamento serão confirmados, inclusive os ocultos pelos filtros. Os já pagos e os cancelados serão mantidos.</p>
+            </div>
+          )}
           <div className="bulk-payment-summary">
             <strong>
               {modal.receivables.length} recebimento{modal.receivables.length === 1 ? "" : "s"} pendente
               {modal.receivables.length === 1 ? "" : "s"}
             </strong>
             <span>
-              Total: {money(modal.receivables.reduce((sum, item) => sum + Number(item.amount || 0), 0))}
+              Total a registrar: {money(sumMoney(modal.receivables, item => item.amount))}
             </span>
           </div>
+          {modal.invoice && (
+            <ul aria-label="Itens em aberto do faturamento" className="bulk-payment-items">
+              {modal.receivables.map(item => {
+                const shift = item.shift_id ? shiftsById.get(item.shift_id) : undefined;
+                return <li key={item.id}><span>{shift ? `Plantão em ${dateLabel(shift.date)}` : item.description}</span><strong>{money(item.amount)}</strong></li>;
+              })}
+            </ul>
+          )}
           <MarkPaidForm
-            onCancel={() => setModal(null)}
+            onCancel={() => { if (!markFilteredPaid.isPending) setModal(null); }}
             onSubmit={(values) => {
               setFormError("");
               markFilteredPaid.mutate({

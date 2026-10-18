@@ -1,6 +1,7 @@
 import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { Brand } from "./components/Brand";
 import { useAuth } from "./contexts/AuthContext";
 
@@ -61,25 +62,27 @@ function PublicRoute() {
 export function App() {
   return (
     // Suspense mostra a tela de carregamento enquanto o chunk da página é baixado
-    <Suspense fallback={<LoadingScreen />}>
-      <Routes>
-        <Route element={<LegalPage document="terms" />} path="/terms" />
-        <Route element={<LegalPage document="privacy" />} path="/privacy" />
-        <Route element={<PublicRoute />} path="/login" />
-        <Route element={<ProtectedShell />}>
-          <Route element={<ProfilePage />} path="profile" />
-          <Route element={<DashboardPage />} index />
-          <Route element={<ShiftsPage />} path="shifts" />
-          <Route element={<LocationsPage />} path="locations" />
-          <Route element={<FinancePage />} path="finance" />
-          <Route element={<ExpensesPage />} path="expenses" />
-          <Route element={<Navigate replace to="/" />} path="ai" />
-          <Route element={<Navigate replace to="/" />} path="guidelines" />
-          <Route element={<SpacesPage />} path="spaces" />
-          <Route element={<ReportsPage />} path="reports" />
-        </Route>
-        <Route element={<Navigate replace to="/" />} path="*" />
-      </Routes>
-    </Suspense>
+    <AppErrorBoundary>
+      <Suspense fallback={<LoadingScreen />}>
+        <Routes>
+          <Route element={<LegalPage document="terms" />} path="/terms" />
+          <Route element={<LegalPage document="privacy" />} path="/privacy" />
+          <Route element={<PublicRoute />} path="/login" />
+          <Route element={<ProtectedShell />}>
+            <Route element={<ProfilePage />} path="profile" />
+            <Route element={<DashboardPage />} index />
+            <Route element={<ShiftsPage />} path="shifts" />
+            <Route element={<LocationsPage />} path="locations" />
+            <Route element={<FinancePage />} path="finance" />
+            <Route element={<ExpensesPage />} path="expenses" />
+            <Route element={<Navigate replace to="/" />} path="ai" />
+            <Route element={<Navigate replace to="/" />} path="guidelines" />
+            <Route element={<SpacesPage />} path="spaces" />
+            <Route element={<ReportsPage />} path="reports" />
+          </Route>
+          <Route element={<Navigate replace to="/" />} path="*" />
+        </Routes>
+      </Suspense>
+    </AppErrorBoundary>
   );
 }

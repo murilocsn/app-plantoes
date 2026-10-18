@@ -63,6 +63,23 @@ describe("shift recurrence rules", () => {
 });
 
 describe("expectedPaymentDate", () => {
+  it("conta o mes seguinte a partir do fechamento em ciclos entre dois meses", () => {
+    const cycle = { ...location, reference_start_day: 26, reference_end_day: 25 };
+    expect(expectedPaymentDate("2026-08-26", cycle)).toBe("2026-10-10");
+    expect(expectedPaymentDate("2026-09-25", cycle)).toBe("2026-10-10");
+    expect(expectedPaymentDate("2026-09-26", cycle)).toBe("2026-11-10");
+    expect(expectedPaymentDate("2026-12-31", cycle)).toBe("2027-02-10");
+  });
+
+  it("inclui todos os dias de meses curtos e longos sem pular referencia", () => {
+    const cycle = { ...location, reference_end_day: 31 };
+    for (const [month, lastDay, payment] of [["2026-01", 31, "2026-02-10"], ["2026-02", 28, "2026-03-10"], ["2028-02", 29, "2028-03-10"], ["2026-04", 30, "2026-05-10"]] as const) {
+      for (let day = 1; day <= lastDay; day += 1) {
+        expect(expectedPaymentDate(`${month}-${String(day).padStart(2, "0")}`, cycle)).toBe(payment);
+      }
+    }
+  });
+
   it("usa o mes seguinte quando o plantao esta dentro do periodo de referencia", () => {
     expect(expectedPaymentDate("2026-01-15", location)).toBe("2026-02-10");
   });
@@ -88,5 +105,9 @@ describe("expectedPaymentDate", () => {
         payment_due_day: 31,
       }),
     ).toBe("2026-02-28");
+  });
+
+  it("ajusta tambem o inicio de referencia ao ultimo dia de fevereiro", () => {
+    expect(expectedPaymentDate("2026-02-28", { ...location, reference_start_day: 31, reference_end_day: 30 })).toBe("2026-04-10");
   });
 });

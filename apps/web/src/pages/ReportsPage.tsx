@@ -6,15 +6,19 @@ import { EmptyState } from "../components/EmptyState";
 import { Field } from "../components/Field";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { StatCard } from "../components/StatCard";
+import { PeriodNavigation } from "../components/PeriodNavigation";
 import { useBootstrap } from "../hooks/useBootstrap";
 import { domainApi } from "../lib/domain-api";
 import { money } from "../lib/formatters";
+import { adjacentMonthRange, monthDateRange } from "../lib/payment-view";
+import { reportPeriodTotals } from "../lib/monthly-finance";
 
 export function ReportsPage() {
   const bootstrap = useBootstrap();
   const [exporting, setExporting] = useState(false);
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [exportError, setExportError] = useState("");
+  const [from, setFrom] = useState(() => monthDateRange(new Date()).from);
+  const [to, setTo] = useState(() => monthDateRange(new Date()).to);
   const [locationId, setLocationId] = useState("");
   const filteredShifts = useMemo(
     () => (bootstrap.data?.shifts ?? []).filter((shift) => {
@@ -45,6 +49,7 @@ export function ReportsPage() {
 
   async function exportCsv() {
     setExporting(true);
+    setExportError("");
 
     try {
       const blob = await domainApi.exportCsv({ from, to, location_id: locationId });
@@ -54,30 +59,36 @@ export function ReportsPage() {
       anchor.download = `financplantoes-${new Date().toISOString().slice(0, 10)}.csv`;
       anchor.click();
       URL.revokeObjectURL(url);
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : "Não foi possível exportar o relatório.");
     } finally {
       setExporting(false);
     }
   }
 
   const max = Math.max(...byLocation.map((row) => row.total), 1);
-  const totalExpenses =
-    bootstrap.data.personalExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0) +
-    bootstrap.data.sharedExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const totals = reportPeriodTotals(bootstrap.data, { from, to }, locationId);
+  function changePeriod(range: { from: string; to: string }) { setFrom(range.from); setTo(range.to); }
 
   return (
     <>
+      <PeriodNavigation from={from} to={to} label="dos relatórios" onCurrentMonth={() => changePeriod(monthDateRange(new Date()))} onNavigate={(offset) => changePeriod(adjacentMonthRange(from, to, offset))} />
       <section className="stat-grid">
         <StatCard
           icon={WalletCards}
           label="Receita projetada"
           tone="blue"
-          value={money(filteredShifts.reduce((sum, shift) => sum + Number(shift.value ?? shift.value12 ?? 0), 0))}
+          value={money(totals.projected)}
+          detail="Pela data de realização dos plantões"
         />
-        <StatCard icon={Download} label="Recebido" tone="green" value={money(bootstrap.data.summary.received)} />
-        <StatCard icon={FileSpreadsheet} label="Despesas" tone="coral" value={money(totalExpenses)} />
+        <StatCard icon={Download} label="Recebido" tone="green" value={money(totals.received)} detail="Pela data de recebimento registrada" />
+        {totals.expenses !== null && <StatCard icon={FileSpreadsheet} label="Despesas" tone="coral" value={money(totals.expenses)} detail="Pela data da despesa, em todos os locais" />}
       </section>
+      {totals.paidWithoutDate > 0 && <p className="form-hint" role="status">Há {totals.paidWithoutDate} pagamento(s) sem data de recebimento. Eles não entram no recebido do mês até a data ser informada.</p>}
+      {locationId && <p className="form-hint">Selecione Todos os locais para consultar despesas do período, que não possuem vínculo com uma unidade.</p>}
 
       <section className="page-section">
+        {exportError && <p className="form-message" role="alert">{exportError}</p>}
         <header className="section-head">
           <div>
             <p className="eyebrow">Relatorios</p>
@@ -91,7 +102,7 @@ export function ReportsPage() {
 
         <div className="report-filters">
           <DateField
-            label="Plantões de"
+            label="Período de"
             name="report-filter-from"
             onBlur={() => undefined}
             onChange={(value) => {

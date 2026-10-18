@@ -222,9 +222,11 @@ test.describe("Login E2E mockado", () => {
     await expect(page.locator(".calendar-grid")).toBeVisible();
     if (isMobile) await page.getByRole("button", { name: "Menu", exact: true }).click();
     const menu = page.getByRole("navigation", { name: isMobile ? "Navegacao principal mobile" : "Navegacao principal", exact: true });
+    await expect(menu.getByRole("link").first()).toHaveText("Meu perfil");
     await menu.getByRole("link", { name: "Meu perfil", exact: true }).click();
     await expect(page).toHaveURL(/#\/profile$/);
     await expect(page.getByRole("heading", { name: "Meu perfil", exact: true })).toBeVisible();
+    await expect(page.locator('input[autocomplete="username"]')).toHaveValue(mockedUser.email);
     await expect(page.getByLabel("Nome de exibição")).toHaveValue("Usuario de teste");
     await expect(page.getByLabel("Novo e-mail")).toHaveValue(mockedUser.email);
     await expect(page.getByRole("button", { name: "Salvar nome", exact: true })).toBeDisabled();
@@ -620,6 +622,180 @@ test.describe("Login E2E mockado", () => {
     await expect(rows).toHaveCount(3);
   });
 
+  test("faturamento agrupa unidade e referencia sem esconder datas individuais", async ({ page, isMobile }, testInfo) => {
+    const unit = { ...location, reference_start_day: 26, reference_end_day: 25 };
+    const data: AppBootstrap = {
+      ...bootstrap,
+      locations: [unit, { ...unit, id: "other-unit", name: "Outra unidade" }],
+      shifts: [
+        { ...shifts[0], id: "first", date: "2026-08-26", value: 500 },
+        { ...shifts[0], id: "last", date: "2026-09-25", value: 500 },
+        { ...shifts[0], id: "next", date: "2026-09-26", value: 500 },
+        { ...shifts[0], id: "other", date: "2026-09-12", location_id: "other-unit", location_name: "Outra unidade", value: 500 },
+      ],
+      receivables: [
+        { id: "first", shift_id: "first", location_id: location.id, description: "Primeiro plantao", amount: 500, expected_date: "2026-10-10", status: "pending" },
+        { id: "last", shift_id: "last", location_id: location.id, description: "Ultimo plantao", amount: 500, expected_date: "2026-10-10", status: "pending" },
+        { id: "next", shift_id: "next", location_id: location.id, description: "Ciclo seguinte", amount: 500, expected_date: "2026-11-10", status: "pending" },
+        { id: "other", shift_id: "other", location_id: "other-unit", description: "Outra unidade", amount: 500, expected_date: "2026-10-10", status: "pending" },
+      ],
+    };
+    await page.clock.setFixedTime(new Date("2026-10-15T12:00:00Z"));
+    await page.route("**/api/dashboard/bootstrap", route => route.fulfill({ json: { data } }));
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    if (isMobile) await page.setViewportSize({ width: 320, height: 720 });
+    await page.goto("/#/finance");
+    await expect(page.locator(".finance-invoice")).toHaveCount(2);
+    const invoice = page.getByRole("region", { name: `Faturamento ${location.name}`, exact: true });
+    await expect(invoice.locator(".ledger-row")).toHaveCount(2);
+    await expect(invoice.locator(".ledger-date")).toHaveText(["Plantão em 26/08/2026", "Plantão em 25/09/2026"]);
+    await expect(invoice).toContainText("26/08/2026 a 25/09/2026");
+    await expect(invoice.locator(".finance-invoice-head strong")).toHaveText(/R\$\s*1.000,00/);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath("faturamento-unidade-referencia.png"), fullPage: true });
+    await page.getByRole("button", { name: "Próximo mês do período" }).click();
+    await expect(page.locator(".ledger-date")).toHaveText(["Plantão em 26/09/2026"]);
+  });
+
+  test.describe("receber faturamento", () => {
+    test.use({ timezoneId: "America/Sao_Paulo" });
+
+    for (const failFirstAttempt of [false, true]) {
+      test(failFirstAttempt ? "mantem pendencias no erro e permite tentar novamente" : "confirma o grupo inteiro e preserva outros faturamentos", async ({ page, isMobile }, testInfo) => {
+        const unit = { ...location, reference_end_day: 31 };
+        const data: AppBootstrap = {
+          ...bootstrap,
+          locations: [unit, { ...unit, id: "other-unit", name: "Outra unidade" }],
+          shifts: ["first", "second", "paid", "cancelled", "other", "next"].map((id, index) => ({
+            ...shifts[0], id, date: id === "next" ? "2026-09-01" : `2026-08-${String(index + 1).padStart(2, "0")}`,
+            location_id: id === "other" ? "other-unit" : unit.id,
+            location_name: id === "other" ? "Outra unidade" : unit.name, value: 500,
+          })),
+          receivables: ["first", "second", "paid", "cancelled", "other", "next"].map(id => ({
+            id, shift_id: id, location_id: id === "other" ? "other-unit" : unit.id,
+            description: id === "first" ? "Primeiro plantao" : id, amount: 500, expected_date: "2026-09-10",
+            status: id === "paid" ? "received" : id === "cancelled" ? "cancelled" : "pending",
+            received_date: id === "paid" ? "2026-08-01" : null, payment_method: id === "paid" ? "cash" : null,
+          })),
+        };
+        const originalPaid = JSON.stringify(data.receivables.find(item => item.id === "paid"));
+        const submissions: Array<{ ids: string[]; received_date: string; payment_method: string }> = [];
+        let releasePayment: () => void = () => undefined;
+        const paymentReleased = new Promise<void>(resolve => { releasePayment = resolve; });
+        await page.clock.setFixedTime(new Date("2026-09-15T01:30:00Z"));
+        await page.route("**/api/dashboard/bootstrap", route => route.fulfill({ json: { data } }));
+        await page.route("**/api/receivables/mark-paid", async route => {
+          const payload = route.request().postDataJSON();
+          submissions.push(payload);
+          if (failFirstAttempt && submissions.length === 1) return route.fulfill({ status: 503, json: { error: { message: "Falha simulada ao registrar o faturamento" } } });
+          await paymentReleased;
+          const updated = data.receivables.filter(item => payload.ids.includes(item.id) && item.status === "pending");
+          for (const item of updated) Object.assign(item, { status: "received", received_date: payload.received_date, payment_method: payload.payment_method });
+          return route.fulfill({ json: { data: updated } });
+        });
+        await login(page, mockedUser);
+        await expect(page).toHaveURL(/#\/$/);
+        if (isMobile) await page.setViewportSize({ width: 320, height: 720 });
+        await page.goto("/#/finance");
+        await page.locator(".ledger-filters > summary").click();
+        await page.getByPlaceholder("Descricao ou unidade").fill("Primeiro");
+        const invoice = page.getByRole("region", { name: `Faturamento ${unit.name}`, exact: true });
+        await expect(invoice.locator(".ledger-row")).toHaveCount(1);
+        await expect(invoice).toContainText("1 de 4 lançamentos visíveis");
+        await invoice.getByRole("button", { name: "Receber faturamento", exact: true }).click();
+        const dialog = page.getByRole("dialog");
+        await expect(dialog.getByRole("heading", { name: "Receber faturamento" })).toBeVisible();
+        await expect(dialog).toContainText("2 recebimentos pendentes");
+        await expect(dialog.locator(".bulk-payment-summary")).toContainText(/Total a registrar: R\$\s*1.000,00/);
+        await expect(dialog.getByRole("list", { name: "Itens em aberto do faturamento" }).getByRole("listitem")).toHaveCount(2);
+        await expect(dialog.getByLabel("Data recebida")).toHaveValue("2026-09-14");
+        expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+        await page.screenshot({ path: testInfo.outputPath("receber-faturamento.png"), fullPage: true });
+        await dialog.getByRole("button", { name: "Cancelar", exact: true }).click();
+        await expect(dialog).toBeHidden();
+        expect(submissions).toHaveLength(0);
+        await invoice.getByRole("button", { name: "Receber faturamento", exact: true }).click();
+        if (failFirstAttempt) {
+          await dialog.getByRole("button", { name: "Confirmar", exact: true }).click();
+          await expect(dialog.getByRole("alert")).toHaveText("Falha simulada ao registrar o faturamento");
+          await expect(invoice.locator(".ledger-row")).toHaveAttribute("data-payment-state", "overdue");
+        }
+        const sent = page.waitForRequest(request => request.url().endsWith("/api/receivables/mark-paid") && request.method() === "POST");
+        await dialog.getByRole("button", { name: "Confirmar", exact: true }).click();
+        const payload = (await sent).postDataJSON();
+        expect([...payload.ids].sort()).toEqual(["first", "second"]);
+        expect(payload).toMatchObject({ received_date: "2026-09-14", payment_method: "pix" });
+        await expect(dialog.getByRole("button", { name: "Confirmar", exact: true })).toBeDisabled();
+        await dialog.getByRole("button", { name: "Cancelar", exact: true }).click();
+        await expect(dialog).toBeVisible();
+        releasePayment();
+        await expect(dialog).toBeHidden();
+        await expect(invoice.getByRole("button", { name: "Receber faturamento", exact: true })).toHaveCount(0);
+        expect(submissions).toHaveLength(failFirstAttempt ? 2 : 1);
+        expect(JSON.stringify(data.receivables.find(item => item.id === "paid"))).toBe(originalPaid);
+        await page.getByPlaceholder("Descricao ou unidade").fill("");
+        await expect(page.locator('.ledger-row[data-payment-state="paid"]')).toHaveCount(3);
+        await expect(page.locator('.ledger-row[data-payment-state="cancelled"]')).toHaveCount(1);
+        await expect(page.locator('.ledger-row[data-payment-state="overdue"]')).toHaveCount(2);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      });
+    }
+  });
+
+  test("resumo mensal separa producao, recebimento e despesas sem acumular historico", async ({ page }) => {
+    const data: AppBootstrap = {
+      ...layoutBootstrap,
+      shifts: [...shifts, { ...shifts[0], id: "previous", date: "2026-08-15", value: 9000 }],
+      receivables: [
+        { id: "actual", description: "Recebido em setembro", amount: 200, expected_date: "2026-08-10", received_date: "2026-09-05", status: "received" },
+        { id: "later", description: "Recebido em outubro", amount: 800, expected_date: "2026-09-10", received_date: "2026-10-01", status: "received" },
+      ],
+      personalExpenses: [...layoutBootstrap.personalExpenses, { id: "old", description: "Despesa antiga", amount: 9000, expense_date: "2026-08-15" }],
+    };
+    await page.route("**/api/dashboard/bootstrap", route => route.fulfill({ json: { data } }));
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    await page.goto("/#/reports");
+    await expect(page.locator(".stat-grid .stat-card > strong")).toHaveText([/R\$\s*1.500,00/, /R\$\s*200,00/, /R\$\s*520,00/]);
+    await page.getByRole("button", { name: "Mês anterior dos relatórios" }).click();
+    await expect(page.locator(".stat-grid .stat-card > strong")).toHaveText([/R\$\s*9.000,00/, /R\$\s*0,00/, /R\$\s*9.000,00/]);
+    await page.goto("/#/expenses");
+    await expect(page.locator(".stat-grid .stat-card > strong")).toHaveText([/R\$\s*320,00/, /R\$\s*200,00/]);
+    await expect(page.getByText("Despesa antiga", { exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "Mês anterior das despesas" }).click();
+    await expect(page.getByText("Despesa antiga", { exact: true })).toBeVisible();
+    await expect(page.locator(".stat-grid .stat-card > strong")).toHaveText([/R\$\s*9.000,00/, /R\$\s*0,00/]);
+  });
+
+  test("faturamento explica mes seguinte e inclui o mes inteiro por padrao", async ({ page }) => {
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    await page.goto("/#/locations");
+    await page.getByRole("button", { name: "Novo local", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByLabel("Dia de fechamento da referência")).toHaveValue("31");
+    await expect(dialog.getByRole("combobox", { name: "Em qual mês a empresa costuma pagar?" })).toHaveValue("1");
+    await expect(dialog).toContainText("No mês seguinte ao fechamento");
+    await expect(dialog).toContainText("26/08 a 25/09");
+    await expect(dialog).toContainText("Não é uma contagem de 30 dias");
+    await page.route("**/api/locations", route => route.fulfill({ json: { data: { ...location, ...route.request().postDataJSON() } } }));
+    await dialog.getByLabel("Nome do local").fill("Nova unidade");
+    const saved = page.waitForRequest(request => request.method() === "POST" && request.url().endsWith("/api/locations"));
+    await dialog.getByRole("button", { name: "Salvar", exact: true }).click();
+    expect((await saved).postDataJSON()).toMatchObject({ reference_start_day: 1, reference_end_day: 31, payment_due_months_after: 1, payment_due_day: 10 });
+    await expect(dialog).toBeHidden();
+  });
+
+  test("falha no carregamento de uma aba oferece atualizacao sem tela em branco", async ({ page }) => {
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    await page.route("**/src/pages/ShiftsPage.tsx*", route => route.abort());
+    await page.goto("/#/shifts");
+    await expect(page.getByRole("heading", { name: "Não foi possível abrir esta tela" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Atualizar aplicativo" })).toBeVisible();
+  });
+
   test("recebimentos agrupados preservam confirmacao e atualizam o selo no calendario", async ({ page, isMobile }, testInfo) => {
     await mockPaymentLayout(page);
     if (isMobile) await page.setViewportSize({ width: 320, height: 720 });
@@ -631,8 +807,8 @@ test.describe("Login E2E mockado", () => {
     await expect(rows.locator(".payment-badge")).toHaveText(["Pago", "Atrasado", "Pendente"]);
     await expectFinancialColors(page);
     await expect(page.locator(".payment-summary dd")).toHaveText([/R\$\s*500,00/, /R\$\s*500,00/, /R\$\s*500,00/]);
-    // A tela mantém todos os períodos até o usuário selecionar um mês.
-    await expect(page.getByRole("heading", { name: "Todos os períodos" })).toBeVisible();
+    // O periodo inicial e o mes vigente.
+    await expect(page.getByRole("heading", { name: "Setembro 2026" })).toBeVisible();
     await page.getByRole("button", { name: "Mês atual do período" }).click();
     await expect(page.getByRole("heading", { name: "Setembro 2026" })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

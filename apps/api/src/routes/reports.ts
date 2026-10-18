@@ -7,7 +7,9 @@ import { optionalData } from "../lib/db";
 export const reportsRouter = Router();
 
 function csvCell(value: unknown) {
-  return `"${String(value ?? "").replace(/"/g, '""')}"`;
+  const text = String(value ?? "");
+  const safe = typeof value === "string" && /^\s*[=+\-@]/.test(text) ? `'${text}` : text;
+  return `"${safe.replace(/"/g, '""')}"`;
 }
 
 reportsRouter.get(
@@ -22,26 +24,31 @@ reportsRouter.get(
     if (query.from) shiftsQuery = shiftsQuery.gte("date", query.from);
     if (query.to) shiftsQuery = shiftsQuery.lte("date", query.to);
     if (query.location_id) shiftsQuery = shiftsQuery.eq("location_id", query.location_id);
-    const [shifts, receivables, expenses] = await Promise.all([
+    let receivablesQuery = request.auth.supabase.from("receivables")
+      .select("expected_date,received_date,description,amount,status,location_id")
+      .eq("user_id", userId).order("expected_date", { ascending: true });
+    if (query.location_id) receivablesQuery = receivablesQuery.eq("location_id", query.location_id);
+    const inPeriod = (date: string | null | undefined) => Boolean(date && (!query.from || date >= query.from) && (!query.to || date <= query.to));
+    const [shifts, receivables, expenses, sharedExpenses] = await Promise.all([
       optionalData<Shift[]>(
         shiftsQuery.order("date", { ascending: true }),
         [],
       ),
       optionalData<Receivable[]>(
-        request.auth.supabase
-          .from("receivables")
-          .select("expected_date,description,amount,status")
-          .eq("user_id", userId)
-          .order("expected_date", { ascending: true }),
+        receivablesQuery,
         [],
       ),
-      optionalData<Expense[]>(
+      query.location_id ? Promise.resolve([] as Expense[]) : optionalData<Expense[]>(
         request.auth.supabase
           .from("personal_expenses")
           .select("expense_date,description,amount")
           .eq("user_id", userId)
           .order("expense_date", { ascending: true }),
         [],
+      ),
+      query.location_id ? Promise.resolve([] as Expense[]) : optionalData<Expense[]>(
+        request.auth.supabase.from("expenses").select("expense_date,description,amount")
+          .eq("paid_by", userId).order("expense_date", { ascending: true }), [],
       ),
     ]);
 
@@ -54,14 +61,14 @@ reportsRouter.get(
         shift.value ?? shift.value12,
         "",
       ]),
-      ...receivables.map((item) => [
+      ...receivables.filter(item => item.status !== "cancelled" && inPeriod(item.status === "received" ? item.received_date : item.expected_date)).map((item) => [
         "Recebivel",
-        item.expected_date,
+        item.status === "received" ? item.received_date : item.expected_date,
         item.description,
         item.amount,
         item.status,
       ]),
-      ...expenses.map((item) => [
+      ...[...expenses, ...sharedExpenses].filter(item => inPeriod(item.expense_date)).map((item) => [
         "Despesa",
         item.expense_date,
         item.description,

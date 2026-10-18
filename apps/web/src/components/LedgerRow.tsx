@@ -8,6 +8,7 @@ type LedgerRowProps = {
   title: string;
   time: string;
   subtitle?: string;
+  date?: string;
   amount: number;
   color?: string;
   paymentState: PaymentState;
@@ -20,6 +21,7 @@ export function LedgerRow({
   title,
   time,
   subtitle,
+  date,
   amount,
   color,
   paymentState,
@@ -41,6 +43,7 @@ export function LedgerRow({
             <span className="ledger-copy">
               <span className="ledger-time">{time}</span>
               <strong className="ledger-title">{title}</strong>
+              {date && <span className="ledger-date">{date}</span>}
               {subtitle && <span className="ledger-subtitle">{subtitle}</span>}
               {warning && <span className="ledger-warning">{warning}</span>}
             </span>

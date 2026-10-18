@@ -22,6 +22,7 @@ import { Button } from "./Button";
 import { PushReminderButton } from "./PushReminderButton";
 
 const navItems = [
+  { to: "/profile", label: "Meu perfil", icon: UserRound },
   { to: "/", label: "Painel", mobileLabel: "Calendário", icon: CalendarDays },
   { to: "/shifts", label: "Plantoes", mobileLabel: "Plantões", icon: ClipboardList },
   { to: "/locations", label: "Locais", icon: MapPin },
@@ -29,7 +30,6 @@ const navItems = [
   { to: "/expenses", label: "Despesas", icon: Receipt },
   { to: "/spaces", label: "Espacos", icon: UsersRound },
   { to: "/reports", label: "Relatorios", icon: Download },
-  { to: "/profile", label: "Meu perfil", icon: UserRound },
 ];
 
 const mobileNavItems = navItems.filter((item) => item.mobileLabel);

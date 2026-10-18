@@ -6,9 +6,12 @@ import { ExpenseForm } from "../components/forms/ExpenseForm";
 import { Modal } from "../components/Modal";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { StatCard } from "../components/StatCard";
+import { PeriodNavigation } from "../components/PeriodNavigation";
 import { useAppMutation, useBootstrap } from "../hooks/useBootstrap";
 import { domainApi } from "../lib/domain-api";
 import { dateLabel, money } from "../lib/formatters";
+import { adjacentMonthRange, monthDateRange } from "../lib/payment-view";
+import { inDateRange, sumMoney } from "../lib/monthly-finance";
 
 type ExpenseModal = "personal" | "shared" | null;
 
@@ -16,6 +19,7 @@ export function ExpensesPage() {
   const bootstrap = useBootstrap();
   const [modal, setModal] = useState<ExpenseModal>(null);
   const [formError, setFormError] = useState("");
+  const [period, setPeriod] = useState(() => monthDateRange(new Date()));
 
   const showError = (error: Error) => setFormError(error.message);
   const onSuccess = () => {
@@ -40,12 +44,15 @@ export function ExpensesPage() {
     return <ErrorBlock error={bootstrap.error} />;
   }
 
-  const { personalExpenses, sharedExpenses, spaces } = bootstrap.data;
-  const personalTotal = personalExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const sharedTotal = sharedExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const { spaces } = bootstrap.data;
+  const personalExpenses = bootstrap.data.personalExpenses.filter(item => inDateRange(item.expense_date, period));
+  const sharedExpenses = bootstrap.data.sharedExpenses.filter(item => inDateRange(item.expense_date, period));
+  const personalTotal = sumMoney(personalExpenses, item => item.amount);
+  const sharedTotal = sumMoney(sharedExpenses, item => item.amount);
 
   return (
     <>
+      <PeriodNavigation {...period} label="das despesas" onCurrentMonth={() => setPeriod(monthDateRange(new Date()))} onNavigate={(offset) => setPeriod(current => adjacentMonthRange(current.from, current.to, offset))} />
       <section className="stat-grid two">
         <StatCard icon={Receipt} label="Pessoal" tone="coral" value={money(personalTotal)} />
         <StatCard icon={UsersRound} label="Compartilhado" tone="amber" value={money(sharedTotal)} />
