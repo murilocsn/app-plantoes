@@ -593,6 +593,221 @@ canvas {
   }
 }
 
+/* Despesas e convites por card. */
+.expenses-page-head {
+  margin-bottom: 1rem;
+}
+.expenses-page-head .muted {
+  margin: 0.3rem 0 0;
+}
+.expenses-columns > *,
+.expense-sharing-card,
+.expense-card-head > * {
+  min-width: 0;
+}
+.expense-sharing-hint {
+  margin: 0 0 0.8rem;
+  font-size: 0.8rem;
+}
+.expense-sharing-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+.expense-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.expense-card-head strong {
+  display: block;
+}
+.expense-card-head small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-top: 0.2rem;
+}
+.expense-card-head > span {
+  flex-shrink: 0;
+  text-align: right;
+}
+.expense-card-head b {
+  display: block;
+  margin-top: 0.2rem;
+}
+.expense-card-share {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: var(--blue-soft);
+  padding: 0.6rem;
+  border-radius: 8px;
+  margin: 0.75rem 0;
+}
+.expense-card-share span strong {
+  display: block;
+  color: var(--blue);
+}
+.expense-card-share small {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--muted);
+}
+.expense-sharing-card > .button {
+  width: 100%;
+}
+.expense-card-notes {
+  white-space: pre-wrap;
+}
+.expense-card-invitations {
+  margin-top: 0.65rem;
+}
+.expense-card-invitations summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--blue);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+.expense-card-invitations summary:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+.expense-card-invitations ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.expense-card-invitations li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--border);
+}
+.expense-card-invitations li > div {
+  min-width: 0;
+}
+.expense-card-invitations li strong,
+.expense-card-invitations li small {
+  display: block;
+  font-size: 0.75rem;
+}
+.expense-card-invitations li small {
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+.expense-card-invitations li .button {
+  flex-shrink: 0;
+  min-height: 44px;
+  min-width: 44px;
+}
+.expense-invite-context {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  overflow-wrap: anywhere;
+}
+.expense-invite-context span {
+  color: var(--muted);
+}
+.expense-form-note {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.expense-invite-form .form-actions { grid-column: 1 / -1; }
+.expense-invite-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.expense-invite-actions .button {
+  min-height: 44px;
+}
+@media (max-width: 600px) {
+  .expenses-page-head {
+    align-items: flex-start;
+  }
+  .expenses-page-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.25rem 0.5rem;
+  }
+  .expenses-page-head > div {
+    display: contents;
+  }
+  .expenses-page-head .eyebrow,
+  .expenses-page-head h2 {
+    grid-column: 1;
+  }
+  .expenses-page-head .muted {
+    grid-column: 1 / -1;
+  }
+  .expenses-page-head > .button {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+  .expenses-page-head h2 {
+    margin-bottom: 0.25rem;
+  }
+  .expenses-page-head .muted {
+    font-size: 0.75rem;
+  }
+  .expenses-page-head > .button {
+    flex-shrink: 0;
+    min-height: 44px;
+  }
+  .expenses-columns .section-head > .button {
+    min-height: 44px;
+  }
+  .expenses-columns .section-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .expenses-columns .section-head h2 {
+    overflow-wrap: normal;
+  }
+  .expense-sharing-card {
+    padding: 0.65rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+  }
+  .expense-card-head {
+    gap: 0.4rem;
+  }
+  .expense-card-head small {
+    font-size: 0.68rem;
+  }
+  .expense-card-share {
+    padding: 0.5rem;
+  }
+  .expense-card-share small {
+    font-size: 0.7rem;
+  }
+  .expense-sharing-card > .button {
+    min-height: 44px;
+  }
+  .expense-invite-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .expense-invite-form input {
+    font-size: 16px;
+  }
+}
+
 /* Perfil da conta */
 .profile-page {
   display: grid;

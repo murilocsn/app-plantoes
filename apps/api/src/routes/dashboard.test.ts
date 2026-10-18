@@ -42,6 +42,7 @@ let rejectedTable: string | undefined;
 let server: Server | undefined;
 let telemetry: HttpTelemetry | undefined;
 const filters = new Map<string, Array<[string, unknown]>>();
+const sharingRpc = vi.fn();
 const from = vi.fn((table: string) => {
   const appliedFilters: Array<[string, unknown]> = [];
   filters.set(table, appliedFilters);
@@ -107,7 +108,8 @@ beforeEach(() => {
   filters.clear();
   from.mockClear();
   getUser.mockReset().mockResolvedValue({ data: { user: { id: userId } }, error: null });
-  createSupabaseForToken.mockReset().mockReturnValue({ from });
+  sharingRpc.mockReset().mockResolvedValue({ data: { cards: [], invitations: [] }, error: null });
+  createSupabaseForToken.mockReset().mockReturnValue({ from, rpc: sharingRpc });
   // These are isolated route tests; never query a real database or auth service.
   vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Unexpected external request."));
 });
@@ -250,5 +252,18 @@ describe("GET /api/dashboard/bootstrap", () => {
         },
       },
     });
+  });
+  it("includes only the current user's monthly share in bootstrap totals", async () => {
+    sharingRpc.mockResolvedValue({ data: { cards: [{ id: "synthetic-card", description: "Synthetic shared cost", total_amount: 300.01, amount: 100.01, expense_date: new Date().toISOString().slice(0, 10) }], invitations: [] }, error: null });
+    const response = await bootstrap(token);
+    expect(response.status).toBe(200);
+    expect(response.body.data?.sharedExpenses).toContainEqual(expect.objectContaining({ amount: 100.01, sharing_card_id: "synthetic-card" }));
+    expect(response.body.data?.summary.expenses).toBe(100.01);
+  });
+  it("preserves legacy bootstrap when sharing has not been activated", async () => {
+    sharingRpc.mockResolvedValue({ data: null, error: { code: "PGRST202" } });
+    const response = await bootstrap(token);
+    expect(response.status).toBe(200);
+    expect(response.body.data?.expenseSharing).toEqual({ available: false, cards: [], invitations: [] });
   });
 });
