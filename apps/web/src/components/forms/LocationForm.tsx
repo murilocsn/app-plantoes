@@ -52,14 +52,14 @@ export function LocationForm({ location, submitting, onCancel, onSubmit }: Locat
       <Field error={errors.reference_end_day?.message} label="Fim do periodo de referencia">
         <input min="1" max="31" type="number" {...register("reference_end_day")} />
       </Field>
-      <Field error={errors.payment_due_day?.message} label="Dia limite do pagamento">
+      <Field error={errors.payment_due_day?.message} label="Dia do faturamento">
         <input min="1" max="31" type="number" {...register("payment_due_day")} />
       </Field>
       <Field error={errors.payment_due_months_after?.message} label="Meses apos o periodo">
         <input min="0" max="12" type="number" {...register("payment_due_months_after")} />
       </Field>
       <p className="form-hint">
-        Exemplo: periodo 01 a 28, pagamento no dia 10 e 1 mes depois resulta em plantões de agosto pagos ate 10/09.
+        Exemplo: periodo 01 a 28, faturamento no dia 10 e 1 mes depois resulta em plantões de agosto faturados ate 10/09.
       </p>
       <label className="check-field">
         <input type="checkbox" {...register("active")} />
