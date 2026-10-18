@@ -58,4 +58,5 @@ npm run test:e2e
 - Endpoints: [05-api/endpoints.md](05-api/endpoints.md)
 - Banco/RLS: [04-banco-de-dados/seguranca-rls.md](04-banco-de-dados/seguranca-rls.md)
 - Riscos: [15-governanca/riscos-tecnicos.md](15-governanca/riscos-tecnicos.md)
+- Cadastro e documentos legais: [07-privacidade-lgpd/aceite-cadastro.md](07-privacidade-lgpd/aceite-cadastro.md)
 - Due diligence: [14-comercial/checklist-due-diligence.md](14-comercial/checklist-due-diligence.md)

@@ -9,6 +9,16 @@ const mockedUser: TestUser = {
   password: "test-password",
 };
 
+const mockedAuthUser = {
+  id: "00000000-0000-4000-8000-000000000001",
+  aud: "authenticated",
+  role: "authenticated",
+  email: mockedUser.email,
+  user_metadata: { full_name: "Usuario de teste" },
+  app_metadata: {},
+  created_at: "2026-01-01T00:00:00Z",
+};
+
 const location: Location = {
   id: "auth-location",
   name: "Hospital Central",
@@ -93,15 +103,7 @@ async function mockAuthAndApi(page: Page) {
         refresh_token: "test-refresh-token",
         token_type: "bearer",
         expires_in: 3600,
-        user: {
-          id: "00000000-0000-4000-8000-000000000001",
-          aud: "authenticated",
-          role: "authenticated",
-          email: mockedUser.email,
-          user_metadata: { full_name: "Usuario de teste" },
-          app_metadata: {},
-          created_at: "2026-01-01T00:00:00Z",
-        },
+        user: mockedAuthUser,
       },
     }),
   );
@@ -206,6 +208,164 @@ async function login(page: Page, user: TestUser) {
 test.describe("Login E2E mockado", () => {
   test.beforeEach(async ({ page }) => {
     await mockAuthAndApi(page);
+  });
+
+  test("perfil exige login antes de exibir dados da conta", async ({ page }) => {
+    await page.goto("/#/profile");
+    await expect(page).toHaveURL(/#\/login$/);
+    await expect(page.getByRole("heading", { name: "Entrar na conta", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Meu perfil", exact: true })).toHaveCount(0);
+  });
+
+  test("perfil fica acessivel no menu e preserva layout compacto e tema escuro", async ({ page, isMobile }, testInfo) => {
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    if (isMobile) await page.getByRole("button", { name: "Menu", exact: true }).click();
+    const menu = page.getByRole("navigation", { name: isMobile ? "Navegacao principal mobile" : "Navegacao principal", exact: true });
+    await menu.getByRole("link", { name: "Meu perfil", exact: true }).click();
+    await expect(page).toHaveURL(/#\/profile$/);
+    await expect(page.getByRole("heading", { name: "Meu perfil", exact: true })).toBeVisible();
+    await expect(page.getByLabel("Nome de exibição")).toHaveValue("Usuario de teste");
+    await expect(page.getByLabel("Novo e-mail")).toHaveValue(mockedUser.email);
+    await expect(page.getByRole("button", { name: "Salvar nome", exact: true })).toBeDisabled();
+    if (isMobile) await page.getByRole("button", { name: "Menu", exact: true }).click();
+    const theme = page.getByRole("button", { name: "Tema escuro", exact: true }).filter({ visible: true });
+    await theme.click();
+    if (isMobile) await page.getByRole("button", { name: "Fechar menu", exact: true }).last().click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    if (isMobile) await page.setViewportSize({ width: 320, height: 568 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath("perfil-compacto.png"), fullPage: true });
+  });
+
+  test("perfil salva somente o nome e atualiza a saudacao e a sessao persistida", async ({ page }) => {
+    let updates = 0;
+    await page.route("**/auth/v1/user", async (route) => {
+      if (route.request().method() !== "PUT") return route.fallback();
+      updates++;
+      expect(route.request().postDataJSON()).toEqual({ code_challenge: null, code_challenge_method: null, data: { full_name: "Marina de Teste" } });
+      return route.fulfill({ json: { ...mockedAuthUser, user_metadata: { full_name: "Marina de Teste" } } });
+    });
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    await page.goto("/#/profile");
+    await page.getByLabel("Nome de exibição").fill("  Marina de Teste  ");
+    await page.getByRole("button", { name: "Salvar nome", exact: true }).click();
+    await expect(page.locator(".profile-page").getByRole("status")).toHaveText("Nome atualizado.");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Marina");
+    await page.reload();
+    await expect(page.getByLabel("Nome de exibição")).toHaveValue("Marina de Teste");
+    expect(updates).toBe(1);
+  });
+
+  test("perfil solicita troca de email sem antecipar confirmacao ou alterar outros dados", async ({ page }) => {
+    await page.route("**/auth/v1/user?*", async (route) => {
+      if (route.request().method() !== "PUT") return route.fallback();
+      expect(route.request().postDataJSON()).toEqual({ code_challenge: null, code_challenge_method: null, email: "novo@example.test" });
+      expect(new URL(route.request().url()).searchParams.get("redirect_to")).toBe(new URL("/", page.url()).href);
+      return route.fulfill({ json: { ...mockedAuthUser, new_email: "novo@example.test" } });
+    });
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    await page.goto("/#/profile");
+    await page.getByLabel("Novo e-mail").fill("novo@example.test");
+    await page.getByRole("button", { name: "Solicitar alteração de e-mail", exact: true }).click();
+    await expect(page.locator(".profile-page").getByRole("status")).toContainText("Confira seus e-mails");
+    await expect(page.locator(".topbar-copy")).toContainText(mockedUser.email);
+    await expect(page.locator(".profile-summary")).toContainText("aguardando confirmação");
+  });
+
+  test("perfil so informa email atualizado quando o Auth confirma o novo endereco", async ({ page }) => {
+    await page.route("**/auth/v1/user?*", async (route) => {
+      if (route.request().method() !== "PUT") return route.fallback();
+      return route.fulfill({ json: { ...mockedAuthUser, email: "novo@example.test" } });
+    });
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    await page.goto("/#/profile");
+    await page.getByLabel("Novo e-mail").fill("Novo@example.test");
+    await page.getByRole("button", { name: "Solicitar alteração de e-mail", exact: true }).click();
+    await expect(page.locator(".profile-page").getByRole("status")).toHaveText("E-mail atualizado.");
+    await expect(page.locator(".topbar-copy")).toContainText("novo@example.test");
+    await expect(page.locator(".profile-summary")).not.toContainText("aguardando confirmação");
+  });
+
+  test("perfil valida dados antes de enviar alteracoes de conta", async ({ page }) => {
+    let updates = 0;
+    let verifications = 0;
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    await page.route("**/auth/v1/user*", async (route) => { updates++; return route.abort(); });
+    await page.route("**/auth/v1/token?*", async (route) => { verifications++; return route.abort(); });
+    await page.goto("/#/profile");
+    await page.getByLabel("Nome de exibição").fill(" ");
+    await page.getByRole("button", { name: "Salvar nome", exact: true }).click();
+    await expect(page.getByText("Informe pelo menos 2 caracteres.", { exact: true })).toBeVisible();
+    await page.getByLabel("Novo e-mail").fill("invalid-address");
+    await page.getByRole("button", { name: "Solicitar alteração de e-mail", exact: true }).click();
+    await expect(page.getByText("Informe um e-mail válido.", { exact: true })).toBeVisible();
+    await page.getByLabel("Senha atual", { exact: true }).fill(mockedUser.password);
+    await page.getByLabel("Nova senha", { exact: true }).fill("New test password 42!");
+    await page.getByLabel("Confirmar nova senha", { exact: true }).fill("Different test password");
+    await page.getByRole("button", { name: "Alterar senha", exact: true }).click();
+    await expect(page.getByText("As senhas precisam ser iguais.", { exact: true })).toBeVisible();
+    expect(updates).toBe(0);
+    expect(verifications).toBe(0);
+  });
+
+  test("perfil verifica senha atual antes da troca e limpa campos secretos apos sucesso", async ({ page }) => {
+    let verifications = 0;
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    await page.route("**/auth/v1/token?*", async (route) => {
+      expect(route.request().postDataJSON().password).toBe(mockedUser.password);
+      verifications++;
+      return route.fallback();
+    });
+    await page.route("**/auth/v1/user", async (route) => {
+      if (route.request().method() !== "PUT") return route.fallback();
+      expect(verifications).toBe(1);
+      expect(route.request().postDataJSON()).toEqual({ code_challenge: null, code_challenge_method: null, password: "New test password 42!", current_password: mockedUser.password });
+      return route.fulfill({ json: mockedAuthUser });
+    });
+    await page.goto("/#/profile");
+    await page.getByLabel("Senha atual", { exact: true }).fill(mockedUser.password);
+    await page.getByLabel("Nova senha", { exact: true }).fill("New test password 42!");
+    await page.getByLabel("Confirmar nova senha", { exact: true }).fill("New test password 42!");
+    await page.getByRole("button", { name: "Alterar senha", exact: true }).click();
+    await expect(page.locator(".profile-page").getByRole("status")).toContainText("Senha alterada.");
+    for (const input of await page.locator('input[type="password"]').all()) await expect(input).toHaveValue("");
+    expect(verifications).toBe(1);
+  });
+
+  test("perfil bloqueia troca com senha atual incorreta e permite tentar novamente", async ({ page }) => {
+    let updates = 0;
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    await page.route("**/auth/v1/token?*", (route) => route.fulfill({ status: 400, headers: { "X-Supabase-Api-Version": "2024-01-01", "Access-Control-Expose-Headers": "X-Supabase-Api-Version" }, json: { code: "invalid_credentials", msg: "Invalid login credentials" } }));
+    await page.route("**/auth/v1/user", async (route) => { updates++; return route.abort(); });
+    await page.goto("/#/profile");
+    await page.getByLabel("Senha atual", { exact: true }).fill("Wrong test password");
+    await page.getByLabel("Nova senha", { exact: true }).fill("New test password 42!");
+    await page.getByLabel("Confirmar nova senha", { exact: true }).fill("New test password 42!");
+    await page.getByRole("button", { name: "Alterar senha", exact: true }).click();
+    await expect(page.getByRole("alert")).toContainText("senha atual está incorreta");
+    for (const input of await page.locator('input[type="password"]').all()) await expect(input).toHaveValue("");
+    expect(updates).toBe(0);
+    await expect(page.getByLabel("Senha atual", { exact: true })).toBeEnabled();
+  });
+
+  test("perfil informa falha sem mostrar mensagens privadas ou confirmar sucesso", async ({ page }) => {
+    await page.route("**/auth/v1/user", (route) => route.fulfill({ status: 500, json: { code: "unexpected_failure", msg: "PRIVATE_TOKEN PRIVATE_EMAIL@example.test" } }));
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    await page.goto("/#/profile");
+    await page.getByLabel("Nome de exibição").fill("Nome de teste");
+    await page.getByRole("button", { name: "Salvar nome", exact: true }).click();
+    await expect(page.getByRole("alert")).toHaveText("Não foi possível salvar a alteração. Tente novamente em alguns instantes.");
+    await expect(page.locator(".profile-page").getByRole("status")).toHaveCount(0);
+    await expect(page.getByText(/PRIVATE_/)).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Usuario");
   });
 
   test("faz login e chega ao painel (desktop e mobile)", async ({ page }) => {
@@ -329,6 +489,30 @@ test.describe("Login E2E mockado", () => {
     await page.screenshot({ path: testInfo.outputPath("calendario-referencia.png"), fullPage: true });
     await page.getByRole("button", { name: "12/09/2026", exact: true }).click();
     await expect(row).toHaveAttribute("data-payment-state", "paid");
+  });
+
+  test("menu de acoes preserva foco interno e fecha ao navegar para fora pelo teclado", async ({ page }) => {
+    await mockPaymentLayout(page);
+    await login(page, mockedUser);
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    await page.getByRole("button", { name: "14/09/2026", exact: true }).click();
+    const row = page.locator(".day-detail .ledger-row");
+    const trigger = row.locator(".ledger-trigger");
+    const panel = row.getByRole("group", { name: "Ações do plantão" });
+
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await expect(panel).toBeVisible();
+    await panel.getByRole("button", { name: "Editar plantao" }).focus();
+    await expect(panel).toBeVisible();
+    await page.getByRole("button", { name: "Mes anterior", exact: true }).focus();
+    await expect(panel).toBeHidden();
+
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await expect(panel).toBeVisible();
+    for (let index = 0; index < 3; index++) await page.keyboard.press("Tab");
+    await expect(panel).toBeHidden();
   });
 
   test("acoes flutuantes de plantao preservam altura, cores, teclado e confirmacao", async ({ page, isMobile }, testInfo) => {
