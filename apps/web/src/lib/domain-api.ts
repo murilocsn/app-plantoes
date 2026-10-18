@@ -34,6 +34,8 @@ export const domainApi = {
     api<Receivable>(`/receivables/${id}`, { method: "PATCH", body: payload }),
   markReceivablePaid: (id: string, payload: unknown) =>
     api<Receivable>(`/receivables/${id}/mark-paid`, { method: "POST", body: payload }),
+  markReceivablesPaid: (payload: unknown) =>
+    api<Receivable[]>("/receivables/mark-paid", { method: "POST", body: payload }),
   deleteReceivable: (id: string) => api(`/receivables/${id}`, { method: "DELETE" }),
   createPersonalExpense: (payload: unknown) =>
     api("/expenses/personal", { method: "POST", body: payload }),

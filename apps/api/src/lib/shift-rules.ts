@@ -1,4 +1,5 @@
 import type { recurrenceInputSchema } from "@financplantoes/shared";
+import { billingPeriod } from "@financplantoes/shared";
 import type { z } from "zod";
 import { HttpError } from "./http-error";
 
@@ -84,29 +85,5 @@ export function recurrenceForDatabase(recurrence: RecurrenceInput) {
 }
 
 export function expectedPaymentDate(shiftDate: string, location: PaymentLocation) {
-  const date = new Date(`${shiftDate}T12:00:00Z`);
-  const day = date.getUTCDate();
-  let periodMonth = date.getUTCMonth();
-  const periodYear = date.getUTCFullYear();
-
-  if (location.reference_start_day <= location.reference_end_day) {
-    if (day > location.reference_end_day) {
-      periodMonth += 1;
-    } else if (day < location.reference_start_day) {
-      periodMonth -= 1;
-    }
-  } else if (day < location.reference_start_day) {
-    periodMonth -= 1;
-  }
-
-  const periodDate = new Date(Date.UTC(periodYear, periodMonth, 1));
-  const paymentDate = new Date(
-    Date.UTC(periodDate.getUTCFullYear(), periodDate.getUTCMonth() + location.payment_due_months_after, 1),
-  );
-  const lastDay = new Date(
-    Date.UTC(paymentDate.getUTCFullYear(), paymentDate.getUTCMonth() + 1, 0),
-  ).getUTCDate();
-  paymentDate.setUTCDate(Math.min(location.payment_due_day, lastDay));
-
-  return paymentDate.toISOString().slice(0, 10);
+  return billingPeriod(shiftDate, location).expectedDate;
 }

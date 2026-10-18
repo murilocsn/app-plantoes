@@ -14,6 +14,10 @@ export const receivablesRouter = Router();
 const receivableSelect =
   "id,shift_id,location_id,description,amount,expected_date,received_date,payment_method,status,notes,created_at";
 
+const markReceivablesPaidSchema = markReceivablePaidSchema.extend({
+  ids: idParamSchema.shape.id.array().min(1).max(1000),
+});
+
 receivablesRouter.get(
   "/",
   asyncHandler(async (request, response) => {
@@ -46,6 +50,29 @@ receivablesRouter.post(
     );
 
     ok(response, receivable, 201);
+  }),
+);
+
+receivablesRouter.post(
+  "/mark-paid",
+  asyncHandler(async (request, response) => {
+    const { ids, ...input } = markReceivablesPaidSchema.parse(request.body);
+    // One UPDATE for the batch; paid/cancelled records cannot be overwritten.
+    const receivables = await expectData<Receivable[]>(
+      request.auth.supabase
+        .from("receivables")
+        .update({
+          ...input,
+          received_date: input.received_date ?? new Date().toISOString().slice(0, 10),
+          status: "received",
+        })
+        .eq("user_id", request.auth.user.id)
+        .in("id", [...new Set(ids)])
+        .in("status", ["pending", "overdue"])
+        .select(receivableSelect),
+    );
+
+    ok(response, receivables);
   }),
 );
 

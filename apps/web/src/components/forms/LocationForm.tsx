@@ -29,7 +29,7 @@ export function LocationForm({ location, submitting, onCancel, onSubmit }: Locat
       doc: location?.doc ?? "",
       active: location?.active ?? true,
       reference_start_day: location?.reference_start_day ?? 1,
-      reference_end_day: location?.reference_end_day ?? 28,
+      reference_end_day: location?.reference_end_day ?? 31,
       payment_due_day: location?.payment_due_day ?? 10,
       payment_due_months_after: location?.payment_due_months_after ?? 1,
     },
@@ -49,17 +49,24 @@ export function LocationForm({ location, submitting, onCancel, onSubmit }: Locat
       <Field error={errors.reference_start_day?.message} label="Inicio do periodo de referencia">
         <input min="1" max="31" type="number" {...register("reference_start_day")} />
       </Field>
-      <Field error={errors.reference_end_day?.message} label="Fim do periodo de referencia">
+      <Field error={errors.reference_end_day?.message} label="Dia de fechamento da referência">
         <input min="1" max="31" type="number" {...register("reference_end_day")} />
       </Field>
-      <Field error={errors.payment_due_day?.message} label="Dia do faturamento">
+      <Field error={errors.payment_due_day?.message} label="Dia habitual do pagamento">
         <input min="1" max="31" type="number" {...register("payment_due_day")} />
       </Field>
-      <Field error={errors.payment_due_months_after?.message} label="Meses apos o periodo">
-        <input min="0" max="12" type="number" {...register("payment_due_months_after")} />
+      <Field error={errors.payment_due_months_after?.message} label="Em qual mês a empresa costuma pagar?">
+        <select {...register("payment_due_months_after")}>
+          <option value="0">No mesmo mês do fechamento</option>
+          <option value="1">No mês seguinte ao fechamento</option>
+          {Array.from({ length: 11 }, (_, index) => index + 2).map(months => <option key={months} value={months}>{months} meses após o mês do fechamento</option>)}
+        </select>
       </Field>
       <p className="form-hint">
-        Exemplo: periodo 01 a 28, faturamento no dia 10 e 1 mes depois resulta em plantões de agosto faturados ate 10/09.
+        Exemplo: referência de 26/08 a 25/09, pagamento habitual no dia 10 e no mês seguinte: previsão em 10/10. Não é uma contagem de 30 dias.
+      </p>
+      <p className="form-hint">
+        Para abranger o mês inteiro, use início 1 e fechamento 31. Se o dia não existir, usamos o último dia daquele mês, inclusive em fevereiro. Plantões após o fechamento entram na referência seguinte; nenhum dia é descartado. É uma previsão, não uma confirmação de recebimento.
       </p>
       <label className="check-field">
         <input type="checkbox" {...register("active")} />

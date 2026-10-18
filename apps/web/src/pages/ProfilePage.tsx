@@ -123,6 +123,7 @@ export function ProfilePage() {
           <h3 id="profile-password-title"><KeyRound aria-hidden="true" size={18} /> Alterar senha</h3>
           <p className="form-hint">Confirme sua senha atual e escolha uma nova com pelo menos 8 caracteres.</p>
           <form className="form-grid" noValidate onSubmit={passwordForm.handleSubmit(savePassword)}>
+            <input autoComplete="username" hidden name="username" readOnly type="text" value={user?.email ?? ""} />
             <Field error={passwordForm.formState.errors.currentPassword?.message} label="Senha atual">
               <input autoComplete="current-password" aria-invalid={Boolean(passwordForm.formState.errors.currentPassword)} disabled={busy} type="password" {...passwordForm.register("currentPassword")} />
             </Field>

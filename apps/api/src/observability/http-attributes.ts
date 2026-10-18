@@ -9,7 +9,7 @@ const routePaths = {
   "/api/dashboard": ["/overview", "/bootstrap"],
   "/api/expenses": ["/", "/personal", "/shared"],
   "/api/locations": ["/", "/:id"],
-  "/api/receivables": ["/", "/:id", "/:id/mark-paid"],
+  "/api/receivables": ["/", "/:id", "/mark-paid", "/:id/mark-paid"],
   "/api/reports": ["/export.csv"],
   "/api/settings": ["/"],
   "/api/shifts": ["/", "/:id"],
