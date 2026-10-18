@@ -67,6 +67,7 @@ export function App() {
         <Route element={<LegalPage document="privacy" />} path="/privacy" />
         <Route element={<PublicRoute />} path="/login" />
         <Route element={<ProtectedShell />}>
+          <Route element={<ProfilePage />} path="profile" />
           <Route element={<DashboardPage />} index />
           <Route element={<ShiftsPage />} path="shifts" />
           <Route element={<LocationsPage />} path="locations" />
@@ -76,7 +77,6 @@ export function App() {
           <Route element={<Navigate replace to="/" />} path="guidelines" />
           <Route element={<SpacesPage />} path="spaces" />
           <Route element={<ReportsPage />} path="reports" />
-          <Route element={<ProfilePage />} path="profile" />
         </Route>
         <Route element={<Navigate replace to="/" />} path="*" />
       </Routes>
