@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { KeyRound, Mail, Save, UserRound } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { Link } from "react-router-dom";
 import type { z } from "zod";
 import { Button } from "../components/Button";
 import { Field } from "../components/Field";
@@ -139,6 +140,10 @@ export function ProfilePage() {
           </form>
         </section>
       </div>
+      <nav aria-label="Documentos legais" className="legal-links">
+        <Link to="/terms">Termos de Uso</Link>
+        <Link to="/privacy">Aviso de Privacidade</Link>
+      </nav>
     </section>
   );
 }

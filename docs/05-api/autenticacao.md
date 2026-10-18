@@ -29,6 +29,15 @@ Tokens e chaves reais nunca devem aparecer em documentacao, prints, commits ou l
 
 ## Perfil do usuario
 
+No cadastro pela interface, **Nome completo** e obrigatorio, com 2 a 80 caracteres
+apos remover espacos das extremidades. O formulario e o metodo `AuthContext.signUp`
+validam o campo antes de enviar ao Supabase. Reutiliza a validacao de nome do perfil;
+nao verifica identidade civil nem exige documento pessoal. O nome e enviado somente
+como `options.data.full_name`, separado de `legal_acknowledgment`, e aparece completo
+em Meu perfil. A saudacao continua usando apenas o primeiro nome. Nao e enviado a
+telemetria ou logs. O login de contas
+existentes continua solicitando apenas e-mail e senha.
+
 A rota autenticada `/#/profile`, disponivel em **Meu perfil** no menu lateral
 e no menu mobile, usa o mesmo cliente Supabase Auth da aplicacao.
 

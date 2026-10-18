@@ -3,13 +3,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { ProfilePassword } from "../lib/profile";
+import { signupLegalMetadata, type SignupAcknowledgment } from "../lib/legal";
 
 type AuthContextValue = {
   loading: boolean;
   session: Session | null;
   user: User | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, acknowledgment: SignupAcknowledgment) => Promise<void>;
   signOut: () => Promise<void>;
   updateName: (fullName: string) => Promise<void>;
   changeEmail: (email: string) => Promise<boolean>;
@@ -84,8 +85,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw error;
         }
       },
-      async signUp(email, password) {
-        const { error } = await supabase.auth.signUp({ email, password });
+      async signUp(email, password, fullName, acknowledgment) {
+        // Validate before contacting Auth. User-editable metadata is not authorization
+        // or a protected audit record; see docs/07-privacidade-lgpd/aceite-cadastro.md.
+        const legalMetadata = signupLegalMetadata(acknowledgment);
+        const { profileNameSchema } = await import("../lib/profile");
+        const input = profileNameSchema.safeParse({ fullName });
+        if (!input.success) throw Object.assign(new Error("Invalid signup name."), { code: "signup_name_invalid" });
+        const data = { full_name: input.data.fullName, ...legalMetadata };
+        const { error } = await supabase.auth.signUp({ email, password, options: { data } });
 
         if (error) {
           throw error;

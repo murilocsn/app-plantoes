@@ -14,6 +14,7 @@ const ExpensesPage = lazy(() => import("./pages/ExpensesPage").then((m) => ({ de
 const FinancePage = lazy(() => import("./pages/FinancePage").then((m) => ({ default: m.FinancePage })));
 const LocationsPage = lazy(() => import("./pages/LocationsPage").then((m) => ({ default: m.LocationsPage })));
 const LoginPage = lazy(() => import("./pages/LoginPage").then((m) => ({ default: m.LoginPage })));
+const LegalPage = lazy(() => import("./pages/LegalPage").then((m) => ({ default: m.LegalPage })));
 const ProfilePage = lazy(() => import("./pages/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const ReportsPage = lazy(() => import("./pages/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const ShiftsPage = lazy(() => import("./pages/ShiftsPage").then((m) => ({ default: m.ShiftsPage })));
@@ -62,6 +63,8 @@ export function App() {
     // Suspense mostra a tela de carregamento enquanto o chunk da página é baixado
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
+        <Route element={<LegalPage document="terms" />} path="/terms" />
+        <Route element={<LegalPage document="privacy" />} path="/privacy" />
         <Route element={<PublicRoute />} path="/login" />
         <Route element={<ProtectedShell />}>
           <Route element={<DashboardPage />} index />
