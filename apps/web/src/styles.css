@@ -33,9 +33,9 @@
   --radius-panel: 14px;
   --control-height: 40px;
   --payment-purple: #9735b9;
-  --payment-paid: #0fd60c;
-  --payment-pending: #f4d509ea;
-  --payment-overdue: #dc332e;
+  --payment-paid: #158313;
+  --payment-pending: #ccb30eea;
+  --payment-overdue: #c3241f;
   --payment-paid-ink: #14361c;
 }
 
@@ -2353,7 +2353,7 @@ h3 {
 }
 
 .mobile-menu-backdrop {
-  background: rgba(11, 15, 24, 0.42);
+  background: rgba(11, 15, 24, 0.28);
   border: 0;
   cursor: pointer;
   inset: 0;
@@ -2362,19 +2362,37 @@ h3 {
   z-index: 90;
 }
 
+html:has(.mobile-menu-drawer),
+body:has(.mobile-menu-drawer) {
+  overflow: hidden;
+}
+
 .mobile-menu-drawer {
   background: var(--surface);
-  border-right: 1px solid var(--border);
-  box-shadow: 20px 0 48px rgba(31, 42, 68, 0.2);
-  display: grid;
-  gap: 1rem;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  inset: 0 auto 0 0;
-  max-width: 340px;
-  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(31, 42, 68, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  inset: 12px auto auto 12px;
+  max-height: min(42rem, calc(100vh - 5rem));
+  max-height: min(42rem, calc(100dvh - 5rem));
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding: 0.75rem;
   position: fixed;
-  width: min(86vw, 320px);
+  scrollbar-width: none;
+  width: min(78vw, 280px);
   z-index: 100;
+}
+
+.mobile-menu-drawer::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-menu-drawer > * {
+  flex-shrink: 0;
 }
 
 .mobile-menu-head {
@@ -2382,6 +2400,26 @@ h3 {
   display: flex;
   gap: 0.75rem;
   justify-content: space-between;
+}
+
+.mobile-menu-head > a {
+  flex: 1;
+  min-width: 0;
+}
+
+.mobile-menu-head .brand {
+  gap: 0.5rem;
+}
+
+.mobile-menu-head .brand-logo {
+  height: 36px;
+  width: 36px;
+}
+
+.mobile-menu-head .brand span {
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.35;
 }
 
 .mobile-menu-nav,
@@ -2392,17 +2430,23 @@ h3 {
 
 .mobile-menu-nav {
   align-content: start;
-  overflow-y: auto;
+}
+
+.mobile-menu-footer {
+  margin-top: auto;
 }
 
 .mobile-menu-nav a,
 .mobile-menu-footer .button {
   align-items: center;
   border-radius: 8px;
-  color: var(--muted);
+  color: var(--text);
   display: flex;
+  font-size: 0.9rem;
+  font-weight: 600;
   gap: 0.7rem;
-  min-height: 42px;
+  line-height: 1.4;
+  min-height: 44px;
   padding: 0 0.75rem;
 }
 
@@ -2414,6 +2458,11 @@ h3 {
 
 .mobile-menu-footer .button-primary {
   color: var(--on-blue);
+}
+
+.mobile-menu-footer .push-reminder-control small {
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .push-reminder-control {
