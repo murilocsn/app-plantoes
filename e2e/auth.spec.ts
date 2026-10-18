@@ -757,15 +757,110 @@ test.describe("Login E2E mockado", () => {
     await login(page, mockedUser);
     await expect(page.locator(".calendar-grid")).toBeVisible();
     await page.goto("/#/reports");
-    await expect(page.locator(".stat-grid .stat-card > strong")).toHaveText([/R\$\s*1.500,00/, /R\$\s*200,00/, /R\$\s*520,00/]);
+    await expect(page.locator(".reports-summary .stat-card > strong")).toHaveText([/R\$\s*1.500,00/, "12 h", /R\$\s*125,00/]);
+    await page.locator(".reports-finance > summary").click();
+    await expect(page.locator(".reports-cash-totals dd")).toHaveText([/R\$\s*200,00/, /R\$\s*520,00/]);
     await page.getByRole("button", { name: "Mês anterior dos relatórios" }).click();
-    await expect(page.locator(".stat-grid .stat-card > strong")).toHaveText([/R\$\s*9.000,00/, /R\$\s*0,00/, /R\$\s*9.000,00/]);
+    await expect(page.locator(".reports-summary .stat-card > strong")).toHaveText([/R\$\s*9.000,00/, "12 h", /R\$\s*750,00/]);
+    await expect(page.locator(".reports-cash-totals dd")).toHaveText([/R\$\s*0,00/, /R\$\s*9.000,00/]);
     await page.goto("/#/expenses");
     await expect(page.locator(".stat-grid .stat-card > strong")).toHaveText([/R\$\s*320,00/, /R\$\s*200,00/]);
     await expect(page.getByText("Despesa antiga", { exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: "Mês anterior das despesas" }).click();
     await expect(page.getByText("Despesa antiga", { exact: true })).toBeVisible();
     await expect(page.locator(".stat-grid .stat-card > strong")).toHaveText([/R\$\s*9.000,00/, /R\$\s*0,00/]);
+  });
+
+  test.describe("relatorios comparativos", () => {
+    const reportLocations: Location[] = [
+      { ...location, id: "report-a", name: "CASA DE SAUDE STELLA MARIS (CSSM) - Unidade de demonstracao" },
+      { ...location, id: "report-b", name: "Unidade Beta" },
+      { ...location, id: "report-c", name: "Unidade Gama" },
+      { ...location, id: "report-empty", name: "Local sem plantoes" },
+    ];
+    const makeShift = (unit: Location, day: number, duration: number, value: number): Shift => ({
+      id: `${unit.id}-${day}`, date: `2026-10-${String(day).padStart(2, "0")}`, location_id: unit.id,
+      location_name: unit.name, duration, value, start_time: "07:00",
+    });
+    const data: AppBootstrap = {
+      ...bootstrap,
+      locations: reportLocations,
+      shifts: [
+        ...[3, 8, 15, 26].map(day => makeShift(reportLocations[0]!, day, 12, 720)),
+        ...[5, 12, 24].map(day => makeShift(reportLocations[1]!, day, 12, 900)),
+        ...[9, 20].map(day => makeShift(reportLocations[2]!, day, 6, 300)),
+        { ...makeShift(reportLocations[0]!, 15, 10, 1000), id: "report-previous", date: "2026-09-15" },
+        { ...makeShift(reportLocations[0]!, 15, 10, 2000), id: "report-next", date: "2026-11-15" },
+      ],
+    };
+
+    test.beforeEach(async ({ page, isMobile }) => {
+      await page.clock.setFixedTime(new Date("2026-10-15T12:00:00Z"));
+      await page.route("**/api/dashboard/bootstrap", route => route.fulfill({ json: { data } }));
+      await login(page, mockedUser);
+      await expect(page).toHaveURL(/#\/$/);
+      if (isMobile) await page.setViewportSize({ width: 320, height: 720 });
+      await page.goto("/#/reports");
+      await expect(page.getByRole("heading", { name: "Comparativo por local", exact: true })).toBeVisible();
+    });
+
+    test("compara valores e horas, expande locais e exporta o periodo filtrado", async ({ page }, testInfo) => {
+      const cards = page.locator(".reports-summary .stat-card > strong");
+      await expect(cards).toHaveText([/R\$\s*6.180,00/, "96 h", /R\$\s*64,38/]);
+      await expect(page.locator(".reports-scope")).toContainText("9 plantões · 3 locais");
+      await expect(page.locator(".report-location")).toHaveCount(3);
+      await expect(page.locator(".report-place small").first()).toHaveText("46,6% do valor previsto");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: testInfo.outputPath("relatorios-comparativo.png"), fullPage: true });
+      await page.getByRole("combobox", { name: "Ordenar por", exact: true }).selectOption("hourly");
+      const first = page.locator(".report-location").first();
+      await expect(first.locator(".report-place strong")).toHaveText("Unidade Beta");
+      await first.locator("summary").press("Enter");
+      await expect(first).toHaveAttribute("open", "");
+      await expect(first.locator(".report-shift-details li")).toHaveCount(3);
+      await expect(first.locator(".report-shift-date")).toHaveText(["05/10/2026", "12/10/2026", "24/10/2026"]);
+      await page.getByRole("combobox", { name: "Local", exact: true }).selectOption("report-b");
+      await expect(cards).toHaveText([/R\$\s*2.700,00/, "36 h", /R\$\s*75,00/]);
+      await page.getByRole("combobox", { name: "Local", exact: true }).selectOption("");
+      await page.getByRole("combobox", { name: "Período dos plantões", exact: true }).selectOption("2026-09");
+      await expect(cards).toHaveText([/R\$\s*1.000,00/, "10 h", /R\$\s*100,00/]);
+      await page.getByRole("button", { name: "Mês atual dos relatórios", exact: true }).click();
+      await expect(cards.first()).toHaveText(/R\$\s*6.180,00/);
+      await page.getByRole("combobox", { name: "Local", exact: true }).selectOption("report-b");
+      await page.getByRole("combobox", { name: "Período dos plantões", exact: true }).selectOption("custom");
+      await page.getByRole("textbox", { name: "De", exact: true }).fill("01/10/2026");
+      await page.getByRole("textbox", { name: "Até", exact: true }).fill("15/10/2026");
+      await expect(cards).toHaveText([/R\$\s*1.800,00/, "24 h", /R\$\s*75,00/]);
+      await page.route("**/api/reports/export.csv*", route => route.fulfill({ contentType: "text/csv", body: 'Tipo;Data;Descricao;Valor;Status\nPlantao;2026-10-05;Unidade Beta;900;' }));
+      const outgoing = page.waitForRequest(request => new URL(request.url()).pathname === "/api/reports/export.csv");
+      const download = page.waitForEvent("download");
+      await page.getByRole("button", { name: "Exportar CSV", exact: true }).click();
+      const query = new URL((await outgoing).url()).searchParams;
+      expect(Object.fromEntries(query)).toEqual({ from: "2026-10-01", to: "2026-10-15", location_id: "report-b" });
+      expect((await download).suggestedFilename()).toMatch(/^financplantoes-.*\.csv$/);
+    });
+
+    test("mantem estados vazios, valida as datas e informa falhas de exportacao", async ({ page }, testInfo) => {
+      await page.getByRole("combobox", { name: "Local", exact: true }).selectOption("report-empty");
+      await expect(page.getByText("Sem plantões no período", { exact: true })).toBeVisible();
+      await expect(page.locator(".reports-summary .stat-card > strong")).toHaveText([/R\$\s*0,00/, "0 h", "—"]);
+      await page.getByRole("combobox", { name: "Período dos plantões", exact: true }).selectOption("custom");
+      for (const invalidDate of ["31/02/2026", "2026-1-1"]) {
+        await page.getByRole("textbox", { name: "De", exact: true }).fill(invalidDate);
+        await expect(page.getByRole("alert")).toHaveText("Informe datas válidas para o início e o fim do período.");
+        await expect(page.getByRole("button", { name: "Exportar CSV", exact: true })).toBeDisabled();
+        await expect(page.locator(".reports-summary")).toHaveCount(0);
+      }
+      await page.getByRole("button", { name: "Mês atual dos relatórios", exact: true }).click();
+      await page.getByRole("combobox", { name: "Local", exact: true }).selectOption("");
+      await page.route("**/api/reports/export.csv*", route => route.fulfill({ status: 503, json: { error: { message: "Synthetic export failure" } } }));
+      await page.getByRole("button", { name: "Exportar CSV", exact: true }).click();
+      await expect(page.getByRole("alert")).toContainText("baixar o arquivo");
+      await expect(page.getByRole("button", { name: "Exportar CSV", exact: true })).toBeEnabled();
+      await page.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: testInfo.outputPath("relatorios-escuro.png"), fullPage: true, animations: "disabled" });
+    });
   });
 
   test("faturamento explica mes seguinte e inclui o mes inteiro por padrao", async ({ page }) => {
@@ -878,7 +973,7 @@ test.describe("Login E2E mockado", () => {
     { path: "locations", heading: "Locais de trabalho", action: "Novo local", dialog: "Novo local" },
     { path: "expenses", heading: "Despesas pessoais", action: "Nova", dialog: "Nova despesa pessoal" },
     { path: "spaces", heading: "Espacos", action: "Novo espaco", dialog: "Novo espaco" },
-    { path: "reports", heading: "Resumo por local", action: null, dialog: null },
+    { path: "reports", heading: "Comparativo por local", action: null, dialog: null },
   ]) {
     test(`layout compacto: ${screen.path || "calendario"} preserva dados e acoes`, async ({ page, isMobile }, testInfo) => {
       const errors: string[] = [];
