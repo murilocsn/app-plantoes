@@ -74,3 +74,19 @@ nomes dos participantes sem e-mails de terceiros, centavos e totais por período
 O script concorrente valida duplicidade e a corrida entre aceite e cadastro de
 despesa. Ele verifica o diretório exato do cluster antes de executar operações.
 Os testes SQL usam rollback; o script remove somente seus usuários fictícios.
+
+## Autoria dos lançamentos
+
+Depois do fixture e das duas migrations de locais, execute somente no cluster
+temporário em loopback:
+
+```powershell
+psql -X -h 127.0.0.1 -p 55428 -U expense_reform_test -d postgres -v ON_ERROR_STOP=1 -f database/tests/expense_authors_fixture.sql -f database/migrations/20261019180927_expense_authors.sql -f database/tests/expense_sharing.sql -f database/tests/expense_locations.sql -f database/tests/expense_authors.sql
+```
+
+O fixture de autoria acrescenta um modelo mínimo de `profiles`, com RLS, ao
+ambiente de teste. Ele falha se essa tabela já existir; não deve ser executado
+no Supabase de produção. A suíte verifica autor proprietário/convidado, nome
+do perfil, registros históricos sem atribuição indevida, isolamento entre
+usuários, bloqueio de alteração direta do autor e preservação da despesa quando
+a conta do autor é removida. Os dados fictícios são revertidos por rollback.
