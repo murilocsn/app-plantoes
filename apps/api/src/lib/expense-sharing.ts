@@ -11,7 +11,13 @@ export async function expenseSharingSnapshot(
   if (error?.code === "PGRST202") {
     return { available: false, cards: [], invitations: [] };
   }
-  if (error || !Array.isArray(data?.cards) || !Array.isArray(data?.invitations))
+  if (
+    error ||
+    !Array.isArray(data?.cards) ||
+    !Array.isArray(data?.invitations) ||
+    (data.locations !== undefined && !Array.isArray(data.locations)) ||
+    (data.personal_locations !== undefined && !Array.isArray(data.personal_locations))
+  )
     throw new HttpError(
       503,
       "Não foi possível carregar as despesas compartilhadas.",
@@ -29,11 +35,13 @@ export async function expenseSharingAction(
   if (error) {
     const messages: Record<string, [number, string]> = {
       "42501": [403, "Você não tem permissão para realizar esta ação."],
-      P0002: [404, "Despesa ou convite não encontrado."],
+      P0002: [404, "Local, despesa ou convite não encontrado."],
       "23505": [409, "Já existe um convite pendente ou aceito para essa pessoa."],
       "22023": [
         400,
-        "Confira o valor e o e-mail informado. O valor não pode ultrapassar o disponível.",
+        name.startsWith("expense_location_")
+          ? "Confira os dados informados. Para convidar, use o e-mail de outra pessoa cadastrada e confirmada."
+          : "Confira o valor e o e-mail informado. O valor não pode ultrapassar o disponível.",
       ],
       P0001: [409, "Esse convite já foi respondido ou cancelado. Atualize a página."],
       "54000": [429, "O limite de convites foi atingido. Tente novamente mais tarde."],

@@ -30,6 +30,15 @@ export const expenseInviteInputSchema = z.object({
 export const expenseInviteReplySchema = z.object({ action: z.enum(["accepted", "declined"]) });
 export const expenseSharingIdSchema = z.object({ id: z.string().uuid("Identificador inválido") });
 
+export const expenseLocationInputSchema = z.object({
+  name: z.string().trim().min(2, "Informe o nome do local").max(200),
+  visibility: z.enum(["personal", "shared"]),
+});
+export const expenseLocationInviteSchema = expenseInviteInputSchema.pick({ email: true });
+export const locatedExpenseInputSchema = expenseCardInputSchema.extend({
+  location_card_id: z.string().uuid("Selecione um local"),
+});
+
 export type ExpenseInvitation = {
   id: string;
   card_id: string;
@@ -43,12 +52,14 @@ export type ReceivedExpenseInvitation = ExpenseInvitation & {
   expense_date: string;
   total_amount: number;
   owner_name: string;
+  is_location?: boolean;
 };
 export type SharedExpenseCard = {
   id: string;
   owner_id: string;
   owner_name: string;
   description: string;
+  created_by_name?: string | null;
   expense_date: string;
   category?: string | null;
   notes?: string | null;
@@ -58,11 +69,24 @@ export type SharedExpenseCard = {
   is_owner: boolean;
   participant_count: number;
   invitations: ExpenseInvitation[];
+  location_card_id?: string | null;
+};
+export type ExpenseLocationCard = {
+  id: string;
+  name: string;
+  visibility: "personal" | "shared";
+  is_owner: boolean;
+  owner_name: string;
+  participant_count: number;
+  participants: Array<{ name: string; is_owner: boolean }>;
+  invitations: ExpenseInvitation[];
 };
 export type ExpenseSharingSnapshot = {
   available: boolean;
   cards: SharedExpenseCard[];
   invitations: ReceivedExpenseInvitation[];
+  locations?: ExpenseLocationCard[];
+  personal_locations?: Array<{ expense_id: string; location_card_id: string }>;
 };
 
 /** Pending invitations reserve cents, but do not charge their recipients. */
@@ -84,6 +108,7 @@ export function expenseCardCosts(cards: readonly SharedExpenseCard[]) {
   return cards.map((card) => ({
     id: card.id,
     sharing_card_id: card.id,
+    location_card_id: card.location_card_id,
     description: card.description,
     amount: Number(card.amount),
     expense_date: card.expense_date,
@@ -91,4 +116,14 @@ export function expenseCardCosts(cards: readonly SharedExpenseCard[]) {
     notes: card.notes,
     created_at: card.created_at,
   }));
+}
+
+export function attachExpenseLocations<T extends { id: string }>(
+  expenses: readonly T[],
+  sharing: ExpenseSharingSnapshot,
+) {
+  const links = new Map(
+    sharing.personal_locations?.map((link) => [link.expense_id, link.location_card_id]),
+  );
+  return expenses.map((expense) => ({ ...expense, location_card_id: links.get(expense.id) }));
 }

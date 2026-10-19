@@ -2,9 +2,11 @@ import type { Expense, Location, Receivable, Shift } from "@financplantoes/share
 import { describe, expect, it } from "vitest";
 import {
   groupBillingReceivables,
+  groupExpenseStatements,
   inDateRange,
   reportPeriodTotals,
   sumMoney,
+  type ExpenseLedgerEntry,
 } from "./monthly-finance";
 
 const unit: Location = {
@@ -44,6 +46,62 @@ const expense = (date: string, amount: number): Expense => ({
   description: "Expense",
   expense_date: date,
   amount,
+});
+
+describe("expense statement grouping", () => {
+  const entry = (
+    id: string,
+    date: string,
+    amount: number,
+    location?: string,
+    type: "personal" | "shared" = "personal",
+  ): ExpenseLedgerEntry => ({
+    id,
+    expense_date: date,
+    amount,
+    description: id,
+    location_card_id: location,
+    type,
+  });
+  it("groups by location and reference month, keeping equal location names separate", () => {
+    const groups = groupExpenseStatements(
+      [
+        entry("first", "2026-10-01", 100.01, "a"),
+        entry("second", "2026-10-02", 0.02, "a"),
+        entry("previous", "2026-09-30", 20, "a"),
+        entry("other", "2026-10-01", 50, "b"),
+      ],
+      [
+        { id: "a", name: "Hospital" },
+        { id: "b", name: "Hospital" },
+      ],
+    );
+    expect(groups).toHaveLength(3);
+    const october = groups.find((group) => group.items.some((item) => item.id === "first"))!;
+    expect(october.total).toBe(100.03);
+    expect(october.reference).toBe("Referência: Outubro 2026");
+    expect(october.items.map((item) => item.id)).toEqual(["second", "first"]);
+    expect(groups.find((group) => group.items[0]?.id === "previous")?.reference).toBe(
+      "Referência: Setembro 2026",
+    );
+  });
+  it("keeps personal/shared expenses without a location visible in distinct groups", () => {
+    const groups = groupExpenseStatements(
+      [entry("personal", "2026-10-18", 10), entry("shared", "2026-10-18", 30, undefined, "shared")],
+      [],
+    );
+    expect(groups.map((group) => group.name)).toEqual([
+      "Compartilhadas sem local",
+      "Pessoais sem local",
+    ]);
+    expect(sumMoney(groups, (group) => group.total)).toBe(40);
+  });
+  it("sorts references across years without changing the original records", () => {
+    const items = [entry("december", "2026-12-31", 1, "a"), entry("january", "2027-01-01", 2, "a")];
+    const groups = groupExpenseStatements(items, [{ id: "a", name: "Casa" }]);
+    expect(groups.map((group) => group.month)).toEqual(["2027-01", "2026-12"]);
+    expect(items.map((item) => item.id)).toEqual(["december", "january"]);
+  });
 });
 
 describe("monthly finance", () => {

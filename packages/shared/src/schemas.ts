@@ -170,6 +170,7 @@ export const markReceivablePaidSchema = z.object({
 export const expenseSchema = z.object({
   id: z.string(),
   sharing_card_id: z.string().optional(),
+  location_card_id: z.string().nullable().optional(),
   description: z.string(),
   amount: z.coerce.number(),
   expense_date: z.string(),
@@ -184,6 +185,10 @@ export const personalExpenseInputSchema = z.object({
   expense_date: z.string().date("Informe uma data valida"),
   category: optionalText,
   notes: optionalText,
+  location_card_id: z.preprocess(
+    (value) => value === "" ? undefined : value,
+    z.string().uuid("Selecione um local válido").optional(),
+  ),
 });
 
 export const spaceTypeSchema = z.enum([

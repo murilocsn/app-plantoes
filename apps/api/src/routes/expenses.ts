@@ -6,6 +6,10 @@ import {
   expenseInviteReplySchema,
   expenseSharingIdSchema,
   expenseCardCosts,
+  attachExpenseLocations,
+  expenseLocationInputSchema,
+  expenseLocationInviteSchema,
+  locatedExpenseInputSchema,
   type Expense,
 } from "@financplantoes/shared";
 import { Router } from "express";
@@ -16,36 +20,169 @@ import { expenseSharingAction, expenseSharingSnapshot } from "../lib/expense-sha
 
 export const expensesRouter = Router();
 
-expensesRouter.post("/cards", asyncHandler(async (request, response) => {
-  const input = expenseCardInputSchema.parse(request.body);
-  ok(response, await expenseSharingAction(request.auth.supabase, "expense_sharing_create", {
-    p_description: input.description, p_amount: input.amount, p_expense_date: input.expense_date,
-    p_category: input.category || null, p_notes: input.notes || null,
-  }), 201);
-}));
+expensesRouter.get(
+  "/overview",
+  asyncHandler(async (request, response) => {
+    const startedAt = performance.now();
+    const [personal, shared, expenseSharing] = await Promise.all([
+      optionalData<Expense[]>(
+        request.auth.supabase
+          .from("personal_expenses")
+          .select("id,description,amount,expense_date,category,notes,created_at")
+          .eq("user_id", request.auth.user.id)
+          .order("expense_date", { ascending: false }),
+        [],
+      ),
+      optionalData<Expense[]>(
+        request.auth.supabase
+          .from("expenses")
+          .select("id,description,amount,expense_date,category,notes,created_at")
+          .eq("paid_by", request.auth.user.id)
+          .order("expense_date", { ascending: false }),
+        [],
+      ),
+      expenseSharingSnapshot(request.auth.supabase),
+    ]);
+    response.setHeader(
+      "Server-Timing",
+      `expenses;dur=${Math.round(performance.now() - startedAt)}`,
+    );
+    ok(response, {
+      personal: attachExpenseLocations(personal, expenseSharing),
+      shared: [...shared, ...expenseCardCosts(expenseSharing.cards)],
+      expenseSharing,
+    });
+  }),
+);
 
-expensesRouter.post("/cards/:id/invitations", asyncHandler(async (request, response) => {
-  const { id } = expenseSharingIdSchema.parse(request.params);
-  const input = expenseInviteInputSchema.parse(request.body);
-  ok(response, await expenseSharingAction(request.auth.supabase, "expense_sharing_invite", {
-    p_card_id: id, p_email: input.email, p_amount: input.amount,
-  }), 201);
-}));
+expensesRouter.post(
+  "/locations",
+  asyncHandler(async (request, response) => {
+    const input = expenseLocationInputSchema.parse(request.body);
+    ok(
+      response,
+      await expenseSharingAction(request.auth.supabase, "expense_location_create", {
+        p_name: input.name,
+        p_visibility: input.visibility,
+      }),
+      201,
+    );
+  }),
+);
 
-expensesRouter.post("/invitations/:id/respond", asyncHandler(async (request, response) => {
-  const { id } = expenseSharingIdSchema.parse(request.params);
-  const { action } = expenseInviteReplySchema.parse(request.body);
-  ok(response, await expenseSharingAction(request.auth.supabase, "expense_sharing_respond", {
-    p_invitation_id: id, p_action: action,
-  }));
-}));
+expensesRouter.patch(
+  "/locations/:id",
+  asyncHandler(async (request, response) => {
+    const { id } = expenseSharingIdSchema.parse(request.params);
+    const input = expenseLocationInputSchema.pick({ name: true }).parse(request.body);
+    ok(
+      response,
+      await expenseSharingAction(request.auth.supabase, "expense_location_rename", {
+        p_card_id: id,
+        p_name: input.name,
+      }),
+    );
+  }),
+);
 
-expensesRouter.post("/invitations/:id/cancel", asyncHandler(async (request, response) => {
-  const { id } = expenseSharingIdSchema.parse(request.params);
-  ok(response, await expenseSharingAction(request.auth.supabase, "expense_sharing_cancel", {
-    p_invitation_id: id,
-  }));
-}));
+expensesRouter.post(
+  "/locations/:id/invitations",
+  asyncHandler(async (request, response) => {
+    const { id } = expenseSharingIdSchema.parse(request.params);
+    const input = expenseLocationInviteSchema.parse(request.body);
+    ok(
+      response,
+      await expenseSharingAction(request.auth.supabase, "expense_location_invite", {
+        p_card_id: id,
+        p_email: input.email,
+      }),
+      201,
+    );
+  }),
+);
+
+expensesRouter.post(
+  "/locations/:id/expenses",
+  asyncHandler(async (request, response) => {
+    const { id } = expenseSharingIdSchema.parse(request.params);
+    const input = locatedExpenseInputSchema.parse({ ...request.body, location_card_id: id });
+    ok(
+      response,
+      await expenseSharingAction(request.auth.supabase, "expense_location_add_shared", {
+        p_card_id: id,
+        p_description: input.description,
+        p_amount: input.amount,
+        p_expense_date: input.expense_date,
+        p_category: input.category || null,
+        p_notes: input.notes || null,
+      }),
+      201,
+    );
+  }),
+);
+
+expensesRouter.post(
+  "/cards",
+  asyncHandler(async (request, response) => {
+    const input = expenseCardInputSchema.parse(request.body);
+    ok(
+      response,
+      await expenseSharingAction(request.auth.supabase, "expense_sharing_create", {
+        p_description: input.description,
+        p_amount: input.amount,
+        p_expense_date: input.expense_date,
+        p_category: input.category || null,
+        p_notes: input.notes || null,
+      }),
+      201,
+    );
+  }),
+);
+
+expensesRouter.post(
+  "/cards/:id/invitations",
+  asyncHandler(async (request, response) => {
+    const { id } = expenseSharingIdSchema.parse(request.params);
+    const input = expenseInviteInputSchema.parse(request.body);
+    ok(
+      response,
+      await expenseSharingAction(request.auth.supabase, "expense_sharing_invite", {
+        p_card_id: id,
+        p_email: input.email,
+        p_amount: input.amount,
+      }),
+      201,
+    );
+  }),
+);
+
+expensesRouter.post(
+  "/invitations/:id/respond",
+  asyncHandler(async (request, response) => {
+    const { id } = expenseSharingIdSchema.parse(request.params);
+    const { action } = expenseInviteReplySchema.parse(request.body);
+    ok(
+      response,
+      await expenseSharingAction(request.auth.supabase, "expense_sharing_respond", {
+        p_invitation_id: id,
+        p_action: action,
+      }),
+    );
+  }),
+);
+
+expensesRouter.post(
+  "/invitations/:id/cancel",
+  asyncHandler(async (request, response) => {
+    const { id } = expenseSharingIdSchema.parse(request.params);
+    ok(
+      response,
+      await expenseSharingAction(request.auth.supabase, "expense_sharing_cancel", {
+        p_invitation_id: id,
+      }),
+    );
+  }),
+);
 
 expensesRouter.get(
   "/",
@@ -90,6 +227,21 @@ expensesRouter.post(
   "/personal",
   asyncHandler(async (request, response) => {
     const input = personalExpenseInputSchema.parse(request.body);
+    if (input.location_card_id) {
+      ok(
+        response,
+        await expenseSharingAction(request.auth.supabase, "expense_location_add_personal", {
+          p_card_id: input.location_card_id,
+          p_description: input.description,
+          p_amount: input.amount,
+          p_expense_date: input.expense_date,
+          p_category: input.category || null,
+          p_notes: input.notes || null,
+        }),
+        201,
+      );
+      return;
+    }
     const expense = await expectData<Expense>(
       request.auth.supabase
         .from("personal_expenses")

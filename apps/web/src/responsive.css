@@ -597,6 +597,57 @@ canvas {
 .expenses-page-head {
   margin-bottom: 1rem;
 }
+.expense-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.expense-section { margin-top: 1rem; }
+.expense-section > .section-head { gap: 1rem; flex-wrap: wrap; }
+.expense-filters { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+.expense-filters .field { min-width: 0; }
+.expense-locations-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 1rem; }
+.expense-locations-grid h3 { margin: 0.5rem 0; overflow-wrap: anywhere; }
+.expense-ledger { display: grid; gap: 0.85rem; min-width: 0; }
+.expense-statement { border: 1px solid var(--border); border-radius: 10px; margin: 0; overflow: hidden; }
+.expense-statement .finance-invoice-head { border-radius: 0; }
+.expense-statement .ledger-list { padding-inline: 0.65rem; }
+.expense-ledger-entry { display: grid; grid-template-columns: 4px minmax(0, 1fr) auto; align-items: center; gap: 0.65rem; min-height: 76px; padding: 0.65rem 0; }
+.expense-ledger-row:last-child { border-bottom: 0; }
+.expense-ledger-row[data-expense-type="personal"] .ledger-accent { background: var(--coral, #df6758); }
+.expense-ledger-row[data-expense-type="shared"] .ledger-accent { background: var(--amber); }
+.expense-ledger-row .expense-type-badge { border-radius: 5px; font-size: 0.625rem; }
+.expense-ledger-row .expense-card-invitations { margin: 0; padding: 0 0.25rem 0.5rem; }
+.expense-ledger-caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.25rem 0.75rem; color: var(--muted); font-size: 0.75rem; margin: 0 0 0.65rem; }
+.expense-ledger-caption small { font-size: 0.6875rem; }
+.expense-filter-clear { margin-left: auto; }
+.expense-filter-toggle .finance-filter-panel { display: grid; }
+.expense-filter-toggle .expense-filters { margin-block: 0.5rem; }
+.expense-type-badge { display: inline-flex; border-radius: 20px; font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.55rem; }
+.expense-type-badge.personal { color: #9c3427; background: #fff0ed; }
+.expense-type-badge.shared { color: #805200; background: #fff3d6; }
+.expense-mode-choices { display: grid; gap: 0.75rem; }
+.expense-mode-choices .button { justify-content: flex-start; text-align: left; white-space: normal; padding: 1rem; }
+.expense-mode-choices small { display: block; margin-top: 0.25rem; font-weight: 400; }
+.expense-detail-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0; }
+.expense-location-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+.expense-location-summary > div { padding: 0.75rem; border-radius: 8px; background: var(--surface-muted, #edf2fa); }
+.expense-location-summary dt { color: var(--muted); font-size: 0.75rem; }
+.expense-location-summary dd { margin: 0.25rem 0 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.expense-location-expenses { list-style: none; padding: 0; margin: 0; }
+.expense-location-expense { padding: 0.85rem 0; border-bottom: 1px solid var(--border); }
+.expense-location-expense:last-child { border-bottom: 0; }
+.expense-location-expense-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.75rem; align-items: baseline; }
+.expense-location-expense-head strong { overflow-wrap: anywhere; }
+.expense-location-expense-head b { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.expense-location-expense-meta { display: grid; gap: 0.25rem; margin-top: 0.4rem; color: var(--muted); font-size: 0.75rem; overflow-wrap: anywhere; }
+.expense-location-expense-meta small { color: var(--blue); font-size: inherit; }
+.expense-members { padding-left: 1.25rem; overflow-wrap: anywhere; }
+@media (max-width: 900px) { .expense-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) {
+  .expense-summary { grid-template-columns: 1fr; }
+  .expense-section > .section-head > .button { width: 100%; }
+  .expense-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .expense-filters > .field:last-child { grid-column: 1 / -1; }
+  .app-frame .expense-summary > .stat-card:last-child { grid-column: 1 / -1; }
+  .expense-detail-actions .button { width: 100%; }
+}
 .expenses-page-head .muted {
   margin: 0.3rem 0 0;
 }

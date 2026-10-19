@@ -1,6 +1,6 @@
 import type { Expense, Location, Receivable, Shift } from "@financplantoes/shared";
 import { billingPeriod } from "@financplantoes/shared";
-import { dateLabel } from "./formatters";
+import { dateLabel, monthTitle } from "./formatters";
 
 export type DateRange = { from: string; to: string };
 
@@ -15,6 +15,61 @@ export function sumMoney<T>(items: readonly T[], amount: (item: T) => unknown) {
       return cents + (Number.isFinite(value) ? Math.round((value + Number.EPSILON) * 100) : 0);
     }, 0) / 100
   );
+}
+
+export type ExpenseLedgerEntry = Expense & { type: "personal" | "shared" };
+
+/** Keep distinct locations and personal/shared records separate, even with equal names. */
+export function groupExpenseStatements(
+  items: readonly ExpenseLedgerEntry[],
+  locations: readonly { id: string; name: string }[],
+) {
+  const names = new Map(locations.map((location) => [location.id, location.name]));
+  const groups = new Map<
+    string,
+    {
+      key: string;
+      name: string;
+      month: string;
+      reference: string;
+      items: ExpenseLedgerEntry[];
+    }
+  >();
+  for (const item of items) {
+    const month = item.expense_date.slice(0, 7);
+    const key = JSON.stringify([item.location_card_id || null, item.type, month]);
+    let group = groups.get(key);
+    if (!group) {
+      group = {
+        key,
+        name: item.location_card_id
+          ? (names.get(item.location_card_id) ?? "Local da despesa")
+          : item.type === "personal"
+            ? "Pessoais sem local"
+            : "Compartilhadas sem local",
+        month,
+        reference: `Referência: ${monthTitle(new Date(`${month}-01T12:00:00`))}`,
+        items: [],
+      };
+      groups.set(key, group);
+    }
+    group.items.push(item);
+  }
+  return [...groups.values()]
+    .map((group) => ({
+      ...group,
+      total: sumMoney(group.items, (item) => item.amount),
+      items: [...group.items].sort(
+        (left, right) =>
+          right.expense_date.localeCompare(left.expense_date) || left.id.localeCompare(right.id),
+      ),
+    }))
+    .sort(
+      (left, right) =>
+        left.name.localeCompare(right.name, "pt-BR") ||
+        right.month.localeCompare(left.month) ||
+        left.key.localeCompare(right.key),
+    );
 }
 
 export function reportPeriodTotals(

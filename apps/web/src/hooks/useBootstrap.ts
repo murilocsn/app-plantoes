@@ -4,6 +4,16 @@ import { domainApi } from "../lib/domain-api";
 const bootstrapKey = ["bootstrap"];
 const dashboardOverviewKey = ["dashboard-overview"];
 const receivablesKey = ["receivables"];
+const expensesKey = ["expenses"];
+
+export function useExpenses() {
+  return useQuery({
+    queryKey: expensesKey,
+    queryFn: domainApi.expenses,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
+  });
+}
 
 export function useBootstrap() {
   return useQuery({
@@ -31,6 +41,7 @@ export function useRefreshBootstrap() {
       queryClient.invalidateQueries({ queryKey: bootstrapKey }),
       queryClient.invalidateQueries({ queryKey: dashboardOverviewKey }),
       queryClient.invalidateQueries({ queryKey: receivablesKey }),
+      queryClient.invalidateQueries({ queryKey: expensesKey }),
     ]);
   };
 }
