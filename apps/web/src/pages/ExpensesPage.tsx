@@ -1,34 +1,62 @@
-import { Bell, Check, Plus, Receipt, UserPlus, UsersRound, X } from "lucide-react";
-import { expenseCardAvailable, type SharedExpenseCard } from "@financplantoes/shared";
-import { useRef, useState } from "react";
+import {
+  Bell,
+  ChevronDown,
+  Plus,
+  Receipt,
+  RefreshCw,
+  SlidersHorizontal,
+  UsersRound,
+  Wallet,
+  X,
+} from "lucide-react";
+import {
+  expenseCardAvailable,
+  type ExpenseLocationCard,
+  type SharedExpenseCard,
+} from "@financplantoes/shared";
+import { lazy, Suspense, useRef, useState } from "react";
 import { Button } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
-import { ExpenseForm } from "../components/forms/ExpenseForm";
+import { ExpenseInbox } from "../components/ExpenseInbox";
+import { ExpenseLedger } from "../components/ExpenseLedger";
+import { ExpenseLocations, ExpenseLocationDetails } from "../components/ExpenseLocations";
+import { ExpenseLocationForm } from "../components/forms/ExpenseLocationForm";
 import { ExpenseInviteForm } from "../components/forms/ExpenseInviteForm";
+import { Field } from "../components/Field";
+import { DateField } from "../components/DateField";
 import { Modal } from "../components/Modal";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { StatCard } from "../components/StatCard";
 import { PeriodNavigation } from "../components/PeriodNavigation";
-import { useAppMutation, useBootstrap } from "../hooks/useBootstrap";
+import { useAppMutation, useExpenses } from "../hooks/useBootstrap";
 import { domainApi } from "../lib/domain-api";
-import { dateLabel, money } from "../lib/formatters";
+import { money } from "../lib/formatters";
 import { adjacentMonthRange, monthDateRange } from "../lib/payment-view";
 import { inDateRange, sumMoney } from "../lib/monthly-finance";
 
+const ExpenseForm = lazy(() =>
+  import("../components/forms/ExpenseForm").then((module) => ({ default: module.ExpenseForm })),
+);
+type ExpenseMode = "personal" | "shared";
 type ExpenseModal =
-  { type: "personal" | "shared" | "inbox" } | { type: "invite"; card: SharedExpenseCard } | null;
-const invitationLabels = {
-  pending: "Aguardando aceite",
-  accepted: "Aceito",
-  declined: "Recusado",
-  cancelled: "Cancelado",
-};
+  | { type: "expense"; mode?: ExpenseMode; locationId?: string }
+  | { type: "new-location" }
+  | { type: "location" | "edit-location"; id: string }
+  | { type: "invite"; card: SharedExpenseCard | ExpenseLocationCard }
+  | { type: "inbox" }
+  | null;
+const PAGE_SIZE = 20;
 
 export function ExpensesPage() {
-  const bootstrap = useBootstrap();
+  const query = useExpenses();
   const [modal, setModal] = useState<ExpenseModal>(null);
+  const [creatingLocation, setCreatingLocation] = useState(false);
   const [formError, setFormError] = useState("");
   const [period, setPeriod] = useState(() => monthDateRange(new Date()));
+  const [type, setType] = useState("");
+  const [category, setCategory] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [notice, setNotice] = useState("");
   const returnFocusTo = useRef<HTMLElement | null>(null);
   const openModal = (value: ExpenseModal, trigger?: HTMLElement) => {
@@ -36,27 +64,50 @@ export function ExpensesPage() {
       trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     setFormError("");
     setNotice("");
+    setCreatingLocation(false);
     setModal(value);
   };
-
   const showError = (error: Error) => setFormError(error.message);
   const onSuccess = () => {
     setModal(null);
     setFormError("");
   };
-
   const createPersonal = useAppMutation(domainApi.createPersonalExpense, {
     onSuccess,
     onError: showError,
   });
-  const createShared = useAppMutation(domainApi.createExpenseCard, {
+  const createShared = useAppMutation(domainApi.addLocatedSharedExpense, {
     onSuccess,
     onError: showError,
   });
-  const sendInvite = useAppMutation(domainApi.inviteExpenseParticipant, {
+  const createLocation = useAppMutation(domainApi.createExpenseLocation, {
+    onSuccess: () => {
+      setFormError("");
+      if (modal?.type === "expense") {
+        setCreatingLocation(false);
+        setNotice("Local criado. Selecione-o no formulário.");
+      } else {
+        setModal(null);
+        setNotice("Local criado.");
+      }
+    },
+    onError: showError,
+  });
+  const renameLocation = useAppMutation(domainApi.renameExpenseLocation, {
+    onSuccess,
+    onError: showError,
+  });
+  const sendLegacyInvite = useAppMutation(domainApi.inviteExpenseParticipant, {
     onSuccess: () => {
       onSuccess();
-      setNotice("Convite enviado. A pessoa poderá responder dentro do aplicativo.");
+      setNotice("Convite enviado.");
+    },
+    onError: showError,
+  });
+  const sendLocationInvite = useAppMutation(domainApi.inviteExpenseLocation, {
+    onSuccess: () => {
+      onSuccess();
+      setNotice("Convite enviado. O acesso será liberado após o aceite.");
     },
     onError: showError,
   });
@@ -67,13 +118,23 @@ export function ExpensesPage() {
     },
     onError: showError,
   });
-  const cancelInvite = useAppMutation(domainApi.cancelExpenseInvitation, { onError: showError });
-  const busy =
-    createPersonal.isPending ||
-    createShared.isPending ||
-    sendInvite.isPending ||
-    replyInvite.isPending ||
-    cancelInvite.isPending;
+  const cancelInvite = useAppMutation(domainApi.cancelExpenseInvitation, {
+    onSuccess: () => {
+      setFormError("");
+      setNotice("Convite cancelado.");
+    },
+    onError: showError,
+  });
+  const busy = [
+    createPersonal,
+    createShared,
+    createLocation,
+    renameLocation,
+    sendLegacyInvite,
+    sendLocationInvite,
+    replyInvite,
+    cancelInvite,
+  ].some((mutation) => mutation.isPending);
   const closeModal = () => {
     if (!busy) {
       setModal(null);
@@ -81,26 +142,87 @@ export function ExpensesPage() {
     }
   };
 
-  if (bootstrap.isLoading) {
-    return <LoadingBlock />;
-  }
-
-  if (bootstrap.error || !bootstrap.data) {
-    return <ErrorBlock error={bootstrap.error} />;
-  }
-
-  const sharing = bootstrap.data.expenseSharing;
-  const personalExpenses = bootstrap.data.personalExpenses.filter((item) =>
-    inDateRange(item.expense_date, period),
+  if (query.isLoading) return <LoadingBlock />;
+  if (!query.data) return <ErrorBlock error={query.error} />;
+  const { personal, shared, expenseSharing: sharing } = query.data;
+  const locations = sharing.locations ?? [];
+  const locationsAvailable = sharing.available && Array.isArray(sharing.locations);
+  const locationsById = new Map(locations.map((location) => [location.id, location]));
+  const entries = [
+    ...personal.map((expense) => ({ ...expense, type: "personal" as const })),
+    ...shared.map((expense) => ({ ...expense, type: "shared" as const })),
+  ]
+    .filter((expense) => inDateRange(expense.expense_date, period))
+    .sort((a, b) => b.expense_date.localeCompare(a.expense_date) || a.id.localeCompare(b.id));
+  const personalTotal = sumMoney(
+    entries.filter((item) => item.type === "personal"),
+    (item) => item.amount,
   );
-  const sharedExpenses = bootstrap.data.sharedExpenses.filter((item) =>
-    inDateRange(item.expense_date, period),
+  const sharedTotal = sumMoney(
+    entries.filter((item) => item.type === "shared"),
+    (item) => item.amount,
   );
-  const personalTotal = sumMoney(personalExpenses, (item) => item.amount);
-  const sharedTotal = sumMoney(sharedExpenses, (item) => item.amount);
-  const cards = (sharing?.cards ?? []).filter((item) => inDateRange(item.expense_date, period));
-  const legacyExpenses = sharedExpenses.filter((item) => !item.sharing_card_id);
-  const invitations = sharing?.invitations ?? [];
+  const filtered = entries.filter(
+    (expense) =>
+      (!type || expense.type === type) &&
+      (!category || expense.category === category) &&
+      (!locationFilter || expense.location_card_id === locationFilter),
+  );
+  const categories = [
+    ...new Set(
+      [...personal, ...shared]
+        .map((expense) => expense.category)
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ].sort();
+  const currentMonth = monthDateRange(new Date());
+  const hasActiveFilters = Boolean(
+    type ||
+    category ||
+    locationFilter ||
+    period.from !== currentMonth.from ||
+    period.to !== currentMonth.to,
+  );
+  const activeLocation =
+    modal && (modal.type === "location" || modal.type === "edit-location")
+      ? locationsById.get(modal.id)
+      : undefined;
+  const invitations = sharing.invitations;
+  const title =
+    modal?.type === "expense"
+      ? modal.mode
+        ? `Nova despesa ${modal.mode === "personal" ? "pessoal" : "compartilhada"}`
+        : "Nova despesa"
+      : modal?.type === "inbox"
+        ? "Convites recebidos"
+        : modal?.type === "invite"
+          ? "Convidar pessoa"
+          : modal?.type === "edit-location"
+            ? "Editar local"
+            : modal?.type === "location"
+              ? (activeLocation?.name ?? "Local")
+              : "Novo local";
+  const cancelInvitation = (id: string) => {
+    setFormError("");
+    cancelInvite.mutate(id);
+  };
+  const refreshError = query.isRefetchError ? (
+    <p className="form-message" role="alert">
+      Não foi possível atualizar as despesas. {query.error.message}
+    </p>
+  ) : null;
+  const availabilityNotice = !locationsAvailable ? (
+    <div className="section-head" role="status">
+      <p className="muted">
+        O cadastro de locais está indisponível no momento. Você pode continuar registrando despesas
+        pessoais sem local.
+      </p>
+      <Button size="sm" disabled={query.isFetching || busy} onClick={() => void query.refetch()}>
+        <RefreshCw aria-hidden="true" size={16} className={query.isFetching ? "spin" : undefined} />
+        <span>{query.isFetching ? "Verificando..." : "Verificar disponibilidade"}</span>
+      </Button>
+    </div>
+  ) : null;
 
   return (
     <>
@@ -113,9 +235,9 @@ export function ExpensesPage() {
         <Button
           onClick={(event) => {
             openModal({ type: "inbox" }, event.currentTarget);
-            void bootstrap.refetch();
+            void query.refetch();
           }}
-          disabled={!sharing?.available}
+          disabled={!sharing.available}
           variant="secondary"
         >
           <Bell size={17} />
@@ -125,306 +247,342 @@ export function ExpensesPage() {
       <PeriodNavigation
         {...period}
         label="das despesas"
-        onCurrentMonth={() => setPeriod(monthDateRange(new Date()))}
-        onNavigate={(offset) =>
-          setPeriod((current) => adjacentMonthRange(current.from, current.to, offset))
-        }
+        onCurrentMonth={() => {
+          setPeriod(monthDateRange(new Date()));
+          setVisibleCount(PAGE_SIZE);
+        }}
+        onNavigate={(offset) => {
+          setPeriod((current) => adjacentMonthRange(current.from, current.to, offset));
+          setVisibleCount(PAGE_SIZE);
+        }}
       />
-      <section className="stat-grid two">
+      <section aria-label="Resumo financeiro" className="stat-grid expense-summary">
         <StatCard icon={Receipt} label="Pessoal" tone="coral" value={money(personalTotal)} />
         <StatCard icon={UsersRound} label="Compartilhado" tone="amber" value={money(sharedTotal)} />
+        <StatCard
+          icon={Wallet}
+          label="Total no período"
+          tone="blue"
+          value={money(sumMoney(entries, (item) => item.amount))}
+        />
       </section>
-
-      {notice && (
+      {notice && !modal && (
         <p className="muted" role="status">
           {notice}
         </p>
       )}
-      {!sharing?.available && (
-        <p className="muted">
-          O compartilhamento está indisponível no momento. Você pode continuar registrando despesas
-          pessoais.
-        </p>
-      )}
+      {!modal && refreshError}
+      {!modal && availabilityNotice}
       {formError && !modal && (
         <p className="form-message" role="alert">
           {formError}
         </p>
       )}
-
-      <section className="dashboard-columns two-columns expenses-columns">
-        <article className="work-panel">
-          <header className="section-head">
-            <div>
-              <p className="eyebrow">Individual</p>
-              <h2>Despesas pessoais</h2>
-            </div>
-            <Button onClick={(event) => openModal({ type: "personal" }, event.currentTarget)} variant="primary">
-              <Plus size={18} />
-              <span>Nova</span>
-            </Button>
-          </header>
-          {personalExpenses.length ? (
-            <div className="stack">
-              {personalExpenses.map((expense) => (
-                <div className="row-item" key={expense.id}>
-                  <span>
-                    <strong>{expense.description}</strong>
-                    <small>
-                      {dateLabel(expense.expense_date)}{" "}
-                      {expense.category ? `- ${expense.category}` : ""}
-                    </small>
-                  </span>
-                  <b>{money(expense.amount)}</b>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={Receipt}
-              text="Registre custos fixos, variaveis e extras."
-              title="Sem despesas"
-            />
-          )}
-        </article>
-
-        <article className="work-panel">
-          <header className="section-head">
-            <div>
-              <p className="eyebrow">Divisão por pessoa</p>
-              <h2>Despesas compartilhadas</h2>
+      <section
+        className="page-section ledger-page expense-section expense-ledger-page"
+        aria-label="Despesas cadastradas"
+      >
+        <header className="section-head">
+          <div>
+            <p className="eyebrow">Por local e referência</p>
+            <h2>Despesas cadastradas</h2>
+          </div>
+          <Button
+            onClick={(event) => openModal({ type: "expense" }, event.currentTarget)}
+            variant="primary"
+          >
+            <Plus size={18} />
+            <span>Nova despesa</span>
+          </Button>
+        </header>
+        <details className="ledger-filters expense-filter-toggle">
+          <summary>
+            <SlidersHorizontal aria-hidden="true" size={16} />
+            <span>Filtros</span>
+            <small>
+              {filtered.length} {filtered.length === 1 ? "despesa" : "despesas"}
+              {hasActiveFilters ? " · Filtrado" : ""}
+            </small>
+            <ChevronDown aria-hidden="true" className="filter-chevron" size={16} />
+          </summary>
+          <div className="finance-filter-panel">
+            <div className="expense-filters">
+              <DateField
+                label="De"
+                name="expense-filter-from"
+                value={period.from}
+                onBlur={() => undefined}
+                onChange={(from) => {
+                  setPeriod((current) => ({
+                    from,
+                    to: current.to && from && current.to < from ? from : current.to,
+                  }));
+                  setVisibleCount(PAGE_SIZE);
+                }}
+              />
+              <DateField
+                label="Até"
+                name="expense-filter-to"
+                value={period.to}
+                onBlur={() => undefined}
+                onChange={(to) => {
+                  setPeriod((current) => ({
+                    from: current.from && to && to < current.from ? current.from : to,
+                    to,
+                  }));
+                  setVisibleCount(PAGE_SIZE);
+                }}
+              />
+              <Field label="Tipo de despesa">
+                <select
+                  value={type}
+                  onChange={(event) => {
+                    setType(event.target.value);
+                    setVisibleCount(PAGE_SIZE);
+                  }}
+                >
+                  <option value="">Todos os tipos</option>
+                  <option value="personal">Pessoal</option>
+                  <option value="shared">Compartilhada</option>
+                </select>
+              </Field>
+              <Field label="Categoria">
+                <select
+                  value={category}
+                  onChange={(event) => {
+                    setCategory(event.target.value);
+                    setVisibleCount(PAGE_SIZE);
+                  }}
+                >
+                  <option value="">Todas as categorias</option>
+                  {categories.map((value) => (
+                    <option key={value}>{value}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Local">
+                <select
+                  value={locationFilter}
+                  onChange={(event) => {
+                    setLocationFilter(event.target.value);
+                    setVisibleCount(PAGE_SIZE);
+                  }}
+                >
+                  <option value="">Todos os locais</option>
+                  {locations.map((location) => (
+                    <option key={location.id} value={location.id}>
+                      {location.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
             </div>
             <Button
-              disabled={!sharing?.available}
-              onClick={(event) => openModal({ type: "shared" }, event.currentTarget)}
-              variant="primary"
+              className="expense-filter-clear"
+              variant="ghost"
+              disabled={!hasActiveFilters}
+              onClick={() => {
+                setType("");
+                setCategory("");
+                setLocationFilter("");
+                setPeriod(currentMonth);
+                setVisibleCount(PAGE_SIZE);
+              }}
             >
-              <Plus size={18} />
-              <span>Compartilhar</span>
+              <X size={15} />
+              <span>Limpar filtros</span>
             </Button>
-          </header>
-          <p className="muted expense-sharing-hint">
-            O resumo considera apenas a sua parte. Convites pendentes ainda não entram nos gastos do
-            convidado.
-          </p>
-          {cards.length > 0 && (
-            <div className="stack">
-              {cards.map((card) => (
-                <article
-                  aria-label={`Despesa compartilhada ${card.description}`}
-                  className="expense-sharing-card"
-                  key={card.id}
-                >
-                  <header className="expense-card-head">
-                    <div>
-                      <strong>{card.description}</strong>
-                      <small>
-                        {dateLabel(card.expense_date)}
-                        {card.category ? ` · ${card.category}` : ""}
-                      </small>
-                    </div>
-                    <span>
-                      <small>Total da despesa</small>
-                      <b>{money(card.total_amount)}</b>
-                    </span>
-                  </header>
-                  <div className="expense-card-share">
-                    <span>
-                      Sua parte <strong>{money(card.amount)}</strong>
-                    </span>
-                    <small>
-                      <UsersRound size={14} />
-                      {card.participant_count} pessoa{card.participant_count === 1 ? "" : "s"}
-                    </small>
-                  </div>
-                  {!card.is_owner && <p className="muted">Compartilhada por {card.owner_name}</p>}
-                  {card.notes && <p className="muted expense-card-notes">{card.notes}</p>}
-                  {card.is_owner && (
-                    <>
-                      <Button
-                        disabled={busy || expenseCardAvailable(card) <= 0}
-                        onClick={(event) => openModal({ type: "invite", card }, event.currentTarget)}
-                        variant="secondary"
-                      >
-                        <UserPlus size={16} />
-                        <span>Convidar pessoa</span>
-                      </Button>
-                      {card.invitations.length > 0 && (
-                        <details className="expense-card-invitations">
-                          <summary>Participações e convites ({card.invitations.length})</summary>
-                          <ul>
-                            {card.invitations.map((invite) => (
-                              <li key={invite.id}>
-                                <div>
-                                  <strong>{invite.invited_email}</strong>
-                                  <small>
-                                    {money(invite.amount)} · {invitationLabels[invite.status]}
-                                  </small>
-                                </div>
-                                {invite.status === "pending" && (
-                                  <Button
-                                    aria-label={`Cancelar convite para ${invite.invited_email}`}
-                                    disabled={busy}
-                                    onClick={() => {
-                                      setFormError("");
-                                      cancelInvite.mutate(invite.id);
-                                    }}
-                                    size="icon"
-                                    variant="danger"
-                                  >
-                                    <X size={15} />
-                                  </Button>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        </details>
-                      )}
-                    </>
-                  )}
-                </article>
-              ))}
-            </div>
-          )}
-          {legacyExpenses.length > 0 && (
-            <div className="stack">
-              {legacyExpenses.map((expense) => (
-                <div className="row-item" key={expense.id}>
-                  <span>
-                    <strong>{expense.description}</strong>
-                    <small>{dateLabel(expense.expense_date)}</small>
-                  </span>
-                  <b>{money(expense.amount)}</b>
-                </div>
-              ))}
-            </div>
-          )}
-          {!cards.length && !legacyExpenses.length && (
-            <EmptyState
-              icon={UsersRound}
-              text="Crie uma despesa e convide uma pessoa cadastrada para dividir o valor."
-              title="Nenhuma despesa compartilhada neste mês"
-            />
-          )}
-        </article>
-      </section>
-
-      {modal && (modal.type === "personal" || modal.type === "shared") && (
-        <Modal
-          eyebrow="Despesa"
-          manageFocus
-          closeDisabled={busy}
-          returnFocusTo={returnFocusTo.current}
-          onClose={closeModal}
-          title={modal.type === "personal" ? "Nova despesa pessoal" : "Nova despesa compartilhada"}
-        >
-          <ExpenseForm
-            mode={modal.type}
-            error={formError}
-            onCancel={closeModal}
-            onSubmit={(values) => {
-              if (modal.type === "personal") {
-                createPersonal.mutate(values);
-              } else {
-                createShared.mutate(values);
-              }
-            }}
-            submitting={createPersonal.isPending || createShared.isPending}
-          />
-        </Modal>
-      )}
-      {modal?.type === "invite" && (
-        <Modal
-          manageFocus
-          closeDisabled={busy}
-          returnFocusTo={returnFocusTo.current}
-          eyebrow="Compartilhar despesa"
-          onClose={closeModal}
-          title="Convidar pessoa"
-        >
-          <div className="expense-invite-context">
-            <strong>{modal.card.description}</strong>
-            <span>Total: {money(modal.card.total_amount)}</span>
           </div>
-          <ExpenseInviteForm
-            available={expenseCardAvailable(modal.card)}
-            error={formError}
-            submitting={sendInvite.isPending}
-            onCancel={closeModal}
-            onSubmit={(input) => sendInvite.mutate({ id: modal.card.id, ...input })}
+        </details>
+        <div className="expense-ledger-caption">
+          <span>Despesas por local</span>
+          <small>Valores da sua parte no período</small>
+        </div>
+        {filtered.length ? (
+          <ExpenseLedger
+            entries={filtered}
+            locations={locations}
+            legacyCards={sharing.cards}
+            visibleCount={visibleCount}
+            busy={busy}
+            onInvite={(card, trigger) => openModal({ type: "invite", card }, trigger)}
+            onCancelInvitation={cancelInvitation}
           />
-        </Modal>
-      )}
-      {modal?.type === "inbox" && (
+        ) : (
+          <EmptyState
+            icon={Receipt}
+            title="Nenhuma despesa encontrada"
+            text="Cadastre uma despesa ou ajuste os filtros do período."
+          />
+        )}
+        {filtered.length > visibleCount && (
+          <Button onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}>
+            Mostrar mais despesas ({filtered.length - visibleCount})
+          </Button>
+        )}
+      </section>
+      <ExpenseLocations
+        locations={locations}
+        expenses={entries}
+        sharedCards={sharing.cards}
+        available={locationsAvailable}
+        onCreate={(trigger) => openModal({ type: "new-location" }, trigger)}
+        onOpen={(id, trigger) => openModal({ type: "location", id }, trigger)}
+      />
+      {modal && (
         <Modal
+          title={creatingLocation ? "Novo local" : title}
           manageFocus
           closeDisabled={busy}
           returnFocusTo={returnFocusTo.current}
-          eyebrow="Compartilhamento"
           onClose={closeModal}
-          title="Convites recebidos"
         >
-          {bootstrap.isFetching && (
+          {refreshError}
+          {availabilityNotice}
+          {notice && (
             <p className="muted" role="status">
-              Atualizando convites…
+              {notice}
             </p>
           )}
-          {formError && (
-            <p className="form-message" role="alert">
-              {formError}
-            </p>
-          )}
-          {invitations.length ? (
-            <div className="stack">
-              {invitations.map((invite) => (
-                <article
-                  className="expense-sharing-card"
-                  aria-label={`Convite para ${invite.description}`}
-                  key={invite.id}
-                >
-                  <header className="expense-card-head">
-                    <div>
-                      <strong>{invite.description}</strong>
-                      <small>
-                        {dateLabel(invite.expense_date)} · {invite.owner_name}
-                      </small>
-                    </div>
-                  </header>
-                  <p className="muted">Total da despesa: {money(invite.total_amount)}</p>
-                  <p className="expense-card-share">
-                    Sua parte se aceitar: <strong>{money(invite.amount)}</strong>
-                  </p>
-                  <p className="muted">
-                    Aceitar inclui esse valor nos seus gastos do mês da despesa. Nenhum pagamento
-                    será realizado.
-                  </p>
-                  <div className="expense-invite-actions">
-                    <Button
-                      aria-label={`Recusar convite para ${invite.description}`}
-                      disabled={busy}
-                      onClick={() => replyInvite.mutate({ id: invite.id, action: "declined" })}
-                    >
-                      Recusar
-                    </Button>
-                    <Button
-                      aria-label={`Aceitar convite para ${invite.description}`}
-                      disabled={busy}
-                      onClick={() => replyInvite.mutate({ id: invite.id, action: "accepted" })}
-                      variant="primary"
-                    >
-                      <Check size={16} />
-                      <span>Aceitar</span>
-                    </Button>
+          {modal.type === "expense" && (
+            <>
+              {!modal.mode ? (
+                <div className="expense-mode-choices">
+                  <p className="muted">Como deseja cadastrar esta despesa?</p>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setModal({ ...modal, mode: "personal" })}
+                  >
+                    <Receipt size={20} />
+                    <span>
+                      Despesa pessoal<small>Somente você tem acesso.</small>
+                    </span>
+                  </Button>
+                  <Button
+                    disabled={!locationsAvailable}
+                    variant="secondary"
+                    onClick={() => setModal({ ...modal, mode: "shared" })}
+                  >
+                    <UsersRound size={20} />
+                    <span>
+                      Despesa compartilhada<small>Vinculada a um local com participantes.</small>
+                    </span>
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div hidden={creatingLocation}>
+                    <Suspense fallback={<LoadingBlock />}>
+                      <ExpenseForm
+                        key={modal.mode}
+                        mode={modal.mode}
+                        locations={locations}
+                        canCreateLocation={locationsAvailable}
+                        active={!creatingLocation}
+                        initialLocationId={modal.locationId}
+                        error={formError}
+                        onCancel={closeModal}
+                        onCreateLocation={() => {
+                          setFormError("");
+                          setCreatingLocation(true);
+                        }}
+                        onSubmit={(values) => {
+                          if (modal.mode === "personal") createPersonal.mutate(values);
+                          else if (values.location_card_id)
+                            createShared.mutate({
+                              ...values,
+                              location_card_id: values.location_card_id,
+                            });
+                        }}
+                        submitting={busy}
+                      />
+                    </Suspense>
                   </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={Bell}
-              title="Nenhum convite pendente"
-              text="Quando alguém compartilhar uma despesa com você, o convite aparecerá aqui."
+                  {creatingLocation && (
+                    <ExpenseLocationForm
+                      initialVisibility={modal.mode}
+                      error={formError}
+                      submitting={busy}
+                      onCancel={() => {
+                        setCreatingLocation(false);
+                        setFormError("");
+                      }}
+                      onSubmit={(input) => createLocation.mutate(input)}
+                    />
+                  )}
+                </>
+              )}
+            </>
+          )}
+          {(modal.type === "new-location" ||
+            (modal.type === "edit-location" && activeLocation?.is_owner)) && (
+            <ExpenseLocationForm
+              location={activeLocation}
+              error={formError}
+              submitting={busy}
+              onCancel={closeModal}
+              onSubmit={(input) =>
+                activeLocation
+                  ? renameLocation.mutate({ id: activeLocation.id, name: input.name })
+                  : createLocation.mutate(input)
+              }
             />
+          )}
+          {modal.type === "location" && activeLocation && (
+            <ExpenseLocationDetails
+              location={activeLocation}
+              expenses={entries}
+              busy={busy}
+              error={formError}
+              onCancelInvitation={cancelInvitation}
+              onCreateExpense={() =>
+                setModal({
+                  type: "expense",
+                  mode: activeLocation.visibility,
+                  locationId: activeLocation.id,
+                })
+              }
+              onEdit={() => setModal({ type: "edit-location", id: activeLocation.id })}
+              onInvite={() => setModal({ type: "invite", card: activeLocation })}
+            />
+          )}
+          {modal.type === "invite" && (
+            <>
+              <div className="expense-invite-context">
+                <strong>{"name" in modal.card ? modal.card.name : modal.card.description}</strong>
+              </div>
+              <ExpenseInviteForm
+                forLocation={"name" in modal.card}
+                available={"name" in modal.card ? 0 : expenseCardAvailable(modal.card)}
+                error={formError}
+                submitting={busy}
+                onCancel={closeModal}
+                onSubmit={(input) => {
+                  if ("name" in modal.card)
+                    sendLocationInvite.mutate({ id: modal.card.id, email: input.email });
+                  else sendLegacyInvite.mutate({ id: modal.card.id, ...input });
+                }}
+              />
+            </>
+          )}
+          {modal.type === "inbox" && (
+            <>
+              {query.isFetching && (
+                <p className="muted" role="status">
+                  Atualizando convites…
+                </p>
+              )}
+              {formError && (
+                <p className="form-message" role="alert">
+                  {formError}
+                </p>
+              )}
+              <ExpenseInbox
+                invitations={invitations}
+                busy={busy || query.isFetching}
+                onReply={(id, action) => replyInvite.mutate({ id, action })}
+              />
+            </>
           )}
         </Modal>
       )}
