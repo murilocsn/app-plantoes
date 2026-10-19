@@ -532,6 +532,7 @@ export function ExpensesPage() {
             <ExpenseLocationDetails
               location={activeLocation}
               expenses={entries}
+              sharedCards={sharing.cards}
               busy={busy}
               error={formError}
               onCancelInvitation={cancelInvitation}

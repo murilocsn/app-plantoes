@@ -4,6 +4,7 @@ import { Button } from "./Button";
 import { EmptyState } from "./EmptyState";
 import { ExpenseParticipants } from "./ExpenseParticipants";
 import { dateLabel, money } from "../lib/formatters";
+import { sumMoney } from "../lib/monthly-finance";
 
 type Props = {
   locations: ExpenseLocationCard[];
@@ -101,6 +102,7 @@ export function ExpenseLocations({
 export function ExpenseLocationDetails({
   location,
   expenses,
+  sharedCards,
   busy,
   error,
   onCreateExpense,
@@ -110,6 +112,7 @@ export function ExpenseLocationDetails({
 }: {
   location: ExpenseLocationCard;
   expenses: Expense[];
+  sharedCards: SharedExpenseCard[];
   busy: boolean;
   error: string;
   onCreateExpense: () => void;
@@ -117,26 +120,66 @@ export function ExpenseLocationDetails({
   onInvite: () => void;
   onCancelInvitation: (id: string) => void;
 }) {
-  const entries = expenses.filter((expense) => expense.location_card_id === location.id);
+  const cardsById = new Map(sharedCards.map((card) => [card.id, card]));
+  const entries = expenses
+    .filter((expense) => expense.location_card_id === location.id)
+    .map((expense) => {
+      const card = cardsById.get(expense.sharing_card_id ?? expense.id);
+      return {
+        ...expense,
+        totalAmount: card?.total_amount ?? expense.amount,
+        creatorName:
+          location.visibility === "personal" ? location.owner_name : card?.created_by_name,
+      };
+    });
+  const total = sumMoney(entries, (expense) => expense.totalAmount);
+  const share = sumMoney(entries, (expense) => expense.amount);
   return (
     <>
       <p className="muted">
         {location.visibility === "shared"
-          ? "Sua parte nas despesas do período. Cada divisão é registrada entre os participantes que já aceitaram o convite."
+          ? "Todos os gastos do local no período selecionado, com o valor total e a sua parte em cada divisão."
           : "Local pessoal. Somente você tem acesso."}
       </p>
-      {entries.length ? (
-        <div className="stack">
-          {entries.map((expense) => (
-            <div className="row-item" key={expense.id}>
-              <span>
-                <strong>{expense.description}</strong>
-                <small>{dateLabel(expense.expense_date)}</small>
-              </span>
-              <b>{money(expense.amount)}</b>
-            </div>
-          ))}
+      <dl className="expense-location-summary" aria-label="Resumo dos gastos do local">
+        <div>
+          <dt>Total dos gastos</dt>
+          <dd>{money(total)}</dd>
         </div>
+        {location.visibility === "shared" && (
+          <div>
+            <dt>Sua parte</dt>
+            <dd>{money(share)}</dd>
+          </div>
+        )}
+      </dl>
+      <h3>Gastos ({entries.length})</h3>
+      {entries.length ? (
+        <ul className="expense-location-expenses" aria-label="Gastos do local">
+          {entries.map((expense) => (
+            <li className="expense-location-expense" key={expense.id}>
+              <div className="expense-location-expense-head">
+                <strong>{expense.description}</strong>
+                <b>{money(expense.totalAmount)}</b>
+              </div>
+              <div className="expense-location-expense-meta">
+                <span>
+                  <time dateTime={expense.expense_date}>{dateLabel(expense.expense_date)}</time>
+                  {expense.category ? ` · ${expense.category}` : ""}
+                </span>
+                <span>
+                  {expense.creatorName?.trim()
+                    ? `Publicado por ${expense.creatorName}`
+                    : "Autor não registrado"}
+                </span>
+                {location.visibility === "shared" && (
+                  <small>Sua parte: {money(expense.amount)}</small>
+                )}
+              </div>
+              {expense.notes && <p className="muted expense-card-notes">{expense.notes}</p>}
+            </li>
+          ))}
+        </ul>
       ) : (
         <p className="muted">Sem despesas neste período.</p>
       )}

@@ -57,6 +57,7 @@ test.beforeEach(async ({ page }) => {
           id: "shared",
           owner_id: personalId,
           owner_name: "Ana",
+          created_by_name: "Bruno",
           description: "Internet",
           amount: 50,
           total_amount: 100,
@@ -277,6 +278,85 @@ test("cria local compartilhado, consulta despesas e edita o nome", async ({ page
   await page.getByLabel("Nome do local").fill("Casa");
   await page.getByRole("button", { name: "Salvar local" }).click();
   await expect(page.getByRole("article", { name: "Local Casa", exact: true })).toBeVisible();
+});
+
+test("lista todos os gastos do local com autor, total e parte individual", async ({
+  page,
+}, testInfo) => {
+  const state = states.get(page)!;
+  state.shared.push(
+    {
+      id: "energy",
+      sharing_card_id: "energy",
+      location_card_id: sharedId,
+      description: "Energia",
+      amount: 75,
+      expense_date: "2026-10-17",
+      notes: "Conta de outubro",
+    },
+    {
+      id: "historical",
+      sharing_card_id: "historical",
+      location_card_id: sharedId,
+      description: "Limpeza anterior ao convite",
+      amount: 0,
+      expense_date: "2026-10-16",
+    },
+  );
+  state.expenseSharing.cards.push(
+    {
+      ...state.expenseSharing.cards[0],
+      id: "energy",
+      description: "Energia",
+      amount: 75,
+      total_amount: 150,
+      expense_date: "2026-10-17",
+      created_by_name: "Ana",
+    },
+    {
+      ...state.expenseSharing.cards[0],
+      id: "historical",
+      description: "Limpeza anterior ao convite",
+      amount: 0,
+      total_amount: 80,
+      expense_date: "2026-10-16",
+      created_by_name: null,
+    },
+  );
+  await page.reload();
+  await page.getByRole("article", { name: "Local Residência" }).getByRole("button").click();
+  const dialog = page.getByRole("dialog");
+  const list = dialog.getByRole("list", { name: "Gastos do local" });
+  await expect(list.getByRole("listitem")).toHaveCount(3);
+  const internet = list.getByRole("listitem").filter({ hasText: "Internet" });
+  await expect(internet).toContainText("Publicado por Bruno");
+  await expect(internet).toContainText("100,00");
+  await expect(internet).toContainText("Sua parte: R$ 50,00");
+  const energy = list.getByRole("listitem").filter({ hasText: "Energia" });
+  await expect(energy).toContainText("Publicado por Ana");
+  await expect(energy).toContainText("17/10/2026");
+  await expect(energy).toContainText("Conta de outubro");
+  const historical = list.getByRole("listitem").filter({ hasText: "Limpeza anterior" });
+  await expect(historical).toContainText("Autor não registrado");
+  await expect(historical).not.toContainText("Publicado por Ana");
+  await expect(historical).toContainText("80,00");
+  await expect(historical).toContainText("Sua parte: R$ 0,00");
+  await expect(list).not.toContainText("Comida");
+  await expect(dialog.getByLabel("Resumo dos gastos do local")).toContainText("330,00");
+  await expect(dialog.getByLabel("Resumo dos gastos do local")).toContainText("125,00");
+  expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("location-expense-list.png"), fullPage: true });
+});
+
+test("lista as despesas pessoais do local com o nome do proprietário", async ({ page }) => {
+  await page.getByRole("article", { name: "Local Consultório" }).getByRole("button").click();
+  const dialog = page.getByRole("dialog");
+  const list = dialog.getByRole("list", { name: "Gastos do local" });
+  await expect(list.getByRole("listitem")).toHaveCount(1);
+  await expect(list).toContainText("Comida");
+  await expect(list).toContainText("Publicado por Ana");
+  await expect(list).toContainText("230,00");
+  await expect(list).not.toContainText("Internet");
 });
 
 test("envia e cancela convite para o local", async ({ page }) => {

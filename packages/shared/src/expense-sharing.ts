@@ -59,6 +59,7 @@ export type SharedExpenseCard = {
   owner_id: string;
   owner_name: string;
   description: string;
+  created_by_name?: string | null;
   expense_date: string;
   category?: string | null;
   notes?: string | null;

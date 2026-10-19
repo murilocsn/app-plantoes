@@ -194,6 +194,40 @@ publicado a partir de `089611f952f35dc64767ba70a5cba22d9eb1115e`, sem as rotas d
 locais. A publicação coordenada da API e do frontend é necessária para levar o
 fluxo implementado ao GitHub Pages e ao Render.
 
+## Lista de gastos e autoria
+
+Os detalhes de um local exibem uma lista semântica com todos os seus gastos no
+período selecionado. Cada linha mostra descrição, data, categoria, observações,
+valor total e nome de quem cadastrou; nos locais compartilhados, também mostra a
+parte individual. Gastos sem participação financeira do usuário continuam na
+lista. O resumo separa o total do local da parte individual.
+
+A migration `20261019180927_expense_authors.sql`, criada pelo Supabase CLI,
+acrescenta `shared_expense_cards.created_by` com chave estrangeira e índice.
+O default `auth.uid()` é configurado depois da criação da coluna, preservando
+autoria desconhecida nos registros existentes. As RPCs atuais registram assim
+o solicitante autenticado, mesmo quando ele é convidado e o local tem outro dono.
+Valores, divisões e RLS permanecem preservados. A consulta retorna somente o
+nome de exibição, com fallback para `profiles.display_name`.
+
+Os gastos antigos vinculados a locais, sem autor registrado, mostram
+`Autor não registrado`. Para cards antigos avulsos, o proprietário original
+é o autor conhecido. Nos locais pessoais, o proprietário é o autor.
+
+Após autorização explícita, a migration foi aplicada ao projeto `plantoes-app`
+em 19/10/2026, com versão remota `20261019181141`. A consulta autenticada retornou
+o campo de autoria, e a comparação anterior/posterior confirmou preservação da
+quantidade de registros e dos valores. Não houve novos alertas no verificador de
+segurança remoto. A auditoria de segurança do PostgreSQL temporário não apontou
+problemas.
+
+A validação local passou em 18 cenários de navegador, cobrindo desktop,
+Chromium móvel e Safari móvel, além de typecheck, lint dos arquivos envolvidos
+e build web. As suítes SQL anteriores passaram antes e depois da migration;
+`expense_authors.sql` validou autoria, histórico e permissões com dados fictícios.
+Os arquivos novos desta etapa são a migration e os testes
+`database/tests/expense_authors.sql` e `database/tests/expense_authors_fixture.sql`.
+
 ## Arquivos alterados e criados
 
 Modificados:
