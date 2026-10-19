@@ -4,6 +4,10 @@ import {
   expenseCardCosts,
   expenseCardInputSchema,
   expenseInviteInputSchema,
+  expenseLocationInputSchema,
+  expenseLocationInviteSchema,
+  locatedExpenseInputSchema,
+  attachExpenseLocations,
   type SharedExpenseCard,
 } from "./expense-sharing";
 
@@ -46,6 +50,48 @@ const card: SharedExpenseCard = {
   ],
 };
 describe("expense sharing", () => {
+  it("requires an existing location identifier for shared expenses", () => {
+    const values = { description: "Internet", amount: 100, expense_date: "2026-10-18" };
+    expect(locatedExpenseInputSchema.safeParse(values).success).toBe(false);
+    expect(
+      locatedExpenseInputSchema.safeParse({ ...values, location_card_id: "invalid" }).success,
+    ).toBe(false);
+    expect(
+      locatedExpenseInputSchema.safeParse({
+        ...values,
+        location_card_id: "20000000-0000-4000-8000-000000000001",
+      }).success,
+    ).toBe(true);
+  });
+  it("validates location visibility and normalizes membership invitations", () => {
+    expect(expenseLocationInputSchema.parse({ name: " Casa ", visibility: "personal" })).toEqual({
+      name: "Casa",
+      visibility: "personal",
+    });
+    expect(
+      expenseLocationInputSchema.safeParse({ name: "Casa", visibility: "public" }).success,
+    ).toBe(false);
+    expect(
+      expenseLocationInviteSchema.parse({ email: " GUEST@EXAMPLE.TEST ", amount: 500 }),
+    ).toEqual({ email: "guest@example.test" });
+  });
+  it("preserves location associations without duplicating financial records", () => {
+    expect(expenseCardCosts([{ ...card, location_card_id: "location" }])[0]).toMatchObject({
+      amount: 200,
+      location_card_id: "location",
+    });
+    expect(
+      attachExpenseLocations([{ id: "personal" }, { id: "old" }], {
+        available: true,
+        cards: [],
+        invitations: [],
+        personal_locations: [{ expense_id: "personal", location_card_id: "location" }],
+      }),
+    ).toEqual([
+      { id: "personal", location_card_id: "location" },
+      { id: "old", location_card_id: undefined },
+    ]);
+  });
   it("reserves pending and accepted cents, freeing declined or cancelled invitations", () => {
     expect(expenseCardAvailable(card)).toBe(150);
     expect(

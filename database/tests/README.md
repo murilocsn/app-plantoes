@@ -52,3 +52,25 @@ pg_ctl -D $expensePgData -w stop
 
 O sslmode=disable é exclusivo da conexão de teste por loopback. A aplicação
 continua usando a configuração segura existente do Supabase.
+
+## Locais com várias despesas
+
+A reformulação usa um cluster temporário diferente, na porta 55428. Não execute
+o fixture em um banco existente: ele cria `auth` e falha se o schema já existir.
+
+```powershell
+$expenseLocationData = Join-Path (Get-Location).Path 'node_modules/.cache/expense-reform/postgres/data'
+initdb -D $expenseLocationData -U expense_reform_test --auth=trust -E UTF8 --locale=C
+pg_ctl -D $expenseLocationData -l "$expenseLocationData/../test.log" -o '-h 127.0.0.1 -p 55428' -w start
+psql -X -h 127.0.0.1 -p 55428 -U expense_reform_test -d postgres -v ON_ERROR_STOP=1 -f database/tests/expense_locations_fixture.sql -f database/migrations/20261018170810_expense_sharing_cards.sql -f database/tests/expense_sharing.sql -f database/migrations/20261019021850_expense_location_cards.sql -f database/tests/expense_sharing.sql -f database/tests/expense_locations.sql
+node database/tests/expense_locations_concurrency.mjs
+pg_ctl -D $expenseLocationData -w stop
+```
+
+A suíte anterior roda antes e depois da migration nova. Os testes novos cobrem
+locais pessoais/compartilhados, vínculo obrigatório, proteção contra vínculos
+entre usuários, convites duplicados/próprios, aceite/recusa/cancelamento, RLS,
+nomes dos participantes sem e-mails de terceiros, centavos e totais por período.
+O script concorrente valida duplicidade e a corrida entre aceite e cadastro de
+despesa. Ele verifica o diretório exato do cluster antes de executar operações.
+Os testes SQL usam rollback; o script remove somente seus usuários fictícios.

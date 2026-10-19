@@ -131,10 +131,78 @@ paths:
           description: Lista retornada
   /api/expenses/personal:
     post:
-      summary: Cria despesa pessoal
+      summary: Cria despesa pessoal com local pessoal opcional
       responses:
         "201":
           description: Despesa criada
+  /api/expenses/overview:
+    get:
+      summary: Lista despesas e locais acessíveis sem dados de outras páginas
+      responses:
+        "200":
+          description: Despesas pessoais, partes compartilhadas e snapshot de locais e convites
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/expenses/locations:
+    post:
+      summary: Cria um local pessoal ou compartilhado
+      responses:
+        "201":
+          description: Local criado
+        "422":
+          description: Nome ou tipo inválido
+  /api/expenses/locations/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    patch:
+      summary: Proprietário altera o nome do local
+      responses:
+        "200":
+          description: Local atualizado
+        "403":
+          description: Somente o proprietário pode editar
+  /api/expenses/locations/{id}/expenses:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: Participante aceito cadastra despesa no local compartilhado
+      responses:
+        "201":
+          description: Despesa criada com divisão igual entre participantes atuais
+        "403":
+          description: Local inacessível ou incompatível com o tipo da despesa
+  /api/expenses/locations/{id}/invitations:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: Proprietário envia convite ao e-mail de outro usuário cadastrado
+      responses:
+        "201":
+          description: Convite pendente criado sem liberar acesso ao destinatário
+        "403":
+          description: Somente o proprietário pode convidar
+        "409":
+          description: Convite pendente ou aceito já existe
+  /api/expenses/invitations/{id}/respond:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: Destinatário aceita ou recusa um convite
+      responses:
+        "200":
+          description: Resposta registrada
+        "409":
+          description: Convite já respondido ou cancelado
+  /api/expenses/invitations/{id}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: Proprietário cancela um convite pendente
+      responses:
+        "200":
+          description: Convite cancelado
+        "409":
+          description: Convite já respondido
   /api/expenses/shared:
     post:
       summary: Cria despesa compartilhada
