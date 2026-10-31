@@ -1,11 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Location, Shift } from "@financplantoes/shared";
-import { recurrenceInputSchema, shiftInputSchema } from "@financplantoes/shared";
+import { billingPeriod, recurrenceInputSchema, shiftInputSchema } from "@financplantoes/shared";
 import { Check, Palette, Save } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { calendarColorOptions, colorFor, dateKey } from "../../lib/calendar";
+import { dateLabel } from "../../lib/formatters";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../Button";
 import { DateField } from "../DateField";
@@ -109,6 +110,7 @@ export function ShiftForm({
     handleSubmit,
     watch,
     setValue,
+    setFocus,
     formState: { errors },
   } = useForm<ShiftFormValues>({
     resolver: zodResolver(shiftFormSchema),
@@ -124,6 +126,7 @@ export function ShiftForm({
       marker_label: shift?.marker_label ?? "",
       status: "scheduled",
       createReceivable: true,
+      expected_payment_date: "",
       repeat: false,
       frequency: "weekly",
       interval_value: 1,
@@ -135,6 +138,13 @@ export function ShiftForm({
   const selectedLocationId = watch("location_id");
   const durationValue = watch("duration");
   const repeat = watch("repeat");
+  const createReceivable = watch("createReceivable");
+  const shiftDate = watch("date");
+  const customPaymentDate = watch("expected_payment_date");
+  const selectedLocation = activeLocations.find((location) => location.id === selectedLocationId);
+  const inheritedPaymentDate = selectedLocation && shiftInputSchema.shape.date.safeParse(shiftDate).success
+    ? billingPeriod(shiftDate, selectedLocation).expectedDate
+    : "";
   const markerColor = watch("marker_color") || colorFor("Plantao");
   const markerLabel = watch("marker_label")?.trim() || "Sem legenda";
   const markerColorName =
@@ -186,9 +196,12 @@ export function ShiftForm({
 
   return (
     <form
-      className="form-grid"
+      className="form-grid shift-form"
       onSubmit={handleSubmit((values) => {
-        const shiftPayload = shiftInputSchema.parse(values);
+        const shiftPayload = shiftInputSchema.parse({
+          ...values,
+          expected_payment_date: !shift && values.createReceivable ? values.expected_payment_date || undefined : undefined,
+        });
         saveDurationHistory(userStorageId, shiftPayload.duration);
         setDurationHistory(readDurationHistory(userStorageId));
         const recurrence = values.repeat
@@ -245,6 +258,39 @@ export function ShiftForm({
       <Field error={errors.value?.message} label="Valor">
         <input min="0" step="0.01" type="number" {...register("value")} />
       </Field>
+      {!shift && createReceivable && (
+        <div className="shift-payment-forecast">
+          <Controller
+            control={control}
+            name="expected_payment_date"
+            shouldUnregister
+            render={({ field }) => (
+              <DateField
+                {...field}
+                error={errors.expected_payment_date?.message}
+                hint={customPaymentDate
+                  ? `Data personalizada.${inheritedPaymentDate ? ` Previsão do local: ${dateLabel(inheritedPaymentDate)}.` : ""}${repeat ? " Esta data será usada em todas as repetições." : ""}`
+                  : `Previsão do local. Altere para escolher outra data.${repeat ? " Cada repetição seguirá a regra do local." : ""}`}
+                label="Previsão de pagamento"
+                onChange={(value) => field.onChange(value === inheritedPaymentDate ? "" : value)}
+                value={field.value || inheritedPaymentDate}
+              />
+            )}
+          />
+          {customPaymentDate && (
+            <Button
+              onClick={() => {
+                setValue("expected_payment_date", "", { shouldDirty: true, shouldValidate: true });
+                setFocus("expected_payment_date");
+              }}
+              size="sm"
+              variant="ghost"
+            >
+              Usar previsão do local
+            </Button>
+          )}
+        </div>
+      )}
       <div className="field color-field">
         <span>Marcador do plantao</span>
         <div className="marker-color-picker" ref={colorPickerRef}>

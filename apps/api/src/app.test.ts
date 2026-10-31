@@ -99,4 +99,14 @@ describe("inactive AI assistant", () => {
     expect(getUser).not.toHaveBeenCalled();
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
+
+  it("trata falhas inesperadas da autenticação sem deixar a requisição pendente", async () => {
+    getUser.mockRejectedValue(new Error("PRIVATE_AUTH_FAILURE"));
+    const response = await send("/api/ai/chat", "synthetic-token");
+    expect(response).toEqual({
+      status: 500,
+      body: { error: { message: "Erro interno ao processar a requisicao.", code: "INTERNAL_ERROR" } },
+    });
+    expect(createSupabaseForToken).not.toHaveBeenCalled();
+  });
 });

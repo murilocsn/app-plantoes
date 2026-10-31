@@ -30,6 +30,7 @@ export function createApp(telemetry: HttpTelemetry = disabledTelemetry) {
     cors({
       origin: env.WEB_ORIGIN,
       credentials: true,
+      exposedHeaders: ["Server-Timing"],
     }),
   );
   app.use(express.json({ limit: "1mb" }));

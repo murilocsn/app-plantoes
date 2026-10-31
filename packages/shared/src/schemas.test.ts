@@ -94,6 +94,16 @@ describe("shiftInputSchema", () => {
   it("rejeita data inválida", () => {
     expect(() => shiftInputSchema.parse({ ...validShift, date: "2026-02-30" })).toThrow();
   });
+
+  it("aceita uma previsão personalizada e mantém a herança quando omitida ou vazia", () => {
+    expect(shiftInputSchema.parse(validShift).expected_payment_date).toBeUndefined();
+    expect(shiftInputSchema.parse({ ...validShift, expected_payment_date: "" }).expected_payment_date).toBe("");
+    expect(shiftInputSchema.parse({ ...validShift, expected_payment_date: "2026-04-20" }).expected_payment_date).toBe("2026-04-20");
+  });
+
+  it.each(["2026-02-30", "20/04/2026", "amanhã", null, 20260420])("rejeita previsão inválida: %s", (expected_payment_date) => {
+    expect(() => shiftInputSchema.parse({ ...validShift, expected_payment_date })).toThrow();
+  });
 });
 
 describe("locationInputSchema", () => {

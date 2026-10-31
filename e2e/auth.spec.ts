@@ -377,6 +377,155 @@ test.describe("Login E2E mockado", () => {
     await expect(page.locator(".calendar-grid")).toBeVisible({ timeout: 30000 });
   });
 
+  test("carregamento inicial e recarga pedem a visão do calendário sem esperar recebíveis", async ({ page }) => {
+    const overviewRequests: string[] = [];
+    const unexpectedRequests: string[] = [];
+    let releaseReceipts!: () => void;
+    const receiptsReady = new Promise<void>((resolve) => { releaseReceipts = resolve; });
+    await page.route("**/api/**", async (route) => {
+      const url = new URL(route.request().url());
+      if (url.pathname === "/api/dashboard/overview") {
+        overviewRequests.push(url.search);
+        return route.fulfill({ json: { data: { calendarShifts: shifts, upcomingShifts: shifts, locations: [location] } } });
+      }
+      if (url.pathname === "/api/receivables") {
+        await receiptsReady;
+        return route.fulfill({ json: { data: [] } });
+      }
+      unexpectedRequests.push(url.pathname);
+      return route.fulfill({ status: 503, json: { error: { message: "Serviço não utilizado pelo calendário" } } });
+    });
+    try {
+      await login(page, mockedUser);
+      await expect(page.locator(".calendar-grid")).toBeVisible();
+      expect(overviewRequests).toHaveLength(1);
+      expect(new URLSearchParams(overviewRequests[0]).get("view")).toBe("calendar");
+      expect(unexpectedRequests).toEqual([]);
+    } finally {
+      releaseReceipts();
+    }
+    await page.reload();
+    await expect(page.locator(".calendar-grid")).toBeVisible();
+    expect(overviewRequests).toHaveLength(2);
+    for (const query of overviewRequests) expect(new URLSearchParams(query).get("view")).toBe("calendar");
+    expect(unexpectedRequests).toEqual([]);
+  });
+
+  test.describe("Previsão de pagamento do plantão", () => {
+    const units: Location[] = [
+      { ...location, reference_end_day: 31 },
+      { ...location, id: "second-unit", name: "Segunda unidade", reference_end_day: 31, payment_due_day: 25, payment_due_months_after: 2 },
+    ];
+
+    async function openNewShift(page: Page) {
+      await page.route("**/api/dashboard/bootstrap", (route) => route.fulfill({ json: { data: { ...bootstrap, locations: units } } }));
+      await page.route("**/api/shifts", (route) => route.request().method() === "POST"
+        ? route.fulfill({ status: 201, json: { data: [] } })
+        : route.fallback());
+      await login(page, mockedUser);
+      await expect(page.locator(".calendar-grid")).toBeVisible();
+      await page.goto("/#/shifts");
+      await page.locator(".workspace").getByRole("button", { name: "Novo plantao", exact: true }).click();
+      const dialog = page.getByRole("dialog");
+      await dialog.getByRole("textbox", { name: "Data", exact: true }).fill("30/10/2026");
+      return dialog;
+    }
+
+    async function saveShift(page: Page) {
+      const [request] = await Promise.all([
+        page.waitForRequest((request) => new URL(request.url()).pathname === "/api/shifts" && request.method() === "POST"),
+        page.getByRole("dialog").getByRole("button", { name: "Salvar", exact: true }).click(),
+      ]);
+      return request.postDataJSON();
+    }
+
+    test("exibe a previsão herdada e acompanha a data e a unidade sem enviar substituição", async ({ page, isMobile }, testInfo) => {
+      const errors: string[] = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      if (isMobile) await page.setViewportSize({ width: 320, height: 720 });
+      const dialog = await openNewShift(page);
+      const forecast = dialog.getByRole("textbox", { name: "Previsão de pagamento", exact: true });
+      await expect(forecast).toHaveValue("10/11/2026");
+      await expect(forecast).toHaveAccessibleDescription(/Previsão do local/);
+      await dialog.getByRole("textbox", { name: "Data", exact: true }).fill("30/11/2026");
+      await expect(forecast).toHaveValue("10/12/2026");
+      await dialog.getByRole("combobox", { name: "Local", exact: true }).selectOption("second-unit");
+      await expect(forecast).toHaveValue("25/01/2027");
+      await forecast.fill("25/01/2027");
+      await expect(forecast).toHaveAccessibleDescription(/^Previsão do local/);
+      await expect(dialog.getByRole("button", { name: "Usar previsão do local", exact: true })).toHaveCount(0);
+      expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      const valueBox = await dialog.getByRole("spinbutton", { name: "Valor", exact: true }).boundingBox();
+      const forecastBox = await forecast.boundingBox();
+      expect(Math.abs(valueBox!.height - forecastBox!.height)).toBeLessThanOrEqual(2);
+      await forecast.scrollIntoViewIfNeeded();
+      await page.screenshot({ path: testInfo.outputPath("previsao-herdada.png") });
+      const payload = await saveShift(page);
+      expect(payload.shift).not.toHaveProperty("expected_payment_date");
+      expect(payload.shift).toMatchObject({ date: "2026-11-30", location_id: "second-unit", createReceivable: true });
+      expect(errors).toEqual([]);
+    });
+
+    test("permite personalizar, restaurar a previsão do local e personalizar novamente", async ({ page }, testInfo) => {
+      const dialog = await openNewShift(page);
+      const forecast = dialog.getByRole("textbox", { name: "Previsão de pagamento", exact: true });
+      await forecast.fill("20/12/2026");
+      await dialog.getByRole("combobox", { name: "Local", exact: true }).selectOption("second-unit");
+      await dialog.getByRole("textbox", { name: "Data", exact: true }).fill("30/11/2026");
+      await expect(forecast).toHaveValue("20/12/2026");
+      await expect(forecast).toHaveAccessibleDescription(/Data personalizada.*25\/01\/2027/);
+      const restore = dialog.getByRole("button", { name: "Usar previsão do local", exact: true });
+      await restore.focus();
+      await page.keyboard.press("Enter");
+      await expect(forecast).toBeFocused();
+      await expect(forecast).toHaveValue("25/01/2027");
+      await expect(dialog.getByRole("button", { name: "Usar previsão do local", exact: true })).toHaveCount(0);
+      await forecast.fill("20/02/2027");
+      await page.screenshot({ path: testInfo.outputPath("previsao-personalizada.png") });
+      expect((await saveShift(page)).shift.expected_payment_date).toBe("2027-02-20");
+    });
+
+    test("explica a previsão das repetições antes de salvar", async ({ page }) => {
+      const dialog = await openNewShift(page);
+      const forecast = dialog.getByRole("textbox", { name: "Previsão de pagamento", exact: true });
+      await dialog.getByLabel("Repetir plantao").check();
+      await expect(forecast).toHaveAccessibleDescription(/Cada repetição seguirá a regra do local/);
+      await forecast.fill("20/12/2026");
+      await expect(forecast).toHaveAccessibleDescription(/Esta data será usada em todas as repetições/);
+      await dialog.getByLabel("Quantidade", { exact: true }).fill("3");
+      const payload = await saveShift(page);
+      expect(payload.shift.expected_payment_date).toBe("2026-12-20");
+      expect(payload.recurrence).toMatchObject({ frequency: "weekly", occurrences: 3 });
+    });
+
+    test("valida a previsão, associa o erro ao campo e permite voltar à herança", async ({ page }) => {
+      const dialog = await openNewShift(page);
+      const forecast = dialog.getByRole("textbox", { name: "Previsão de pagamento", exact: true });
+      let submissions = 0;
+      page.on("request", (request) => {
+        if (request.method() === "POST" && new URL(request.url()).pathname === "/api/shifts") submissions++;
+      });
+      await forecast.fill("31/02/2026");
+      await dialog.getByRole("button", { name: "Salvar", exact: true }).click();
+      await expect(forecast).toHaveAttribute("aria-invalid", "true");
+      await expect(forecast).toHaveAccessibleDescription(/Informe uma previsão de pagamento válida/);
+      expect(submissions).toBe(0);
+      await dialog.getByRole("button", { name: "Usar previsão do local", exact: true }).click();
+      await expect(forecast).toHaveAttribute("aria-invalid", "false");
+      expect((await saveShift(page)).shift).not.toHaveProperty("expected_payment_date");
+    });
+
+    test("ignora o campo ao desativar a geração automática de recebível", async ({ page }) => {
+      const dialog = await openNewShift(page);
+      await dialog.getByRole("textbox", { name: "Previsão de pagamento", exact: true }).fill("31/02/2026");
+      await dialog.getByLabel("Gerar recebivel automaticamente").uncheck();
+      await expect(dialog.getByRole("textbox", { name: "Previsão de pagamento", exact: true })).toHaveCount(0);
+      const payload = await saveShift(page);
+      expect(payload.shift.createReceivable).toBe(false);
+      expect(payload.shift).not.toHaveProperty("expected_payment_date");
+    });
+  });
+
   test("lista de plantoes aparece agrupada por unidade e data", async ({ page }) => {
     await login(page, mockedUser);
     await expect(page.locator(".calendar-grid")).toBeVisible({ timeout: 30000 });

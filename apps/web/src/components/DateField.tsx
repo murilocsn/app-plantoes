@@ -8,6 +8,7 @@ type DateFieldProps = {
   name: string;
   value: string;
   error?: string;
+  hint?: string;
   autoFocus?: boolean;
   disabled?: boolean;
   onChange: (value: string) => void;
@@ -15,12 +16,14 @@ type DateFieldProps = {
 };
 
 export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(function DateField(
-  { label, name, value, error, autoFocus, disabled, onChange, onBlur },
+  { label, name, value, error, hint, autoFocus, disabled, onChange, onBlur },
   ref,
 ) {
   const id = useId();
   const isISODate = /^\d{4}-\d{2}-\d{2}$/.test(value) && isMatch(value, "yyyy-MM-dd");
   const errorId = `${id}-error`;
+  const hintId = `${id}-hint`;
+  const descriptionIds = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(" ") || undefined;
   const calendarLabel = `Escolher ${label.toLowerCase()} no calendario`;
 
   return (
@@ -28,7 +31,7 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(function D
       <label htmlFor={id}>{label}</label>
       <div className="date-input">
         <input
-          aria-describedby={error ? errorId : undefined}
+          aria-describedby={descriptionIds}
           aria-invalid={Boolean(error)}
           autoFocus={autoFocus}
           disabled={disabled}
@@ -46,6 +49,8 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(function D
         <span className="date-picker" title={calendarLabel}>
           <CalendarDays aria-hidden="true" size={18} />
           <input
+            aria-describedby={descriptionIds}
+            aria-invalid={Boolean(error)}
             aria-label={calendarLabel}
             disabled={disabled}
             lang="pt-BR"
@@ -56,6 +61,7 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(function D
           />
         </span>
       </div>
+      {hint && <small className="form-hint" id={hintId}>{hint}</small>}
       {error && <small className="field-error" id={errorId}>{error}</small>}
     </div>
   );

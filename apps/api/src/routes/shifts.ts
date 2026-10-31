@@ -116,7 +116,7 @@ async function ensureNoShiftTimeConflict(
   }
 }
 
-async function getLocation(request: Request, id: string) {
+async function getLocation(request: Request, id: string, allowInactive = false) {
   const location = await expectData<PaymentLocation>(
     request.auth.supabase
       .from("locations")
@@ -127,7 +127,7 @@ async function getLocation(request: Request, id: string) {
     "Local nao encontrado.",
   );
 
-  if (location.active === false) {
+  if (location.active === false && !allowInactive) {
     throw new HttpError(422, "Este local esta inativo.", "LOCATION_INACTIVE");
   }
 
@@ -220,7 +220,7 @@ shiftsRouter.post(
         location_id: row.location_id,
         description: `Plantao - ${row.location_name}`,
         amount: row.value,
-        expected_date: expectedPaymentDate(row.date, location),
+        expected_date: input.shift.expected_payment_date || expectedPaymentDate(row.date, location),
         status: "pending",
       }));
 
@@ -238,7 +238,7 @@ shiftsRouter.patch(
   "/:id",
   asyncHandler(async (request, response) => {
     const { id } = idParamSchema.parse(request.params);
-    const input = shiftInputSchema.partial().parse(request.body);
+    const input = shiftInputSchema.omit({ expected_payment_date: true }).partial().parse(request.body);
     const currentShift = await expectData<Shift>(
       request.auth.supabase
         .from("shifts")
@@ -249,6 +249,14 @@ shiftsRouter.patch(
       "Plantao nao encontrado.",
     );
     const location = input.location_id ? await getLocation(request, input.location_id) : null;
+    const scheduleChanged = (input.date !== undefined && input.date !== currentShift.date)
+      || (location !== null && location.id !== currentShift.location_id);
+    const previousLocation = scheduleChanged && currentShift.location_id
+      ? location?.id === currentShift.location_id
+        ? location
+        : await getLocation(request, currentShift.location_id, true)
+      : null;
+    const paymentLocation = location ?? previousLocation;
     const update = {
       date: input.date,
       start_time: input.start_time,
@@ -289,7 +297,6 @@ shiftsRouter.patch(
     );
 
     if (location || input.date || input.value !== undefined) {
-      const paymentLocation = location ?? (shift.location_id ? await getLocation(request, shift.location_id) : null);
       await optionalData(
         request.auth.supabase
           .from("receivables")
@@ -297,13 +304,27 @@ shiftsRouter.patch(
             location_id: paymentLocation?.id,
             description: location ? `Plantao - ${location.name}` : undefined,
             amount: input.value,
-            expected_date: paymentLocation ? expectedPaymentDate(shift.date, paymentLocation) : undefined,
           })
           .eq("shift_id", id)
           .eq("user_id", request.auth.user.id)
-          .neq("status", "received"),
+          .in("status", ["pending", "overdue"]),
         null,
       );
+
+      // Só acompanha a nova regra quem ainda usa a previsão herdada anterior.
+      // Datas personalizadas no cadastro ou no faturamento permanecem preservadas.
+      if (scheduleChanged && previousLocation && paymentLocation) {
+        await optionalData(
+          request.auth.supabase
+            .from("receivables")
+            .update({ expected_date: expectedPaymentDate(shift.date, paymentLocation) })
+            .eq("shift_id", id)
+            .eq("user_id", request.auth.user.id)
+            .eq("expected_date", expectedPaymentDate(currentShift.date, previousLocation))
+            .in("status", ["pending", "overdue"]),
+          null,
+        );
+      }
     }
 
     ok(response, normalizeShiftStatus(shift));
