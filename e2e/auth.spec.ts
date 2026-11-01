@@ -411,6 +411,36 @@ test.describe("Login E2E mockado", () => {
     expect(unexpectedRequests).toEqual([]);
   });
 
+  test("agenda e lista adiam o formulário e permitem fechar enquanto ele carrega", async ({ page }) => {
+    let requests = 0;
+    let releaseForm!: () => void;
+    const formReady = new Promise<void>((resolve) => { releaseForm = resolve; });
+    await page.route("**/src/components/forms/ShiftForm.tsx*", async (route) => {
+      requests += 1;
+      await formReady;
+      return route.continue();
+    });
+    try {
+      await login(page, mockedUser);
+      await expect(page.locator(".calendar-grid")).toBeVisible();
+      expect(requests).toBe(0);
+      await page.goto("/#/shifts");
+      await expect(page.locator(".shift-date-list")).toBeVisible();
+      expect(requests).toBe(0);
+      await page.locator(".ledger-page").getByRole("button", { name: "Novo plantao", exact: true }).click();
+      const dialog = page.getByRole("dialog", { name: "Novo plantao", exact: true });
+      await expect(dialog.getByRole("status")).toContainText("Carregando formulário");
+      await expect.poll(() => requests).toBe(1);
+      await dialog.getByRole("button", { name: "Fechar", exact: true }).click();
+      await expect(dialog).toHaveCount(0);
+    } finally {
+      releaseForm();
+    }
+    await page.locator(".ledger-page").getByRole("button", { name: "Novo plantao", exact: true }).click();
+    await expect(page.getByRole("dialog").getByRole("textbox", { name: "Data", exact: true })).toBeVisible();
+    expect(requests).toBe(1);
+  });
+
   test.describe("Previsão de pagamento do plantão", () => {
     const units: Location[] = [
       { ...location, reference_end_day: 31 },

@@ -1,11 +1,13 @@
 import { format, isValid, parse, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+
 export function money(value: unknown) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(Number(value || 0));
+  return currencyFormatter.format(Number(value || 0));
 }
 
 export function dateLabel(value?: string | null, fallback = "-") {

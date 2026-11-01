@@ -97,3 +97,15 @@ export function colorForLocation(name: string, colors = readLocationColors()) {
 export function markerColorForShift(shift: Pick<Shift, "location_name" | "marker_color" | "marker_label">) {
   return shift.marker_color || colorFor(shift.marker_label || shift.location_name || "Plantao");
 }
+
+export function markerTextColor(background: string) {
+  if (!/^#[\da-f]{6}$/i.test(background)) return "var(--text)";
+  const channels = [1, 3, 5].map((start) => {
+    const channel = Number.parseInt(background.slice(start, start + 2), 16) / 255;
+    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  const luminance = channels[0]! * 0.2126 + channels[1]! * 0.7152 + channels[2]! * 0.0722;
+  const blackContrast = (luminance + 0.05) / 0.05;
+  const whiteContrast = 1.05 / (luminance + 0.05);
+  return blackContrast >= whiteContrast ? "#000000" : "#ffffff";
+}

@@ -1,6 +1,6 @@
 import type { Shift } from "@financplantoes/shared";
 import { describe, expect, it } from "vitest";
-import { calendarColors, colorFor, dateKey, isNightShift, monthDays } from "./calendar";
+import { calendarColors, colorFor, dateKey, isNightShift, markerTextColor, monthDays } from "./calendar";
 
 describe("calendar helpers", () => {
   it("gera chave de data no formato yyyy-MM-dd", () => {
@@ -27,5 +27,20 @@ describe("calendar helpers", () => {
 
   it("oferece uma paleta ampla de cores vivas", () => {
     expect(calendarColors).toHaveLength(36);
+  });
+
+  it.each([
+    ["#ffffff", "#000000"],
+    ["#000000", "#ffffff"],
+    ["#9735b9", "#ffffff"],
+    ["#27b952", "#000000"],
+    ["#ffe087", "#000000"],
+    ["#AAAAAA", "#000000"],
+  ])("mantém a legenda legível sobre o marcador %s", (background, foreground) => {
+    expect(markerTextColor(background)).toBe(foreground);
+  });
+
+  it("preserva a cor de texto do tema quando o marcador é inválido", () => {
+    expect(markerTextColor("cor inválida")).toBe("var(--text)");
   });
 });

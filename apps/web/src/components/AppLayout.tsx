@@ -97,7 +97,7 @@ export function AppLayout() {
   return (
     <div className="app-frame">
       <aside className="sidebar">
-        <Link aria-label="FinancPlantoes" to="/">
+        <Link to="/">
           <Brand />
         </Link>
         <nav className="side-nav" aria-label="Navegacao principal">
@@ -200,7 +200,7 @@ export function AppLayout() {
           />
           <aside aria-label="Menu mobile" className="mobile-menu-drawer" id="mobile-menu">
             <div className="mobile-menu-head">
-              <Link aria-label="FinancPlantoes" onClick={() => setMobileMenuOpen(false)} to="/">
+              <Link onClick={() => setMobileMenuOpen(false)} to="/">
                 <Brand />
               </Link>
               <Button
