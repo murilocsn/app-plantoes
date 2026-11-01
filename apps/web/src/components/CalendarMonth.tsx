@@ -91,7 +91,7 @@ export function CalendarMonth({
 
           return (
             <button
-              aria-label={dateLabel(key)}
+              aria-label={dateLabel(key).replace(/^0/, "")}
               aria-pressed={key === selectedDate}
               className={[
                 "calendar-day",

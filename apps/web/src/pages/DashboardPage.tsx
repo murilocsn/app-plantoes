@@ -7,7 +7,7 @@ import { CalendarMonth } from "../components/CalendarMonth";
 import { ErrorBlock, LoadingBlock } from "../components/PageFeedback";
 import { ShiftCrudModals, type ShiftModalState } from "../components/ShiftCrudModals";
 import { useDashboardOverview, useReceivables } from "../hooks/useBootstrap";
-import { markerColorForShift } from "../lib/calendar";
+import { markerColorForShift, markerTextColor } from "../lib/calendar";
 import { dateLabel } from "../lib/formatters";
 
 function monthParam(date: Date) {
@@ -86,7 +86,10 @@ export function DashboardPage() {
                           {shift.marker_label && (
                             <em
                               className="shift-marker-inline"
-                              style={{ backgroundColor: markerColorForShift(shift) }}
+                              style={{
+                                backgroundColor: markerColorForShift(shift),
+                                color: markerTextColor(markerColorForShift(shift)),
+                              }}
                               title={shift.marker_label}
                             >
                               {shift.marker_label}

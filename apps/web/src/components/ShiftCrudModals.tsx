@@ -1,14 +1,26 @@
 import type { Location, Shift } from "@financplantoes/shared";
 import { AlertTriangle } from "lucide-react";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useAppMutation } from "../hooks/useBootstrap";
 import { ApiError } from "../lib/api";
 import { domainApi } from "../lib/domain-api";
 import { Button } from "./Button";
 import { EmptyState } from "./EmptyState";
-import { ShiftForm } from "./forms/ShiftForm";
 import { Modal } from "./Modal";
+import { LoadingBlock } from "./PageFeedback";
 import { showToast } from "./ToastHost";
+
+const ShiftForm = lazy(() =>
+  import("./forms/ShiftForm").then((module) => ({ default: module.ShiftForm })),
+);
+
+function LoadingForm() {
+  return (
+    <div role="status">
+      <LoadingBlock label="Carregando formulário..." />
+    </div>
+  );
+}
 
 export type ShiftModalState =
   | { type: "create"; date?: string }
@@ -61,16 +73,18 @@ export function ShiftCrudModals({ locations, modal, onClose }: ShiftCrudModalsPr
   if (modal.type === "create") {
     return (
       <Modal eyebrow="Plantao" onClose={onClose} title="Novo plantao">
-        <ShiftForm
-          initialDate={modal.date}
-          locations={locations}
-          onCancel={onClose}
-          onSubmit={(values) => {
-            setErrorMessage("");
-            createShift.mutate(values, { onError: showError });
-          }}
-          submitting={createShift.isPending}
-        />
+        <Suspense fallback={<LoadingForm />}>
+          <ShiftForm
+            initialDate={modal.date}
+            locations={locations}
+            onCancel={onClose}
+            onSubmit={(values) => {
+              setErrorMessage("");
+              createShift.mutate(values, { onError: showError });
+            }}
+            submitting={createShift.isPending}
+          />
+        </Suspense>
         {errorMessage && (
           <p className="form-message" role="alert">
             {errorMessage}
@@ -83,16 +97,18 @@ export function ShiftCrudModals({ locations, modal, onClose }: ShiftCrudModalsPr
   if (modal.type === "edit") {
     return (
       <Modal eyebrow="Plantao" onClose={onClose} title="Editar plantao">
-        <ShiftForm
-          locations={locations}
-          onCancel={onClose}
-          onSubmit={(values) => {
-            setErrorMessage("");
-            updateShift.mutate({ id: modal.shift.id, payload: values.shift }, { onError: showError });
-          }}
-          shift={modal.shift}
-          submitting={updateShift.isPending}
-        />
+        <Suspense fallback={<LoadingForm />}>
+          <ShiftForm
+            locations={locations}
+            onCancel={onClose}
+            onSubmit={(values) => {
+              setErrorMessage("");
+              updateShift.mutate({ id: modal.shift.id, payload: values.shift }, { onError: showError });
+            }}
+            shift={modal.shift}
+            submitting={updateShift.isPending}
+          />
+        </Suspense>
         {errorMessage && (
           <p className="form-message" role="alert">
             {errorMessage}

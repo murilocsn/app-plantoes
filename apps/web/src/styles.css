@@ -36,7 +36,7 @@
   --payment-paid: #158313;
   --payment-pending: #ccb30eea;
   --payment-overdue: #c3241f;
-  --payment-paid-ink: #14361c;
+  --payment-paid-ink: #ffffff;
 }
 
 :root[data-theme="dark"] {
@@ -723,7 +723,7 @@ h3 {
 }
 
 .muted-day {
-  opacity: 0.48;
+  background: var(--surface-2);
 }
 
 .day-dots,
