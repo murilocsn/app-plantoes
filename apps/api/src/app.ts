@@ -50,6 +50,18 @@ export function createApp(telemetry: HttpTelemetry = disabledTelemetry) {
     response.json({ data: { status: "ok" } });
   });
 
+  app.get("/version", (_request, response) => {
+    const commit = process.env.RENDER_GIT_COMMIT;
+    const branch = process.env.RENDER_GIT_BRANCH;
+    response.setHeader("Cache-Control", "no-store");
+    response.json({
+      data: {
+        commit: commit && /^[a-f0-9]{40}$/i.test(commit) ? commit : null,
+        branch: branch && /^[a-z0-9._/-]{1,200}$/i.test(branch) ? branch : null,
+      },
+    });
+  });
+
   app.use("/api", requireAuth);
   // Keep the implementation in routes/ai.ts dormant until the feature is reactivated.
   app.use("/api/ai", (_request, _response, next) => {
