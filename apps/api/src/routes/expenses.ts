@@ -43,7 +43,7 @@ expensesRouter.get(
       ),
       expenseSharingSnapshot(request.auth.supabase),
     ]);
-    response.setHeader(
+    response.append(
       "Server-Timing",
       `expenses;dur=${Math.round(performance.now() - startedAt)}`,
     );

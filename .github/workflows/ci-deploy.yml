@@ -35,11 +35,18 @@ jobs:
       - name: Testes
         run: npm test
 
+      - name: Testar publicação
+        run: node --test scripts/deploy-render.test.mjs
+
       - name: Build
         run: npm run build
 
   deploy-render:
     name: Publicar API no Render
+    timeout-minutes: 15
+    concurrency:
+      group: render-api-producao
+      cancel-in-progress: false
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: validate
     runs-on: ubuntu-latest
@@ -55,4 +62,6 @@ jobs:
       - name: Disparar deploy
         env:
           RENDER_API_DEPLOY_HOOK_URL: ${{ secrets.RENDER_API_DEPLOY_HOOK_URL }}
+          RENDER_DEPLOY_COMMIT: ${{ github.sha }}
+          RENDER_VERIFY_URL: https://app-plantoes.onrender.com/version
         run: npm run deploy:render

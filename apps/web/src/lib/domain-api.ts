@@ -1,7 +1,7 @@
 import type {
   AppBootstrap,
   AiChatResponse,
-  DashboardOverview,
+  DashboardCalendar,
   Location,
   Receivable,
   Shift,
@@ -38,10 +38,10 @@ export const domainApi = {
   bootstrap: () => api<AppBootstrap>("/dashboard/bootstrap"),
   receivables: () => api<Receivable[]>("/receivables"),
   dashboardOverview: (filters?: { month?: string }) => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ view: "calendar" });
     if (filters?.month) params.set("month", filters.month);
     const query = params.toString();
-    return api<DashboardOverview>(`/dashboard/overview${query ? `?${query}` : ""}`);
+    return api<DashboardCalendar>(`/dashboard/overview?${query}`);
   },
   createLocation: (payload: unknown) =>
     api<Location>("/locations", { method: "POST", body: payload }),

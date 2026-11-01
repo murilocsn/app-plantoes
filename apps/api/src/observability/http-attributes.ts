@@ -4,7 +4,7 @@ import type { FormatFn } from "morgan";
 
 // Only source-controlled route templates may leave the process. New routes fail closed.
 const routePaths = {
-  "": ["/", "/health"],
+  "": ["/", "/health", "/version"],
   "/api/ai": ["/chat"],
   "/api/dashboard": ["/overview", "/bootstrap"],
   "/api/expenses": [

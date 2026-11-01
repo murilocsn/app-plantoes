@@ -3,6 +3,7 @@ import {
   expenseCardCosts,
   type AppBootstrap,
   type DashboardOverview,
+  type DashboardCalendar,
   type Expense,
   type Location,
   type Receivable,
@@ -11,6 +12,7 @@ import {
 } from "@financplantoes/shared";
 import { Router, type Response } from "express";
 import { performance } from "node:perf_hooks";
+import { z } from "zod";
 import { asyncHandler } from "../lib/async-handler";
 import { normalizeShiftStatus, optionalData } from "../lib/db";
 import { ok } from "../lib/respond";
@@ -30,6 +32,10 @@ const receivableSelect =
 const expenseSelect = "id,description,amount,expense_date,category,notes,created_at";
 
 type QueryTimings = Record<string, number>;
+
+const overviewQuerySchema = monthQuerySchema.extend({
+  view: z.enum(["full", "calendar"]).default("full"),
+});
 
 function getMonthKey(date = new Date()) {
   return date.toISOString().slice(0, 7);
@@ -101,7 +107,7 @@ function writeServerTiming(response: Response, timings: QueryTimings, totalStart
     total: Math.round(performance.now() - totalStartedAt),
   };
 
-  response.setHeader(
+  response.append(
     "Server-Timing",
     Object.entries(metrics)
       .map(([name, duration]) => `${name};dur=${duration}`)
@@ -158,7 +164,8 @@ dashboardRouter.get(
     const timings: QueryTimings = {};
     const userId = request.auth.user.id;
     const supabase = request.auth.supabase;
-    const { month = getMonthParam() } = monthQuerySchema.parse(request.query);
+    const { month = getMonthParam(), view } = overviewQuerySchema.parse(request.query);
+    const calendarOnly = view === "calendar";
     const monthRange = monthBounds(month);
     const calendarRange = calendarBounds(month);
     const today = new Date().toISOString().slice(0, 10);
@@ -210,7 +217,7 @@ dashboardRouter.get(
           [],
         ),
       ),
-      measure(timings, "month_receivables", () =>
+      calendarOnly ? [] : measure(timings, "month_receivables", () =>
         optionalData<Receivable[]>(
           supabase
             .from("receivables")
@@ -222,7 +229,7 @@ dashboardRouter.get(
           [],
         ),
       ),
-      measure(timings, "open_receivables", () =>
+      calendarOnly ? [] : measure(timings, "open_receivables", () =>
         optionalData<Receivable[]>(
           supabase
             .from("receivables")
@@ -234,7 +241,7 @@ dashboardRouter.get(
           [],
         ),
       ),
-      measure(timings, "personal_expenses", () =>
+      calendarOnly ? [] : measure(timings, "personal_expenses", () =>
         optionalData<Expense[]>(
           supabase
             .from("personal_expenses")
@@ -246,7 +253,7 @@ dashboardRouter.get(
           [],
         ),
       ),
-      measure(timings, "spaces", () =>
+      calendarOnly ? [] : measure(timings, "spaces", () =>
         optionalData<Array<{ role: string; spaces: Pick<Space, "archived"> | null }>>(
           supabase
             .from("space_members")
@@ -256,8 +263,8 @@ dashboardRouter.get(
           [],
         ),
       ),
-      measure(timings, "expense_cards", () => expenseSharingSnapshot(supabase)),
-      measure(timings, "legacy_shared_expenses", () => optionalData<Expense[]>(
+      calendarOnly ? null : measure(timings, "expense_cards", () => expenseSharingSnapshot(supabase)),
+      calendarOnly ? [] : measure(timings, "legacy_shared_expenses", () => optionalData<Expense[]>(
         supabase.from("expenses").select(expenseSelect).eq("paid_by", userId)
           .gte("expense_date", monthRange.from).lte("expense_date", monthRange.to), [],
       )),
@@ -265,6 +272,16 @@ dashboardRouter.get(
 
     const normalizedCalendarShifts = calendarShifts.map(normalizeShiftStatus);
     const normalizedUpcomingShifts = upcomingShifts.map(normalizeShiftStatus);
+    if (calendarOnly) {
+      const calendar: DashboardCalendar = {
+        calendarShifts: normalizedCalendarShifts,
+        upcomingShifts: normalizedUpcomingShifts,
+        locations,
+      };
+      writeServerTiming(response, timings, totalStartedAt);
+      ok(response, calendar);
+      return;
+    }
     const monthShifts = normalizedCalendarShifts.filter(
       (shift) => shift.date >= monthRange.from && shift.date <= monthRange.to,
     );
@@ -277,7 +294,7 @@ dashboardRouter.get(
       activeReceivables.filter((item) => item.status === "pending" || item.status === "overdue"),
       (item) => item.amount,
     );
-    const expenses = sumBy([...personalExpenses, ...legacySharedExpenses, ...expenseCardCosts(sharing.cards)]
+    const expenses = sumBy([...personalExpenses, ...legacySharedExpenses, ...expenseCardCosts(sharing?.cards ?? [])]
       .filter(item => item.expense_date >= monthRange.from && item.expense_date <= monthRange.to), item => item.amount);
     const incomeProjected = sumBy(monthShifts, (item) => item.value ?? item.value12);
     const nextReceivable = dashboardReceivables[0] ?? null;

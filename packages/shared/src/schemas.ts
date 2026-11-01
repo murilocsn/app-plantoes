@@ -125,6 +125,7 @@ export const shiftInputSchema = z.object({
   marker_label: optionalMarkerLabel,
   status: shiftStatusSchema.default("scheduled"),
   createReceivable: z.boolean().default(true),
+  expected_payment_date: z.string().date("Informe uma previsão de pagamento válida").or(z.literal("")).optional(),
 });
 
 export const recurrenceInputSchema = z.object({

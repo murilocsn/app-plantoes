@@ -80,6 +80,8 @@ export type DashboardOverview = {
   spaceCount: number;
 };
 
+export type DashboardCalendar = Pick<DashboardOverview, "calendarShifts" | "upcomingShifts" | "locations">;
+
 import type { planSchema } from "./schemas";
 
 export type Plan = z.infer<typeof planSchema>;

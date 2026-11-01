@@ -1,7 +1,7 @@
 import { once } from "node:events";
 import { request } from "node:http";
 import type { Server } from "node:http";
-import type { AppBootstrap } from "@financplantoes/shared";
+import type { AppBootstrap, DashboardCalendar, DashboardOverview } from "@financplantoes/shared";
 import { AggregationTemporality, InMemoryMetricExporter } from "@opentelemetry/sdk-metrics";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../app";
@@ -59,6 +59,10 @@ const from = vi.fn((table: string) => {
   const query = {
     select: vi.fn(() => query),
     order: vi.fn(() => query),
+    gte: vi.fn(() => query),
+    lte: vi.fn(() => query),
+    limit: vi.fn(() => query),
+    in: vi.fn(() => query),
     eq: vi.fn((column: string, value: unknown) => {
       appliedFilters.push([column, value]);
       return query;
@@ -69,20 +73,22 @@ const from = vi.fn((table: string) => {
   return query;
 });
 
-async function bootstrap(accessToken?: string) {
+async function bootstrap<T = AppBootstrap>(accessToken?: string, path = "/api/dashboard/bootstrap") {
   server = createApp(telemetry).listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("Missing test server port.");
   return new Promise<{
     status: number;
-    body: { data?: AppBootstrap; error?: { code: string; message: string; details?: unknown } };
+    body: { data?: T; error?: { code: string; message: string; details?: unknown } };
+    timing: string;
+    exposedHeaders: string;
   }>((resolve, reject) => {
     const outgoing = request(
       {
         hostname: "127.0.0.1",
         port: address.port,
-        path: "/api/dashboard/bootstrap",
+        path,
         agent: false,
         headers: accessToken ? { authorization: `Bearer ${accessToken}` } : {},
       },
@@ -92,7 +98,11 @@ async function bootstrap(accessToken?: string) {
         response.on("data", (chunk) => {
           body += chunk;
         });
-        response.on("end", () => resolve({ status: response.statusCode!, body: JSON.parse(body) }));
+        response.on("end", () => resolve({
+          status: response.statusCode!, body: JSON.parse(body),
+          timing: String(response.headers["server-timing"] ?? ""),
+          exposedHeaders: String(response.headers["access-control-expose-headers"] ?? ""),
+        }));
       },
     );
     outgoing.setTimeout(1500, () => outgoing.destroy(new Error("Bootstrap request timed out.")));
@@ -243,14 +253,12 @@ describe("GET /api/dashboard/bootstrap", () => {
   it("handles an unexpected query rejection without leaking internal details", async () => {
     rejectedTable = "receivables";
     const response = await bootstrap(token);
-    expect(response).toEqual({
-      status: 500,
-      body: {
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({
         error: {
           code: "INTERNAL_ERROR",
           message: "Erro interno ao processar a requisicao.",
         },
-      },
     });
   });
   it("includes only the current user's monthly share in bootstrap totals", async () => {
@@ -265,5 +273,66 @@ describe("GET /api/dashboard/bootstrap", () => {
     const response = await bootstrap(token);
     expect(response.status).toBe(200);
     expect(response.body.data?.expenseSharing).toEqual({ available: false, cards: [], invitations: [] });
+  });
+});
+
+describe("Carregamento inicial do calendário", () => {
+  const path = "/api/dashboard/overview?month=09-2026&view=calendar";
+
+  it("consulta somente plantões e locais, sem depender de despesas ou espaços", async () => {
+    rows.shifts = [{ id: "calendar-shift", date: "2026-09-10", duration: 12, value: 100 }];
+    rows.locations = [{ id: "calendar-location", name: "Unidade de teste" }];
+    rejectedTable = "space_members";
+    sharingRpc.mockRejectedValue(new Error("Compartilhamento indisponível"));
+    const response = await bootstrap<DashboardCalendar>(token, path);
+    expect(response.status).toBe(200);
+    expect(Object.keys(response.body.data!).sort()).toEqual(["calendarShifts", "locations", "upcomingShifts"]);
+    expect(response.body.data?.calendarShifts[0]).toMatchObject({ id: "calendar-shift", status: "scheduled" });
+    expect(from.mock.calls.map(([table]) => table)).toEqual(["shifts", "shifts", "locations"]);
+    expect(sharingRpc).not.toHaveBeenCalled();
+    for (const result of from.mock.results) {
+      const query = result.value;
+      expect(query.eq).toHaveBeenCalledWith("user_id", userId);
+    }
+    expect(from.mock.results[0]?.value.gte).toHaveBeenCalledWith("date", "2026-08-30");
+    expect(from.mock.results[0]?.value.lte).toHaveBeenCalledWith("date", "2026-10-03");
+    expect(from.mock.results[1]?.value.limit).toHaveBeenCalledWith(6);
+    expect(response.timing).toMatch(/auth;dur=\d+/);
+    expect(response.timing).toMatch(/calendar_shifts;dur=\d+/);
+    expect(response.timing).not.toMatch(/expense|spaces|receivables/);
+    expect(response.timing).not.toContain(token);
+    expect(response.timing).not.toContain(userId);
+    expect(response.exposedHeaders).toBe("Server-Timing");
+  });
+
+  it("preserva o contrato completo quando a visão reduzida não é solicitada", async () => {
+    rows.shifts = [{ id: "shift", date: "2026-09-15", value: 100, duration: 12 }];
+    rows.receivables = [{ id: "receipt", expected_date: "2026-09-15", amount: 100, status: "received" }];
+    const response = await bootstrap<DashboardOverview>(token, "/api/dashboard/overview?month=09-2026");
+    expect(response.status).toBe(200);
+    expect(response.body.data?.summary).toMatchObject({ incomeProjected: 100, received: 100, shiftCount: 1 });
+    expect(response.body.data).toHaveProperty("spaceCount");
+    expect(from).toHaveBeenCalledTimes(8);
+    expect(sharingRpc).toHaveBeenCalledOnce();
+    expect(response.timing).toMatch(/auth;dur=\d+/);
+    expect(response.timing).toMatch(/expense_cards;dur=\d+/);
+  });
+
+  it("continua exigindo sessão antes de consultar o calendário", async () => {
+    expect((await bootstrap(undefined, path)).status).toBe(401);
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it.each(["month=13-2026&view=calendar", "month=09-2026&view=unknown"])("valida os filtros antes das consultas: %s", async (query) => {
+    expect((await bootstrap(token, `/api/dashboard/overview?${query}`)).status).toBe(422);
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it("propaga falhas do calendário em vez de mostrar dados vazios", async () => {
+    databaseError = { table: "shifts", code: "PGRST301" };
+    const response = await bootstrap(token, path);
+    expect(response.status).toBe(401);
+    expect(response.body.data).toBeUndefined();
+    expect(response.body.error?.code).toBe("PGRST301");
   });
 });
